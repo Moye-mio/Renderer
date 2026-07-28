@@ -1,0 +1,93 @@
+// ============================================================================
+// RendererCore - PassScheduler.cpp
+// 严格只依赖 IGDevice / RenderCommandList / IRenderPass，无任何后端 API 调用。
+// ============================================================================
+#include "PassScheduler.h"
+#include "IGDevice.h"
+#include "RenderCommandList.h"
+#include "IRenderPass.h"
+
+#include <algorithm>
+
+namespace TitusRHI
+{
+    void PassScheduler::AddPass(const std::shared_ptr<IRenderPass>& pass)
+    {
+        if (!pass) return;
+        m_passes.push_back(pass);
+        SortPasses();
+    }
+
+    void PassScheduler::RemoveAllPasses()
+    {
+        m_passes.clear();
+    }
+
+    void PassScheduler::SortPasses()
+    {
+        std::stable_sort(m_passes.begin(), m_passes.end(),
+            [](const std::shared_ptr<IRenderPass>& a, const std::shared_ptr<IRenderPass>& b) {
+                return static_cast<int>(a->passEvent) < static_cast<int>(b->passEvent);
+            });
+    }
+
+    void PassScheduler::InitAllPasses()
+    {
+        if (!m_device) return;
+        for (auto& p : m_passes) p->Init(*m_device);
+    }
+
+    void PassScheduler::DestroyAllPasses()
+    {
+        if (!m_device) return;
+        for (auto& p : m_passes) p->Destroy(*m_device);
+        m_passes.clear();
+    }
+
+    void PassScheduler::DrawFrame()
+    {
+        if (!m_device) return;
+
+        // 1) BeginFrame：后端内部完成 Acquire / 等待 Fence 等同步动作
+        m_device->BeginFrame();
+
+        // 2) 取得本帧 CommandList
+        RenderCommandList* cmd = m_device->AcquireCommandList();
+        if (!cmd)
+        {
+            // 后端拒绝出帧（如 swapchain out of date）：仅推进帧计数后返回
+            ++m_frameCounter;
+            return;
+        }
+
+        const uint32_t frameIndex = m_device->GetCurrentFrameIndex();
+        const uint32_t imageIndex = frameIndex; // 大多数后端取一致；后端内部已自管 swap image
+
+        // 3) Update + Record
+        for (auto& p : m_passes)
+        {
+            p->Update(*m_device, frameIndex);
+            p->Record(*m_device, *cmd, frameIndex, imageIndex);
+        }
+
+        // 4) Submit + Present
+        //
+        // ImGui-A 修复：必须在 Submit *之后* 才调用 RenderImGuiOverlay。
+        //   - GL：业务 Pass 仅"录制" lambda 到 cmd，Submit 触发 Replay 才真正
+        //     向 GL driver 提交命令；imgui_impl_opengl3 是 immediate 模式，
+        //     一调用就立即向 driver 提交。若放在 Submit 之前，imgui 会先于
+        //     业务画面打到 default FB，紧接着 Submit 内的 glClear/场景绘制
+        //     又把它覆盖掉，最终 SwapBuffers 出去的画面只剩场景没有 GUI。
+        //   - VK：imgui draw 必须录到 primaryCmd 中，但 SubmitImpl 内部会
+        //     调 primaryCmd->End() 关闭 cmdbuf，所以 VK 端把 imgui 录制
+        //     提前挪到了 SubmitImpl 内、End() 之前；这里 Submit 后再调
+        //     RenderImGuiOverlay 时 VK 实现已变为 no-op，不会重复执行。
+        m_device->Submit(cmd);
+
+        m_device->RenderImGuiOverlay();
+
+        m_device->Present();
+
+        ++m_frameCounter;
+    }
+}

@@ -1,0 +1,70 @@
+# === 编译输出 (中间文件与可执行文件) ===
+*.o
+*.obj
+# 保留 Model/ 下的 Wavefront OBJ 模型（非编译产物）
+!Model/**/*.obj
+*.out
+*.exe
+*.app
+*.so
+*.a
+*.lib
+*.dll
+*.dylib
+
+# === 常见构建系统目录 ===
+# CMake
+/build/
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+Makefile
+
+# GNU Make
+.deps/
+.libs/
+
+# === 常见 IDE & 编辑器配置 ===
+# Visual Studio
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+Debug/
+Release/
+x64/
+x86/
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# CLion / JetBrains
+.idea/
+cmake-build-*/
+
+# Xcode
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+*.xcworkspace/
+
+# === 操作系统与日志 ===
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# === SDK ===
+GraphicSDK/
+
+# === Renderer 运行时日志输出 ===
+/Logs/
+
+# === RenderDoc ===
+Rdcs/

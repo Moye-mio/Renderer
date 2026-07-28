@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <Filter Include="Source Files">
+            <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+            <Extensions>cpp;c;cc;cxx</Extensions>
+        </Filter>
+        <Filter Include="Header Files">
+            <UniqueIdentifier>{93995380-89BD-4B04-88EB-625FBE52EBFB}</UniqueIdentifier>
+            <Extensions>h;hh;hpp;hxx</Extensions>
+        </Filter>
+        <Filter Include="Tests">
+            <UniqueIdentifier>{2B2D3A11-87E6-4F50-9D33-1AC9F00CE002}</UniqueIdentifier>
+        </Filter>
+    </ItemGroup>
+    <ItemGroup>
+        <ClCompile Include="RendererCore.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="PassScheduler.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="GDeviceFactory.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="GDevice.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="GThreadableDevice.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="CommandRingBuffer.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="GDeviceWorker.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="GDeviceMainThread.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="ShaderAsset.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="Material.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="AssetGpuUploader.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="GpuModel.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="ShaderReflector.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+    </ItemGroup>
+    <ItemGroup>
+        <ClInclude Include="GHandle.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GEnums.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GDescs.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="IGDevice.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="IWindow.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="RenderCommandList.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="IRenderPass.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="PassScheduler.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GDevice.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GThreadableDevice.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="HandleAllocator.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GContextData.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GThreadingMode.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GResources.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GStateCache.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="ShaderParameterSet.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="ShaderAsset.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="Material.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="MaterialInstance.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GpuMesh.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="AssetGpuUploader.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GpuModel.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="ShaderReflector.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="CommandRingBuffer.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GDeviceWorker.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GDeviceMainThread.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="GDeviceHeadless.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="Tests\MockDevice.h">
+            <Filter>Tests</Filter>
+        </ClInclude>
+        <ClInclude Include="Tests\DeviceLifecycleTest.h">
+            <Filter>Tests</Filter>
+        </ClInclude>
+    </ItemGroup>
+</Project>

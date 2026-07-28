@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup Label="ProjectConfigurations">
+        <ProjectConfiguration Include="Debug|x64">
+            <Configuration>Debug</Configuration>
+            <Platform>x64</Platform>
+        </ProjectConfiguration>
+        <ProjectConfiguration Include="Release|x64">
+            <Configuration>Release</Configuration>
+            <Platform>x64</Platform>
+        </ProjectConfiguration>
+    </ItemGroup>
+    <PropertyGroup Label="Globals">
+        <VCProjectVersion>15.0</VCProjectVersion>
+        <ProjectGuid>{B3A7F200-7C00-4A10-9B3F-1AC9F00DB001}</ProjectGuid>
+        <Keyword>Win32Proj</Keyword>
+        <RootNamespace>RendererVK</RootNamespace>
+        <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    </PropertyGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
+    <PropertyGroup>
+        <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+        <ConfigurationType>StaticLibrary</ConfigurationType>
+        <UseDebugLibraries>true</UseDebugLibraries>
+        <PlatformToolset>v143</PlatformToolset>
+        <CharacterSet>Unicode</CharacterSet>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+        <ConfigurationType>StaticLibrary</ConfigurationType>
+        <UseDebugLibraries>false</UseDebugLibraries>
+        <PlatformToolset>v143</PlatformToolset>
+        <WholeProgramOptimization>true</WholeProgramOptimization>
+        <CharacterSet>Unicode</CharacterSet>
+    </PropertyGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
+    <ImportGroup Label="ExtensionSettings"/>
+    <ImportGroup Label="Shared"/>
+    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform"/>
+    </ImportGroup>
+    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform"/>
+    </ImportGroup>
+    <PropertyGroup Label="UserMacros"/>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <LinkIncremental>true</LinkIncremental>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <LinkIncremental>false</LinkIncremental>
+    </PropertyGroup>
+    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <ClCompile>
+            <PrecompiledHeader>NotUsing</PrecompiledHeader>
+            <WarningLevel>Level3</WarningLevel>
+            <Optimization>Disabled</Optimization>
+            <SDLCheck>true</SDLCheck>
+            <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;RENDERER_ENABLE_RAY_TRACING;_DEBUG;_LIB;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <ConformanceMode>true</ConformanceMode>
+            <LanguageStandard>stdcpplatest</LanguageStandard>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(VULKAN_SDK)\Include;$(OPENGL)\include;$(GLM);$(BOOST);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <DisableSpecificWarnings>4477;4267;4251;4305;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+        </ClCompile>
+        <Link>
+            <SubSystem>Windows</SubSystem>
+            <GenerateDebugInformation>true</GenerateDebugInformation>
+        </Link>
+    </ItemDefinitionGroup>
+    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <ClCompile>
+            <PrecompiledHeader>NotUsing</PrecompiledHeader>
+            <WarningLevel>Level3</WarningLevel>
+            <Optimization>MaxSpeed</Optimization>
+            <FunctionLevelLinking>true</FunctionLevelLinking>
+            <IntrinsicFunctions>true</IntrinsicFunctions>
+            <SDLCheck>true</SDLCheck>
+            <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;RENDERER_ENABLE_RAY_TRACING;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <ConformanceMode>true</ConformanceMode>
+            <LanguageStandard>stdcpplatest</LanguageStandard>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(VULKAN_SDK)\Include;$(OPENGL)\include;$(GLM);$(BOOST);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <DisableSpecificWarnings>4477;4267;4251;4305;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+        </ClCompile>
+        <Link>
+            <SubSystem>Windows</SubSystem>
+            <EnableCOMDATFolding>true</EnableCOMDATFolding>
+            <OptimizeReferences>true</OptimizeReferences>
+            <GenerateDebugInformation>true</GenerateDebugInformation>
+        </Link>
+    </ItemDefinitionGroup>
+    <ItemGroup>
+        <ClCompile Include="Common.cpp"/>
+        <ClCompile Include="VkCommandBufferWrapper.cpp"/>
+        <ClCompile Include="VkContext.cpp"/>
+        <ClCompile Include="VkSwapchainWrapper.cpp"/>
+        <ClCompile Include="VkWindow.cpp"/>
+        <ClCompile Include="VKTranslate.cpp"/>
+        <ClCompile Include="VKDevice.cpp"/>
+        <ClCompile Include="VKCommandList.cpp"/>
+        <ClCompile Include="VKDeviceFactory.cpp"/>
+        <ClCompile Include="VKShaderCompiler.cpp"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ClInclude Include="Common.h"/>
+        <ClInclude Include="RENDERER_VK_EXPORTS.h"/>
+        <ClInclude Include="VkCommandBufferWrapper.h"/>
+        <ClInclude Include="VkContext.h"/>
+        <ClInclude Include="VkSwapchainWrapper.h"/>
+        <ClInclude Include="VkWindow.h"/>
+        <ClInclude Include="VKTranslate.h"/>
+        <ClInclude Include="VKDevice.h"/>
+        <ClInclude Include="VKCommandList.h"/>
+        <ClInclude Include="VKShaderCompiler.h"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\Basic\Basic.vcxproj">
+            <Project>{a447d845-b216-4ee2-b7fb-b2e98463b5a4}</Project>
+            <Name>Basic</Name>
+        </ProjectReference>
+        <ProjectReference Include="..\RendererCore\RendererCore.vcxproj">
+            <Project>{c5e8a100-1b40-4e50-9d33-1ac9f00ce002}</Project>
+            <Name>RendererCore</Name>
+        </ProjectReference>
+    </ItemGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
+    <ImportGroup Label="ExtensionTargets"/>
+</Project>

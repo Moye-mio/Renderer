@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup Label="ProjectConfigurations">
+        <ProjectConfiguration Include="Debug|x64">
+            <Configuration>Debug</Configuration>
+            <Platform>x64</Platform>
+        </ProjectConfiguration>
+        <ProjectConfiguration Include="Release|x64">
+            <Configuration>Release</Configuration>
+            <Platform>x64</Platform>
+        </ProjectConfiguration>
+    </ItemGroup>
+    <ItemGroup>
+        <ClCompile Include="main.cpp"/>
+        <ClCompile Include="TrianglePass.cpp"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ClInclude Include="TrianglePass.h"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="Shader\triangle.vert"/>
+        <Content Include="Shader\triangle.frag"/>
+        <Content Include="Shader\triangle.vert.glsl"/>
+        <Content Include="Shader\triangle.frag.glsl"/>
+        <Content Include="Shader\CompileShaders.bat"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\Basic\Basic.vcxproj">
+            <Project>{a447d845-b216-4ee2-b7fb-b2e98463b5a4}</Project>
+            <Name>Basic</Name>
+        </ProjectReference>
+        <ProjectReference Include="..\..\AssetLoader\AssetLoader.vcxproj">
+            <Project>{A55E1100-1B40-4E50-9D33-1AC9F00CE006}</Project>
+            <Name>AssetLoader</Name>
+        </ProjectReference>
+        <ProjectReference Include="..\..\RendererInterface\RendererInterface.vcxproj">
+            <Project>{f2d1a100-1b40-4e50-9d33-1ac9f00ce005}</Project>
+            <Name>RendererInterface</Name>
+        </ProjectReference>
+    </ItemGroup>
+    <PropertyGroup Label="Globals">
+        <VCProjectVersion>15.0</VCProjectVersion>
+        <ProjectGuid>{E1F0C200-AB40-4E50-9D33-1AC9F00CE004}</ProjectGuid>
+        <Keyword>Win32Proj</Keyword>
+        <RootNamespace>_Test_000_UnifiedTriangle</RootNamespace>
+        <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    </PropertyGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
+    <PropertyGroup>
+        <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+        <ConfigurationType>Application</ConfigurationType>
+        <UseDebugLibraries>true</UseDebugLibraries>
+        <PlatformToolset>v143</PlatformToolset>
+        <CharacterSet>Unicode</CharacterSet>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+        <ConfigurationType>Application</ConfigurationType>
+        <UseDebugLibraries>false</UseDebugLibraries>
+        <PlatformToolset>v143</PlatformToolset>
+        <WholeProgramOptimization>true</WholeProgramOptimization>
+        <CharacterSet>Unicode</CharacterSet>
+    </PropertyGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props"/>
+    <ImportGroup Label="ExtensionSettings"/>
+    <ImportGroup Label="Shared"/>
+    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform"/>
+    </ImportGroup>
+    <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform"/>
+    </ImportGroup>
+    <PropertyGroup Label="UserMacros"/>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <LinkIncremental>true</LinkIncremental>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <LinkIncremental>false</LinkIncremental>
+    </PropertyGroup>
+    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+        <ClCompile>
+            <PrecompiledHeader>NotUsing</PrecompiledHeader>
+            <WarningLevel>Level3</WarningLevel>
+            <Optimization>Disabled</Optimization>
+            <SDLCheck>true</SDLCheck>
+            <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;_DEBUG;_CONSOLE;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;RENDERER_ENABLE_VK;RENDERER_ENABLE_GL;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <ConformanceMode>true</ConformanceMode>
+            <LanguageStandard>stdcpplatest</LanguageStandard>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)AssetLoader;$(VULKAN_SDK)\Include;$(OPENGL)\include;$(GLM);$(BOOST);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <DisableSpecificWarnings>4477;4267;4251;4305;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+        </ClCompile>
+        <Link>
+            <SubSystem>Console</SubSystem>
+            <GenerateDebugInformation>true</GenerateDebugInformation>
+            <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;$(OPENGL)\lib\x64;$(ASSIMP)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+            <AdditionalDependencies>vulkan-1.lib;glfw3-vc140.lib;opengl32.lib;glew32.lib;assimp-vc140-mt.lib;glslangd.lib;MachineIndependentd.lib;GenericCodeGend.lib;OSDependentd.lib;SPIRVd.lib;glslang-default-resource-limitsd.lib;SPIRV-Toolsd.lib;SPIRV-Tools-optd.lib;kernel32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+        <PreBuildEvent>
+            <Command>call "$(SolutionDir)tools\check_no_backend_headers.bat"
+if errorlevel 1 exit /b 1
+call "$(ProjectDir)Shader\CompileShaders.bat"</Command>
+            <Message>静态扫描后端头 + 编译 GLSL → SPIR-V</Message>
+        </PreBuildEvent>
+        <PostBuildEvent>
+            <Command>xcopy /Y /D "$(OPENGL)\bin\x64\glfw3-vc140.dll" "$(OutDir)"
+xcopy /Y /D "$(OPENGL)\bin\x64\glew32.dll" "$(OutDir)"</Command>
+            <Message>复制运行时 DLL...</Message>
+        </PostBuildEvent>
+    </ItemDefinitionGroup>
+    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+        <ClCompile>
+            <PrecompiledHeader>NotUsing</PrecompiledHeader>
+            <WarningLevel>Level3</WarningLevel>
+            <Optimization>MaxSpeed</Optimization>
+            <FunctionLevelLinking>true</FunctionLevelLinking>
+            <IntrinsicFunctions>true</IntrinsicFunctions>
+            <SDLCheck>true</SDLCheck>
+            <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;NDEBUG;_CONSOLE;RENDERER_ENABLE_VK;RENDERER_ENABLE_GL;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <ConformanceMode>true</ConformanceMode>
+            <LanguageStandard>stdcpplatest</LanguageStandard>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)AssetLoader;$(VULKAN_SDK)\Include;$(OPENGL)\include;$(GLM);$(BOOST);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+        </ClCompile>
+        <Link>
+            <SubSystem>Console</SubSystem>
+            <EnableCOMDATFolding>true</EnableCOMDATFolding>
+            <OptimizeReferences>true</OptimizeReferences>
+            <GenerateDebugInformation>true</GenerateDebugInformation>
+            <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;$(OPENGL)\lib\x64;$(ASSIMP)\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+            <AdditionalDependencies>vulkan-1.lib;glfw3-vc140.lib;opengl32.lib;glew32.lib;assimp-vc140-mt.lib;glslang.lib;MachineIndependent.lib;GenericCodeGen.lib;OSDependent.lib;SPIRV.lib;glslang-default-resource-limits.lib;SPIRV-Tools.lib;SPIRV-Tools-opt.lib;kernel32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+        </Link>
+        <PreBuildEvent>
+            <Command>call "$(SolutionDir)tools\check_no_backend_headers.bat"
+if errorlevel 1 exit /b 1
+call "$(ProjectDir)Shader\CompileShaders.bat"</Command>
+        </PreBuildEvent>
+        <PostBuildEvent>
+            <Command>xcopy /Y /D "$(OPENGL)\bin\x64\glfw3-vc140.dll" "$(OutDir)"
+xcopy /Y /D "$(OPENGL)\bin\x64\glew32.dll" "$(OutDir)"</Command>
+        </PostBuildEvent>
+    </ItemDefinitionGroup>
+    <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
+    <ImportGroup Label="ExtensionTargets"/>
+</Project>

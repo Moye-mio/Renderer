@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <ItemGroup>
+        <Filter Include="Source Files">
+            <UniqueIdentifier>{A55E1100-1B40-4E50-9D33-1AC9F00CE006-S}</UniqueIdentifier>
+        </Filter>
+        <Filter Include="Header Files">
+            <UniqueIdentifier>{A55E1100-1B40-4E50-9D33-1AC9F00CE006-H}</UniqueIdentifier>
+        </Filter>
+        <Filter Include="Tests">
+            <UniqueIdentifier>{A55E1100-1B40-4E50-9D33-1AC9F00CE006-T}</UniqueIdentifier>
+        </Filter>
+    </ItemGroup>
+    <ItemGroup>
+        <ClCompile Include="AssetLoader.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="ImageLoader.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="MeshLoader.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="ModelLoader.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+        <ClCompile Include="FileSystem.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
+    </ItemGroup>
+    <ItemGroup>
+        <ClInclude Include="AssetTypes.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="AssetLoader.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="ImageLoader.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="MeshLoader.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="ModelLoader.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="FileSystem.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="Tests\AssetLoaderSmokeTest.h">
+            <Filter>Tests</Filter>
+        </ClInclude>
+    </ItemGroup>
+</Project>
