@@ -1,0 +1,4 @@
+[submodule "Third-Party/tracy"]
+	path = Third-Party/tracy
+	url = https://github.com/wolfpld/tracy.git
+	branch = master

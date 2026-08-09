@@ -30,6 +30,8 @@
 // 让 GLFW 事件循环运转（含窗口关闭事件）。
 #include <GLFW/glfw3.h>
 
+#include "TracySupport.h"
+
 #include <cstring>
 #include <iostream>
 #include "Logger.h"
@@ -386,6 +388,7 @@ namespace TitusRHI
 
         void UpdateApp()
         {
+            ZoneScopedN("APP::UpdateApp");
             auto& g = Get();
             if (g.window) g.window->PollEvents();
                 // 任务 10：VK 后端 g.window 为 nullptr（由 VKDevice 自管 VkWindow），
@@ -401,6 +404,7 @@ namespace TitusRHI
             // RenderImGuiOverlay hook 录到 backbuffer / cmdbuf 上。
             if (g.enableGUI && TitusRHI::IMGUI::IsInitialized())
             {
+                ZoneScopedN("IMGUI::NewFrame");
                 TitusRHI::IMGUI::NewFrame();
             }
 
@@ -408,6 +412,8 @@ namespace TitusRHI
             // GL 后端需 SwapBuffers；VK 后端在 device.Present 内部完成、
             // GLFWWindow 在 VK 模式下的 SwapBuffers 为空操作。
             if (g.window) g.window->SwapBuffers();
+
+            FrameMark;
         }
 
         void ShutdownApp()

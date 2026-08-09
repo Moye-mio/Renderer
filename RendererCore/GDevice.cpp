@@ -7,6 +7,8 @@
 // ============================================================================
 #include "GDevice.h"
 
+#include "TracySupport.h"
+
 #include <cassert>
 #include <iostream>
 #include "Logger.h"
@@ -479,6 +481,7 @@ namespace TitusRHI
     // ------------------------------------------------------------------------
     void GDevice::BeginFrame()
     {
+        ZoneScopedN("GDevice::BeginFrame");
         BeginFrameImpl();
         m_gContextData.insideFrame = true;
         m_gContextData.currentFrameIndex = m_currentFrameIndex;
@@ -486,16 +489,19 @@ namespace TitusRHI
 
     RenderCommandList* GDevice::AcquireCommandList()
     {
+        ZoneScopedN("GDevice::AcquireCommandList");
         return AcquireCommandListImpl();
     }
 
     void GDevice::Submit(RenderCommandList* cmd)
     {
+        ZoneScopedN("GDevice::Submit");
         SubmitImpl(cmd);
     }
 
     void GDevice::Present()
     {
+        ZoneScopedN("GDevice::Present");
         PresentImpl();
         m_gContextData.insideFrame = false;
         m_currentFrameIndex = (m_currentFrameIndex + 1) % (m_desc.framesInFlight ? m_desc.framesInFlight : 1);

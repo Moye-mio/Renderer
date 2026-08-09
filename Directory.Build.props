@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  仓库根 Directory.Build.props：MSBuild / VS 会自动导入。
+  Tracy：Debug 默认开启；关闭用 /p:TitusTracyEnable=false 或改下方默认值。
+  Release 默认关闭；开启用 /p:TitusTracyEnable=true。
+-->
+<Project>
+  <PropertyGroup>
+    <TitusTracyRoot>$(MSBuildThisFileDirectory)Third-Party\tracy\public</TitusTracyRoot>
+    <TitusTracyEnable Condition="'$(TitusTracyEnable)' == '' and '$(Configuration)' == 'Debug'">true</TitusTracyEnable>
+    <TitusTracyEnable Condition="'$(TitusTracyEnable)' == ''">false</TitusTracyEnable>
+  </PropertyGroup>
+
+  <!-- TracyClient.cpp 始终需要 public 头路径（无 TRACY_ENABLE 时几乎为空实现） -->
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(TitusTracyRoot);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+  </ItemDefinitionGroup>
+
+  <ItemDefinitionGroup Condition="'$(TitusTracyEnable)' == 'true'">
+    <ClCompile>
+      <!-- /ZI 会使 __LINE__ 非常量，Tracy ZoneScoped 报 C2131；改用 /Zi -->
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <PreprocessorDefinitions>TRACY_ENABLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>ws2_32.lib;dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+</Project>

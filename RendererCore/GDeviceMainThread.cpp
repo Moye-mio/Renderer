@@ -6,6 +6,8 @@
 #include "GDevice.h"
 #include "RenderCommandList.h"
 
+#include "TracySupport.h"
+
 #include <iostream>
 
 namespace TitusRHI
@@ -99,11 +101,13 @@ namespace TitusRHI
 
     void GDeviceMainThread::BeginFrame()
     {
+        ZoneScopedN("MainThread::BeginFrame");
         // 等待 Worker 处理完上一帧的所有命令（Submit/Present），避免本帧 Acquire
         // 到的 cmd buffer 仍被 Worker 使用。M2 阶段的简化同步策略；M3 任务 7 引入
         // 客户端代理后会用更细粒度的 fence。
         if (m_worker)
         {
+            ZoneScopedN("MainThread::WaitWorker");
             const uint64_t pendingTick = m_worker->IncrementTick();
             // 这里的 IncrementTick 仅用于读取当前累计 tick；本身不写命令，
             // 我们直接等到 m_tickProgress 追上 pendingTick - 1（即处理完所有
@@ -116,17 +120,20 @@ namespace TitusRHI
 
     RenderCommandList* GDeviceMainThread::AcquireCommandList()
     {
+        ZoneScopedN("MainThread::AcquireCommandList");
         std::lock_guard<std::mutex> lk(m_resourceMutex);
         return m_realDevice ? m_realDevice->AcquireCommandList() : nullptr;
     }
 
     void GDeviceMainThread::Submit(RenderCommandList* cmd)
     {
+        ZoneScopedN("MainThread::Submit");
         PushFrameCmd(GCommandKind::Submit, static_cast<void*>(cmd));
     }
 
     void GDeviceMainThread::Present()
     {
+        ZoneScopedN("MainThread::Present");
         PushFrameCmd(GCommandKind::Present);
     }
 

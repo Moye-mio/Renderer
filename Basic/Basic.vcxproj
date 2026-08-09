@@ -25,11 +25,19 @@
         <ClInclude Include="LogGlm.h"/>
         <ClInclude Include="LogMath.h"/>
         <ClInclude Include="TitusMath.h"/>
+        <ClInclude Include="TracySupport.h"/>
     </ItemGroup>
     <ItemGroup>
         <ClCompile Include="Test.cpp"/>
         <ClCompile Include="Logger.cpp"/>
         <ClCompile Include="TitusMath.cpp"/>
+        <!-- Tracy client：全进程只编译这一份；由 Directory.Build.props 控制 TRACY_ENABLE -->
+        <ClCompile Include="..\Third-Party\tracy\public\TracyClient.cpp">
+            <PrecompiledHeader>NotUsing</PrecompiledHeader>
+            <WarningLevel>TurnOffAllWarnings</WarningLevel>
+            <SDLCheck>false</SDLCheck>
+            <ConformanceMode>false</ConformanceMode>
+        </ClCompile>
     </ItemGroup>
     <PropertyGroup Label="Globals">
         <VCProjectVersion>15.0</VCProjectVersion>

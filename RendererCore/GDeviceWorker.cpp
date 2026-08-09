@@ -7,6 +7,8 @@
 #include "RenderCommandList.h"
 #include "GThreadableDevice.h"
 
+#include "TracySupport.h"
+
 #include <iostream>
 
 namespace TitusRHI
@@ -45,6 +47,9 @@ namespace TitusRHI
 
     void GDeviceWorker::Run()
     {
+#ifdef TRACY_ENABLE
+        tracy::SetThreadName("GDeviceWorker");
+#endif
         // M2 最小可用版：**不**在这里 Acquire/Release 渲染线程所有权。
         // 原因：资源公共 API（CreateBuffer / Update 等）仍由 Client 在主线程
         // 同步调用 RealDevice，RealDevice 内部的 m_ownerThread 仍该为主线程，

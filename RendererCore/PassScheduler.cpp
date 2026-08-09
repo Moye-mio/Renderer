@@ -7,6 +7,8 @@
 #include "RenderCommandList.h"
 #include "IRenderPass.h"
 
+#include "TracySupport.h"
+
 #include <algorithm>
 
 namespace TitusRHI
@@ -46,13 +48,21 @@ namespace TitusRHI
 
     void PassScheduler::DrawFrame()
     {
+        ZoneScopedN("PassScheduler::DrawFrame");
         if (!m_device) return;
 
         // 1) BeginFrame：后端内部完成 Acquire / 等待 Fence 等同步动作
-        m_device->BeginFrame();
+        {
+            ZoneScopedN("BeginFrame");
+            m_device->BeginFrame();
+        }
 
         // 2) 取得本帧 CommandList
-        RenderCommandList* cmd = m_device->AcquireCommandList();
+        RenderCommandList* cmd = nullptr;
+        {
+            ZoneScopedN("AcquireCommandList");
+            cmd = m_device->AcquireCommandList();
+        }
         if (!cmd)
         {
             // 后端拒绝出帧（如 swapchain out of date）：仅推进帧计数后返回
@@ -64,10 +74,21 @@ namespace TitusRHI
         const uint32_t imageIndex = frameIndex; // 大多数后端取一致；后端内部已自管 swap image
 
         // 3) Update + Record
-        for (auto& p : m_passes)
         {
-            p->Update(*m_device, frameIndex);
-            p->Record(*m_device, *cmd, frameIndex, imageIndex);
+            ZoneScopedN("PassLoop");
+            for (auto& p : m_passes)
+            {
+                ZoneScopedN("Pass");
+                ZoneValue(static_cast<uint64_t>(p->passEvent));
+                {
+                    ZoneScopedN("Pass::Update");
+                    p->Update(*m_device, frameIndex);
+                }
+                {
+                    ZoneScopedN("Pass::Record");
+                    p->Record(*m_device, *cmd, frameIndex, imageIndex);
+                }
+            }
         }
 
         // 4) Submit + Present
@@ -82,11 +103,20 @@ namespace TitusRHI
         //     调 primaryCmd->End() 关闭 cmdbuf，所以 VK 端把 imgui 录制
         //     提前挪到了 SubmitImpl 内、End() 之前；这里 Submit 后再调
         //     RenderImGuiOverlay 时 VK 实现已变为 no-op，不会重复执行。
-        m_device->Submit(cmd);
+        {
+            ZoneScopedN("Submit");
+            m_device->Submit(cmd);
+        }
 
-        m_device->RenderImGuiOverlay();
+        {
+            ZoneScopedN("RenderImGuiOverlay");
+            m_device->RenderImGuiOverlay();
+        }
 
-        m_device->Present();
+        {
+            ZoneScopedN("Present");
+            m_device->Present();
+        }
 
         ++m_frameCounter;
     }
