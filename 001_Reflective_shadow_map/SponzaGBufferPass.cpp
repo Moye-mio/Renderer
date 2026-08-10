@@ -1,18 +1,18 @@
 // ============================================================================
 // 001_Reflective_shadow_map - SponzaGBufferPass.cpp
 //
-// 阶段 1（GL-only 版路径①）：
+// GL-only 版路径①：
 //   - 派生自 TitusRHI::IRenderPass，所有资源通过 IGDevice 创建；
 //   - GBuffer 4 个 RT 通过 RegisterSharedData 共享给后续 Pass；
 //   - 使用 cmd.BeginRenderPass / BindPipeline / PushConstants / DrawGpuModel
 //     录制命令，禁止任何原生 glXxx 调用。
 //
-// 备注（已知阶段 1 限制）：
+// 备注（已知 GL PushConstants 限制）：
 //   - GL 后端的 RenderCommandList::PushConstants 当前仅是 stub（未真正写入
 //     uniform），见 Renderer/GLCommandList.cpp:285。这意味着即便本 Pass 的
-//     形式 100% 合规，画面也可能空白；视觉等价回归依赖阶段 2 任务 7（GL 端
-//     PushConstants 落地）或任务 8（GLSL 改为 UBO + ResourceSet 直接绑）。
-//   - 路径①阶段 1 的硬约束验收点是任务 6.1 的 CI 静态扫描，本文件已满足。
+//     形式 100% 合规，画面也可能空白；视觉等价需 GL 端 PushConstants 落地，
+//     或 GLSL 改为 UBO + ResourceSet 直接绑。
+//   - 路径①的硬约束验收点是 CI 静态扫描，本文件已满足。
 // ============================================================================
 #include "SponzaGBufferPass.h"
 #include "Sponza.h"
@@ -88,7 +88,7 @@ void SponzaGBufferPass::Init(TitusRHI::IGDevice& device)
     }
 
     // ------------------------------------------------------------------
-    // 3) Shader / Pipeline（任务 8b：GL/VK 共用 .glsl）
+    // 3) Shader / Pipeline（GL/VK 共用 .glsl）
     // ------------------------------------------------------------------
     const std::string shaderDir = std::string(SOLUTION_DIR) + "001_Reflective_shadow_map/Shader/";
     const std::string vsPath = shaderDir + "Sponza_VS.glsl";
@@ -164,7 +164,7 @@ void SponzaGBufferPass::Init(TitusRHI::IGDevice& device)
         pd.resourceBindings.push_back(rb);
 
         // u_DiffuseTexture at set=0, binding=1
-        // 任务 10：Vulkan 同 set 内 binding 唯一，UBO 占 0 后 sampler 必须用 1。
+        // Vulkan 同 set 内 binding 唯一，UBO 占 0 后 sampler 必须用 1。
         // 与 Sponza_FS.glsl 中 LAYOUT_BIND(0, 1) 严格对齐。
         ResourceBinding rbDiff{};
         rbDiff.name = "u_DiffuseTexture";

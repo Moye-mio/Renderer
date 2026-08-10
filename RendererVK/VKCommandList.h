@@ -82,7 +82,7 @@ namespace TitusVkGraphics
                          uint32_t firstInstance = 0) override;
 
         // ====================================================================
-        // Compute（任务 7v-1）
+        // Compute
         // ====================================================================
         void Dispatch(uint32_t groupCountX,
                       uint32_t groupCountY,
@@ -91,9 +91,9 @@ namespace TitusVkGraphics
         void PipelineBarrier(const TitusRHI::PipelineBarrierDesc& desc) override;
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追派发（P1，任务 15）：vkCmdTraceRaysKHR
+        // 光追派发：vkCmdTraceRaysKHR
         void TraceRays(uint32_t width, uint32_t height, uint32_t depth) override;
-        // 加速结构构建/refit（P2，任务 16）：命令流内 vkCmdBuildAccelerationStructuresKHR
+        // 加速结构构建/refit：命令流内 vkCmdBuildAccelerationStructuresKHR
         void BuildAccelerationStructure(TitusRHI::AccelerationStructureHandle target,
                                         const TitusRHI::AccelerationStructureBuildInfo& info) override;
 #endif
@@ -160,19 +160,19 @@ namespace TitusVkGraphics
         // 当前绑定的 Pipeline 信息（用于 BindResourceSet/PushConstants 找 layout）
         VkPipeline               m_currentPipeline = VK_NULL_HANDLE;
         VkPipelineLayout         m_currentLayout   = VK_NULL_HANDLE;
-        // 任务 7v-1：BindPipeline 时记录 bindPoint，供 Dispatch / 后续 BindDescriptorSets 使用
+        // BindPipeline 时记录 bindPoint，供 Dispatch / 后续 BindDescriptorSets 使用
         VkPipelineBindPoint      m_currentBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        // 任务 7v-2：保留指向 VKPipelineEntry 的弱引用，BindResourceSet 据 setLayouts[setIndex]
+        // 保留指向 VKPipelineEntry 的弱引用，BindResourceSet 据 setLayouts[setIndex]
         // 分配 DescriptorSet。该指针仅在同一帧内、Pipeline 未销毁时有效。
         const struct VKPipelineEntry* m_currentPipelineEntry = nullptr;
 
-        // 任务 11：BeginRenderPass 时记录当前活跃的 RenderTarget 句柄；
+        // BeginRenderPass 时记录当前活跃的 RenderTarget 句柄；
         // EndRenderPass 时把所有 color attachment 的 currentLayout 同步为
         // SHADER_READ_ONLY_OPTIMAL（与 RT.RenderPass 中 finalLayout 一致），
         // 这样后续 Pass 的 BindResourceSet 能用正确 layout 走 sampled image 路径。
         TitusRHI::RenderTargetHandle m_activeRenderTarget;
 
-        // 任务 11.x：per-set ResourceSetDesc 状态缓存（GL 风格增量绑定兼容层）
+        // per-set ResourceSetDesc 状态缓存（GL 风格增量绑定兼容层）
         //
         // 业务侧（如 DrawGpuModelWithDiffuse）的设计假设是 GL 风格：
         //   外层先 BindResourceSet(0, {UBO@binding=0});

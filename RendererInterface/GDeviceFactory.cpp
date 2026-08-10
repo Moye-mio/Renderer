@@ -52,7 +52,7 @@ namespace TitusRHIInterface
         }
         case GBackend::Null:
         {
-            // 任务 10：返回 RendererCore::GDeviceHeadless
+            // 返回 RendererCore::GDeviceHeadless
             // 该后端不依赖 GPU / 窗口，可用于单元测试 + Headless CI。
             return std::unique_ptr<GDevice>(new TitusRHI::GDeviceHeadless());
         }
@@ -65,7 +65,7 @@ namespace TitusRHIInterface
 
     std::unique_ptr<GDevice> GDeviceFactory::Create(GBackend backend, GThreadingMode threading)
     {
-        // Threaded 模式：构造 RealDevice 后外包一层 GDeviceMainThread（任务 6 / M2）。
+        // Threaded 模式：构造 RealDevice 后外包一层 GDeviceMainThread。
         // Direct / NonThreaded 模式：直接返回真实设备。
         if (threading == TitusRHI::GThreadingMode::Threaded)
         {

@@ -552,7 +552,7 @@ namespace TitusGraphics
     }
 
     // ------------------------------------------------------------------------
-    // Compute Pipeline 创建（任务 7 / M2-A）
+    // Compute Pipeline 创建
     //   - GL 没有真正的 PSO；compute pipeline 仅 attach 一个 GL_COMPUTE_SHADER。
     //   - 仍写入 m_pipelines（同一句柄空间），通过 isCompute=true 标记，
     //     GLCommandList 在 BindPipeline / Dispatch 时按此分支处理（不绑 VAO，

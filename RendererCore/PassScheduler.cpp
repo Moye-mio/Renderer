@@ -92,8 +92,7 @@ namespace TitusRHI
         }
 
         // 4) Submit + Present
-        //
-        // ImGui-A 修复：必须在 Submit *之后* 才调用 RenderImGuiOverlay。
+                // 修复：必须在 Submit *之后* 才调用 RenderImGuiOverlay。
         //   - GL：业务 Pass 仅"录制" lambda 到 cmd，Submit 触发 Replay 才真正
         //     向 GL driver 提交命令；imgui_impl_opengl3 是 immediate 模式，
         //     一调用就立即向 driver 提交。若放在 Submit 之前，imgui 会先于

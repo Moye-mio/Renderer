@@ -1,7 +1,7 @@
 // ============================================================================
 // 010_UnifiedTriangle - main.cpp
 // 同一份示例工程通过 --backend=gl 或 --backend=vk 选择后端；其余代码不变。
-// **仅** include RendererInterface 头、**仅**链接 RendererInterface.lib（需求 9.3 / 10.2）。
+// **仅** include RendererInterface 头、**仅**链接 RendererInterface.lib。
 // CI 静态扫描脚本 tools/check_no_backend_headers.bat 会校验本目录不含
 // `<vulkan/...>`、`<GL/...>`、`<glad/...>`、`<glfw3.h>`、
 // `Renderer/*`、`RendererCore/*`、`RendererVK/*`、`Platform/*` 等任何后端字面 include。
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
     // 0.0) Logger 尽早初始化
     TitusBasic::Logger::Instance().Init("010_UnifiedTriangle");
 
-    // 0) 单元测试旁路（任务 10 / M4-10）：若命中 --run-tests，则跑完 Null 后端
+    // 0) 单元测试旁路：若命中 --run-tests，则跑完 Null 后端
     //    单元测试后立即退出；本路径不创建窗口、不创建真实 GPU 设备。
     for (int i = 1; i < argc; ++i)
     {

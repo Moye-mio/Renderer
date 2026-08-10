@@ -4,11 +4,10 @@
 // 业务侧 Pass，仅 include "RendererInterface/TitusGfxPass.h"，只使用
 // TitusRHI 后端无关抽象类型（句柄 / Desc / 枚举），不接触任何 VkXxx。
 //
-// 闭环（需求 13.2）：
+// 闭环：
 //   构建三角形 BLAS → 构建 TLAS → compute 着色器内 rayQuery 求交 →
 //   写入 StorageImage → 全屏三角形采样显示。
-// 不支持光追时（GetCaps().supportsRayTracing == false）优雅提示并仅清屏
-// （需求 13.3）。
+// 不支持光追时（GetCaps().supportsRayTracing == false）优雅提示并仅清屏。
 // ============================================================================
 #include "RendererInterface/TitusGfxPass.h"
 

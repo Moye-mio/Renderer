@@ -9,7 +9,7 @@
 //   - TitusRHI::MaterialInstance / MaterialTextureSlot / MaterialParameters
 //   - TitusRHI::AssetGpuUploader
 //
-// 任务 12 / M5-B 收尾：让外部模块在不直接 include Renderer/RendererCore/RendererVK
+// 让外部模块在不直接 include Renderer/RendererCore/RendererVK
 // 的前提下，完成 "AssetLoader::ModelAssetData → GPU 资源" 的整条链路调用。
 // ============================================================================
 

@@ -17,8 +17,6 @@
 //   - 通过命令行参数 `--validation=on|off`（亦接受 true/false/1/0）
 //   - 或调用 APP::SetEnableValidation(bool) 显式设置
 //   - 未指定时：Debug 默认 on，Release 默认 off
-//
-// 设计参考：requirements.md 需求 1.1 / 1.2 / 1.5 / 2.1~2.6 / 6.1~6.6 / 9.5。
 // ============================================================================
 #include <cstdint>
 #include <memory>
@@ -141,7 +139,7 @@ namespace TitusRHI
         // 里把 void* 静态强转回 const GpuModel*。
         const void* GetGpuModelInternal(GpuModelHandle handle);
 
-        // -- 跨后端单元测试入口（任务 10 / M4-10）--
+        // -- 跨后端单元测试入口 --
         // 通过 GDeviceHeadless 跑一遍设备生命周期 + 资源 + 帧循环 + 延迟销毁的
         // 完整流程；无需 GPU/窗口；返回值为失败用例数（0 表示全通过）。
         // 通常通过 `010_UnifiedTriangle --run-tests` 触发。
@@ -240,7 +238,7 @@ namespace TitusRHI
 
     // ------------------------------------------------------------------------
     // INPUT_MANAGER —— 输入查询
-    // 任务 12：跨后端键鼠输入查询接口。键码 / 鼠标按钮码采用与 GLFW_KEY_* /
+    // 跨后端键鼠输入查询接口。键码 / 鼠标按钮码采用与 GLFW_KEY_* /
     // GLFW_MOUSE_BUTTON_* 一致的常量值（业务侧无需 include GLFW，可直接使用
     // 下方 KEY_* / MOUSE_BUTTON_* 常量）。
     // ------------------------------------------------------------------------
@@ -280,7 +278,7 @@ namespace TitusRHI
     // ------------------------------------------------------------------------
     // CAMERA —— 主相机访问
     // 业务侧只读这些值；写入由 RendererInterface 内部 CameraService 在主
-    // 循环中根据窗口/输入事件驱动（M5 阶段：尚未接入真实输入，先返回单位
+    // 循环中根据窗口/输入事件驱动（尚未接入真实输入，先返回单位
     // 矩阵或由调用方通过 SetXxx 显式注入）。
     // ------------------------------------------------------------------------
     namespace CAMERA
@@ -301,7 +299,7 @@ namespace TitusRHI
         void SetMainCameraPosition(const TitusMath::Vec3& pos);
 
         // --------------------------------------------------------------------
-        // 内置 FPS 飞行相机控制器（任务 12 下沉版本）
+        // 内置 FPS 飞行相机控制器
         //   - WASD：前后左右平移；Q/E：上下平移；LSHIFT 加速、LCTRL 减速
         //   - 鼠标右键拖拽：旋转视角（yaw/pitch）
         //   - EnableBuiltinFlyCamera(true) 后由 APP::UpdateApp 在每帧

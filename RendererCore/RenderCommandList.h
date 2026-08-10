@@ -6,7 +6,6 @@
 //   - GL 后端：内部复用 RenderCommandBuffer 的 std::function 延迟队列；
 //                BeginRenderPass = "BindFBO + 按 LoadOp 选择性 glClear + 按 StoreOp
 //                选择性 glInvalidateFramebuffer"
-// 设计参考：RendererCore 设计方案 §3.3、需求 4。
 // ============================================================================
 #include <cstdint>
 
@@ -17,13 +16,13 @@
 namespace TitusRHI
 {
     // ------------------------------------------------------------------------
-    // AccelerationStructureBuildInfo（光追，任务 6 / 需求 6.1）
+    // AccelerationStructureBuildInfo（光追）
     //   - 承载一次命令流内 BLAS/TLAS 构建或 refit 所需的几何 / instance 引用。
     //   - 字段与 AccelerationStructureDesc 复用（BLASGeometryDesc / TLASInstanceDesc /
     //     ASBuildFlags 均定义于 GDescs.h），额外携带 refit 相关信息。
     //   - 全部字段仅使用 RendererCore 自定义句柄/枚举/POD，禁止出现 VkXxx。
-    //   - P0 主路径在 CreateAccelerationStructure 内即完成首次构建；本结构用于
-    //     动态场景下的重建 / 增量更新（需求 15 的能力预留）。
+    //   - 主路径在 CreateAccelerationStructure 内即完成首次构建；本结构用于
+    //     动态场景下的重建 / 增量更新。
     // ------------------------------------------------------------------------
     struct AccelerationStructureBuildInfo
     {
@@ -101,13 +100,13 @@ namespace TitusRHI
                                  uint32_t firstInstance = 0) = 0;
 
         // ====================================================================
-        // 计算（任务 7 / M2-A）
+        // 计算
         // ====================================================================
         // 调度计算 Pass。要求当前已 BindPipeline(computePipeline)，并已通过
         // BindResourceSet / PushConstants 绑好输入。GL 后端：glDispatchCompute；
         // VK 后端：vkCmdDispatch。
         // 默认实现为空：现有 RenderCommandList 子类（GLCommandList / VKCommandList /
-        // GDeviceHeadless / GDeviceMainThread）在阶段 2 接入时各自 override。
+        // GDeviceHeadless / GDeviceMainThread）在后端接入时各自 override。
         virtual void Dispatch(uint32_t /*groupCountX*/,
                               uint32_t /*groupCountY*/,
                               uint32_t /*groupCountZ*/)
@@ -123,7 +122,7 @@ namespace TitusRHI
         }
 
         // ====================================================================
-        // 加速结构构建（光追，任务 6 / 需求 6.1、6.2）
+        // 加速结构构建（光追）
         // ====================================================================
         // 在命令流中录制 BLAS/TLAS 的构建或 refit。目标 AS 由 handle 指定，
         // 本次构建的几何 / instance 由 info 承载。
@@ -137,7 +136,7 @@ namespace TitusRHI
         }
 
         // ====================================================================
-        // 光线追踪派发（光追管线 / 路线 B，任务 15 / 需求 6.4）
+        // 光线追踪派发（光追管线）
         // ====================================================================
         // 发射 width*height*depth 条光线。要求当前已 BindPipeline(rtPipeline)，
         // 并已通过 BindResourceSet 绑好 TLAS / 输出图像等。VK 后端翻译为

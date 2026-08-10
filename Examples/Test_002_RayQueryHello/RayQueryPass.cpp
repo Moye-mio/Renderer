@@ -27,7 +27,7 @@ void RayQueryPass::Init(TitusRHI::IGDevice& device)
     using namespace TitusRHI;
 
     // ----------------------------------------------------------------------
-    // 0) 能力探测：不支持光追时优雅降级（需求 13.3）
+    // 0) 能力探测：不支持光追时优雅降级
     // ----------------------------------------------------------------------
     const GCaps& caps = device.GetCaps();
     mRayTracingSupported = caps.supportsRayTracing && caps.supportsRayQuery;
@@ -255,7 +255,7 @@ void RayQueryPass::Record(TitusRHI::IGDevice&        /*device*/,
 {
     using namespace TitusRHI;
 
-    // 不支持光追或初始化失败：仅清屏（需求 13.3）
+    // 不支持光追或初始化失败：仅清屏
     if (!mRayTracingSupported || !mComputePipeline.IsValid() || !mBlitPipeline.IsValid())
     {
         RenderPassBeginInfo rp{};

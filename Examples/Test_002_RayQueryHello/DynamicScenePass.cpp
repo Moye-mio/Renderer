@@ -1,5 +1,5 @@
 // ============================================================================
-// 0xx_RayQueryHello - DynamicScenePass.cpp（P2，任务 16）
+// 0xx_RayQueryHello - DynamicScenePass.cpp
 // ============================================================================
 #include "DynamicScenePass.h"
 

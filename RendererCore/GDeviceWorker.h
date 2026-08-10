@@ -3,16 +3,13 @@
 // RendererCore - GDeviceWorker
 // 渲染线程工作者：拥有 RealDevice，从 CommandRingBuffer 中读出 GCommand，
 // dispatch 到 RealDevice 的对应 *Impl()。
-//
-// M2 阶段最小可用版（Minimum Viable Threading）：
+// 最小可用版（Minimum Viable Threading）：
 //   - 仅把"帧控制"四件事串行化到 Worker：BeginFrame / AcquireCommandList /
 //     Submit / Present / WaitIdle。
-//   - 资源创建 / 销毁 / 上传 仍由 Client 端"持互斥锁阻塞调用 RealDevice"——M3 任务 7
-//     再迁移到 Stream 中。
+//   - 资源创建 / 销毁 / 上传 仍由 Client 端"持互斥锁阻塞调用 RealDevice"——
+//     后续可迁移到 Stream 中。
 // 这样在 VK 后端可以让录制 / 提交 / Present 的 vkQueue 调用脱离主线程，
 // 主线程仅做 Pass.Update / Pass.Record（写命令缓冲到本帧 RenderCommandList）。
-//
-// 设计参考：requirements.md 需求 11.4 / 11.5 / 11.6 / 11.7 / 15.4。
 // ============================================================================
 #include <atomic>
 #include <condition_variable>

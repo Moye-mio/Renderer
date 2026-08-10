@@ -4,7 +4,6 @@
 // 渲染线程模式枚举：与 RendererInterfaceTitusRHI::GThreadingMode 同步。
 // 之所以独立放到 RendererCore 而不是 RendererInterface，是因为
 // GDeviceMainThread / GDeviceWorker 在 RendererCore 内部使用。
-// 设计参考：requirements.md 需求 11.1 / 15.1 / 15.3。
 // ============================================================================
 #include <cstdint>
 

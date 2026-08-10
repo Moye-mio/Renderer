@@ -1,7 +1,7 @@
 #pragma once
 // ============================================================================
 // RendererVK - VKShaderCompiler
-// 任务 8b（A 方案）：把 GLSL 源码通过 glslang（Vulkan SDK 自带）在线编译为
+// 把 GLSL 源码通过 glslang（Vulkan SDK 自带）在线编译为
 // SPIR-V 字节码。这样 GL/VK 两端共用同一份 *.glsl，无需预编译 .spv 文件。
 //
 // 调用契约：

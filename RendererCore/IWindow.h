@@ -3,7 +3,6 @@
 // RendererCore - IWindow
 // 后端无关的窗口抽象。参数中绝不出现 GLFWwindow* / VkSurfaceKHR 等具体类型。
 // 后端实现通过 GetNativeHandle()（返回 void*）按各自方式解释原生窗口对象。
-// 设计参考：RendererCore 设计方案 §4 Platform/IWindow、需求 6.1。
 // ============================================================================
 #include <cstdint>
 #include <string>

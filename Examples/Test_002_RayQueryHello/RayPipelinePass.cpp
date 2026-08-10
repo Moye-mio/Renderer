@@ -1,5 +1,5 @@
 // ============================================================================
-// 0xx_RayQueryHello - RayPipelinePass.cpp（RT Pipeline / 路线 B，P1）
+// 0xx_RayQueryHello - RayPipelinePass.cpp（RT Pipeline / 路线 B）
 // 仅依赖 TitusRHI 抽象。RT 着色器（.rgen/.rmiss/.rchit）由 VK 后端运行期
 // 以 SPIR-V 1.5 + GL_EXT_ray_tracing 在线编译。
 // ============================================================================

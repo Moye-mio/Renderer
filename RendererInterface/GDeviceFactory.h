@@ -2,13 +2,12 @@
 // ============================================================================
 // RendererInterface - GDeviceFactory
 // 高层工厂：根据 GBackend + GThreadingMode 创建 RendererCore::GDevice。
-//   - 在 Threaded 模式下外包一层 GDeviceMainThread（任务 6 接入）；
+//   - 在 Threaded 模式下外包一层 GDeviceMainThread；
 //   - 在 Direct 模式下直接返回真实 GLDevice/VKDevice；
-//   - 在 Null 模式下返回 RendererCore::GDeviceHeadless（任务 10 接入）。
+//   - 在 Null 模式下返回 RendererCore::GDeviceHeadless。
 //
 // 实现文件 GDeviceFactory.cpp 是**唯一**同时 include `Renderer/GLDevice.h` 与
 // `RendererVK/VKDevice.h` 的源文件；其它任何源码都禁止同时引用两端 SDK。
-// 设计参考：requirements.md 需求 1.4 / 2.3 / 2.4 / 6.1 / 6.2 / 6.5 / 6.6。
 // ============================================================================
 #include <memory>
 
@@ -30,7 +29,7 @@ namespace TitusRHIInterface
             TitusRHI::GThreadingMode threading);
 
         // 在 Threaded/NonThreaded 模式下也可只创建真实后端设备（不外包 Client）。
-        // 该工厂主要服务于任务 6 的 GDeviceMainThread 内部使用。
+        // 该工厂主要供 GDeviceMainThread 内部使用。
         static std::unique_ptr<TitusRHI::GDevice> CreateRealDevice(
             TitusRHI::GBackend backend);
     };

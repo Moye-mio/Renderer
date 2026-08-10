@@ -3,7 +3,6 @@
 // RendererCore - DeviceLifecycleTest
 // 跨后端"设备生命周期 + 资源生命周期 + 帧循环 + 延迟销毁"单元测试。
 // 默认基于 GDeviceHeadless，运行不依赖任何 GPU/窗口，可在 CI / 本地任意调用。
-//
 // 目标覆盖：
 //   - Init -> Shutdown 流程能跑通；
 //   - CreateBuffer/Texture/Sampler/Shader/Pipeline 句柄非空；
@@ -12,8 +11,6 @@
 //   - BeginFrame / Submit / Present 三件套不崩；
 //   - Destroy 之后 Find* 返回 nullptr；
 //   - 延迟销毁队列在足够帧后被释放（FlushAllPendingDestroys 兜底）。
-//
-// 设计参考：requirements.md 13.x；task-item.md M4-10。
 // ============================================================================
 #include <cstdio>
 #include <cstdint>

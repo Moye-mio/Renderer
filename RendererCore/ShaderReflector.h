@@ -1,25 +1,19 @@
 #pragma once
 // ============================================================================
 // RendererCore - ShaderReflector
-//
 // 把 "shader 字节码 / 文本" 反射为 ReflectionInfo（ResourceBinding 列表 +
 // PushConstantRange 列表）。这一模块对外暴露 3 条路径：
-//
 //   1. ReflectFromSPIRV  : 业界标准做法，编译期通过 glslangValidator/glslc 把
 //                          .glsl 编成 .spv；运行期或构建期再用 SPIRV-Cross
 //                          反射出 binding 表。VK 与 GL 都能消费同一份反射。
 //                          （需开启宏 TITUS_ENABLE_SPIRV_CROSS 才会真正生效；
 //                            未开启时返回 false，调用方可降级到 ReflectFromHints）
-//
 //   2. ReflectFromGLSLSource : 极简的"基于关键字扫描"的回退实现，能识别
 //                          uniform sampler2D / layout(binding=N) uniform Block
 //                          等常见声明，覆盖项目里现有 GL shader 的大部分情况。
-//
 //   3. ReflectFromHints  : 完全由调用方提供 ResourceBinding 数组（手填）。
-//                          是 "M-A 阶段" 默认走的路径——上层把约定 binding 直接
+//                          默认走的路径——上层把约定 binding 直接
 //                          填到 ShaderDesc.reflection 里。
-//
-// 任务 13 / M6：requirements.md 11.x（shader 反射）。
 // ============================================================================
 #include <cstdint>
 #include <cstddef>

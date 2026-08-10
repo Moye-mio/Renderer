@@ -43,7 +43,7 @@ public:
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
     // ------------------------------------------------------------------------
-    // 光追能力查询（任务 1 / 需求 1、2）
+    // 光追能力查询
     //   - 探测结果在 PickPhysicalDevice 阶段填充；不支持时二者恒为 false，
     //     设备照常创建（安全降级，绝不 abort）。
     //   - 扩展函数指针在 CreateLogicalDevice 末尾通过 vkGetDeviceProcAddr 加载。
@@ -56,7 +56,7 @@ public:
         return m_accelStructProps;
     }
 
-    // 光追管线（路线 B / P1，任务 12）：作为独立可选能力，与 ray query 解耦。
+    // 光追管线（路线 B）：作为独立可选能力，与 ray query 解耦。
     bool SupportsRayTracingPipeline() const { return m_supportsRayTracingPipeline; }
     const VkPhysicalDeviceRayTracingPipelinePropertiesKHR& GetRTPipelineProps() const
     {
@@ -72,7 +72,7 @@ public:
         PFN_vkCmdBuildAccelerationStructuresKHR        vkCmdBuildAccelerationStructuresKHR        = nullptr;
         PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = nullptr;
         PFN_vkGetBufferDeviceAddressKHR                vkGetBufferDeviceAddressKHR                = nullptr;
-        // 光追管线（P1，任务 12/14/15）
+        // 光追管线
         PFN_vkCreateRayTracingPipelinesKHR             vkCreateRayTracingPipelinesKHR             = nullptr;
         PFN_vkGetRayTracingShaderGroupHandlesKHR       vkGetRayTracingShaderGroupHandlesKHR       = nullptr;
         PFN_vkCmdTraceRaysKHR                          vkCmdTraceRaysKHR                          = nullptr;
@@ -101,7 +101,7 @@ private:
 #if defined(RENDERER_ENABLE_RAY_TRACING)
     // 探测指定设备是否具备全部光追扩展（不影响 IsDeviceSuitable 的通过与否）
     bool CheckRayTracingSupport(VkPhysicalDevice device) const;
-    // 探测 RT 管线（路线 B / P1）扩展与特性；与 ray query 解耦、单独可选。
+    // 探测 RT 管线（路线 B）扩展与特性；与 ray query 解耦、单独可选。
     bool CheckRayTracingPipelineSupport(VkPhysicalDevice device) const;
     // 加载光追扩展函数指针（在 CreateLogicalDevice 成功且支持光追后调用）
     void LoadRayTracingFunctions();
@@ -126,7 +126,7 @@ private:
     };
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-    // ---- 光追相关（任务 1 / 需求 1、2）----
+    // ---- 光追相关 ----
     // 光追所需的设备扩展；仅在 CheckRayTracingSupport 通过时追加进 CreateLogicalDevice。
     const std::vector<const char*> m_rayTracingExtensions = {
         VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
@@ -141,7 +141,7 @@ private:
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR
     };
 
-    // 光追管线（路线 B / P1，任务 12）：独立于 ray query 的可选扩展与属性。
+    // 光追管线（路线 B）：独立于 ray query 的可选扩展与属性。
     // 注：VK_KHR_spirv_1_4 / shader_float_controls 在实例 API 1.2 下已为 core，
     // 无需单独作为设备扩展启用。
     const std::vector<const char*> m_rayTracingPipelineExtensions = {

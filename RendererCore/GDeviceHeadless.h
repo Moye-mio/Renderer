@@ -6,8 +6,6 @@
 //   1) 单元测试不依赖任何 GPU / 窗口；
 //   2) Headless 跑批（如 CI 流水线、Pass 拓扑校验）；
 //   3) 提前用 RendererInterface 流程冒烟（API 完整性 + 内存生命周期）。
-//
-// 设计参考：requirements.md 需求 13.x。
 // ============================================================================
 #include <cstdint>
 #include <cstring>
@@ -131,7 +129,7 @@ namespace TitusRHI
         bool CreateSamplerImpl(uint64_t, const SamplerDesc&) override { return true; }
         bool CreateShaderImpl(uint64_t, const ShaderDesc&) override { return true; }
         bool CreatePipelineImpl(uint64_t, const GraphicsPipelineDesc&) override { return true; }
-        // 任务 7：Null 后端也接受 Compute Pipeline（不做任何事，用于单测）
+        // Null 后端也接受 Compute Pipeline（不做任何事，用于单测）
         bool CreatePipelineImpl(uint64_t, const ComputePipelineDesc&) override { return true; }
         bool CreateRenderTargetImpl(uint64_t, const RenderTargetDesc&) override { return true; }
 

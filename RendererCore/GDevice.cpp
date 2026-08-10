@@ -3,7 +3,6 @@
 // 模板方法骨架的具体实现：参数校验、句柄分配、调用子类 *Impl()。
 // 严格保持后端无关：本文件不得 include 任何 <vulkan/...> / <GL/...> /
 // <glad/...> / <glfw3.h>。
-// 设计参考：requirements.md 需求 3 / 4.1。
 // ============================================================================
 #include "GDevice.h"
 
@@ -81,7 +80,7 @@ namespace TitusRHI
     {
         if (!m_initialized) return;
 
-        // 任务 7：Shutdown 前强制 Flush 所有延迟销毁条目（在 OnWaitIdle 之后）
+        // Shutdown 前强制 Flush 所有延迟销毁条目（在 OnWaitIdle 之后）
         OnWaitIdleImpl();
         FlushAllPendingDestroys();
 
@@ -135,7 +134,7 @@ namespace TitusRHI
             LOG_STREAM_ERROR("GDevice") << "CreateBufferImpl failed (id=" << id << ")";
             return BufferHandle{};
         }
-        // 任务 7：在后端无关元数据表中留下 desc + handle 供 Material / Pass 反查
+        // 在后端无关元数据表中留下 desc + handle 供 Material / Pass 反查
         BufferHandle h{id};
         m_bufferRegistry.emplace(id, std::make_unique<RHIBuffer>(h, desc));
         return h;
@@ -161,7 +160,7 @@ namespace TitusRHI
 
     SamplerHandle GDevice::CreateSampler(const SamplerDesc& desc)
     {
-        // 任务 8：同 desc 不重复创建 → 查缓存。
+        // 同 desc 不重复创建 → 查缓存。
         if (auto it = m_samplerCache.find(desc); it != m_samplerCache.end())
         {
             return it->second;
@@ -202,7 +201,7 @@ namespace TitusRHI
             LOG_STREAM_ERROR("GDevice") << "CreatePipeline: vs/fs not set";
             return PipelineHandle{};
         }
-        // 任务 8：同 desc 不重复创建 → 查缓存。
+        // 同 desc 不重复创建 → 查缓存。
         if (auto it = m_pipelineCache.find(desc); it != m_pipelineCache.end())
         {
             return it->second;
@@ -225,7 +224,7 @@ namespace TitusRHI
             LOG_STREAM_ERROR("GDevice") << "CreatePipeline(Compute): cs not set";
             return PipelineHandle{};
         }
-        // 任务 7：Compute 当前不入 PipelineCache（cache key 仅哈希 GraphicsPipelineDesc）。
+        // Compute 当前不入 PipelineCache（cache key 仅哈希 GraphicsPipelineDesc）。
         // 后续可补一份 ComputePipelineCache；当前直接创建。
         const uint64_t id = m_handleAllocator.Allocate();
         if (!CreatePipelineImpl(id, desc))
@@ -237,7 +236,7 @@ namespace TitusRHI
         return PipelineHandle{id};
     }
 
-    // 光追管线（P1 路线 B，任务 13）：与 Compute 同款骨架，走既有 Pipeline 句柄空间。
+    // 光追管线：与 Compute 同款骨架，走既有 Pipeline 句柄空间。
     PipelineHandle GDevice::CreatePipeline(const RayTracingPipelineDesc& desc)
     {
         if (desc.stages.empty() || desc.groups.empty())
@@ -271,7 +270,7 @@ namespace TitusRHI
         return RenderTargetHandle{id};
     }
 
-    // 光追（任务 5 / 需求 4、5）：加速结构创建。
+    // 光追：加速结构创建。
     AccelerationStructureHandle GDevice::CreateAccelerationStructure(const AccelerationStructureDesc& desc)
     {
         // 参数校验：BLAS 需至少一个几何；TLAS 需至少一个 instance。
@@ -317,7 +316,7 @@ namespace TitusRHI
             break;
         case PendingDestroyKind::Sampler:
             {
-                // 任务 8：从 SamplerCache 中移除反向映射。由于 cache 以 desc 为键，
+                // 从 SamplerCache 中移除反向映射。由于 cache 以 desc 为键，
                 // 需线性扫描找到该 id 的条目。考虑到 sampler 总量较少，可接受。
                 for (auto it = m_samplerCache.begin(); it != m_samplerCache.end(); ++it)
                     if (it->second.id == id)
@@ -340,7 +339,7 @@ namespace TitusRHI
         default: break;
         }
 
-        // 任务 7：真正的延迟销毁 —— 入队，等 entry.submitFrame + framesInFlight <=
+        // 真正的延迟销毁 —— 入队，等 entry.submitFrame + framesInFlight <=
         // m_submitFrameCount 后（即 GPU 不可能再读该资源）才调用 Delete*Impl。
         // 如果设备尚未 Init（m_initialized==false）或 framesInFlight==0，退化为立即销毁。
         if (!m_initialized || m_desc.framesInFlight == 0)
@@ -438,7 +437,7 @@ namespace TitusRHI
     }
 
     // ------------------------------------------------------------------------
-    // 资源查询（任务 7）
+    // 资源查询
     // ------------------------------------------------------------------------
     const RHIBuffer* GDevice::FindBuffer(BufferHandle h) const
     {
@@ -506,7 +505,7 @@ namespace TitusRHI
         m_gContextData.insideFrame = false;
         m_currentFrameIndex = (m_currentFrameIndex + 1) % (m_desc.framesInFlight ? m_desc.framesInFlight : 1);
         ++m_submitFrameCount;
-        // 任务 7：下一帧开始前处理已成熟的延迟销毁条目
+        // 下一帧开始前处理已成熟的延迟销毁条目
         ProcessPendingDestroysIfReady();
     }
 }

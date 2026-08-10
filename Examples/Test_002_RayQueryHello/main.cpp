@@ -1,6 +1,6 @@
 // ============================================================================
 // 0xx_RayQueryHello - main.cpp
-// Vulkan Ray Query 端到端最小示例（需求 13）。
+// Vulkan Ray Query 端到端最小示例。
 // 仅 include RendererInterface 门面头、仅链接 RendererInterface + Basic；
 // 业务侧只使用 TitusRHI 后端无关抽象，不接触任何 VkXxx / RendererVK 头。
 //
@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 
     // 命令行选择模式（默认路线 A Ray Query）：
     //   --rtpipeline : 路线 B（RT Pipeline + SBT + TraceRays）
-    //   --dynamic    : P2 动态场景（AS 管理层 + 多实例 BLAS 去重 + 每帧 TLAS refit）
+    //   --dynamic    : 动态场景（AS 管理层 + 多实例 BLAS 去重 + 每帧 TLAS refit）
     // 本示例强制 Vulkan（只有 VK 后端实现 KHR 光追）。
     bool useRTPipeline = false;
     bool useDynamic    = false;

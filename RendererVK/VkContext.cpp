@@ -205,7 +205,7 @@ void VkContext::PickPhysicalDevice()
     m_supportsRayQuery   = m_supportsRayTracing; // 当前路线 A 以 ray_query 为准
     if (m_supportsRayTracing)
     {
-        // 探测 RT 管线（路线 B / P1）能力，与 ray query 独立。
+        // 探测 RT 管线（路线 B）能力，与 ray query 独立。
         m_supportsRayTracingPipeline = CheckRayTracingPipelineSupport(m_physicalDevice);
 
         // 查询 AS/scratch 对齐等属性（通过 Properties2 链）；支持 RT 管线时
@@ -344,7 +344,7 @@ void VkContext::CreateLogicalDevice()
                                  m_rayTracingExtensions.begin(),
                                  m_rayTracingExtensions.end());
 
-        // 路线 B / P1：额外启用 RT 管线特性与扩展（仅在探测支持时）。
+        // 路线 B：额外启用 RT 管线特性与扩展（仅在探测支持时）。
         if (m_supportsRayTracingPipeline)
         {
             rtpFeatures.rayTracingPipeline = VK_TRUE;
@@ -421,7 +421,7 @@ uint32_t VkContext::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags pr
 }
 
 // ============================================================================
-// 光追（任务 1 / 需求 1）
+// 光追
 // ============================================================================
 #if defined(RENDERER_ENABLE_RAY_TRACING)
 bool VkContext::CheckRayTracingSupport(VkPhysicalDevice device) const
@@ -486,7 +486,7 @@ void VkContext::LoadRayTracingFunctions()
         return;
     }
 
-    // 路线 B / P1：加载 RT 管线函数（仅在探测支持时）；缺失则仅关闭管线能力，
+    // 路线 B：加载 RT 管线函数（仅在探测支持时）；缺失则仅关闭管线能力，
     // 不影响 ray query 路径。
     if (m_supportsRayTracingPipeline)
     {
@@ -507,7 +507,7 @@ void VkContext::LoadRayTracingFunctions()
     }
 }
 
-// 探测 RT 管线扩展与特性（路线 B / P1）。与 ray query 解耦：不满足时仅
+// 探测 RT 管线扩展与特性（路线 B）。与 ray query 解耦：不满足时仅
 // m_supportsRayTracingPipeline=false，ray query 路径不受影响。
 bool VkContext::CheckRayTracingPipelineSupport(VkPhysicalDevice device) const
 {

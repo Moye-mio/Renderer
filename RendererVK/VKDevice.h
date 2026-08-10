@@ -9,7 +9,6 @@
 //   - 维护"句柄 ↔ 后端原生对象"的映射表
 //   - 把 Fence / Semaphore / vkAcquireNextImageKHR / vkQueueSubmit / vkQueuePresentKHR
 //     等同步逻辑全部封装到 BeginFrameImpl / SubmitImpl / PresentImpl 内部
-// 设计参考：requirements.md 需求 4.3 / 4.4 / 4.6 / 5.7 / 8.2。
 // ============================================================================
 #include <vulkan/vulkan.h>
 #include <unordered_map>
@@ -72,16 +71,16 @@ namespace TitusVkGraphics
         VkPipelineLayout       layout     = VK_NULL_HANDLE;
         // 由 Pipeline 拥有的 DescriptorSetLayout（按 set 索引）
         std::vector<VkDescriptorSetLayout> setLayouts;
-        // 任务 7v-1：标记 Graphics 还是 Compute；BindPipeline / Dispatch 据此派发
+        // 标记 Graphics 还是 Compute；BindPipeline / Dispatch 据此派发
         bool                   isCompute  = false;
         VkPipelineBindPoint    bindPoint  = VK_PIPELINE_BIND_POINT_GRAPHICS;
-        // 任务 11：图形管线烘焙时若 rtLayout 与 swapchain 默认 RP 不兼容，
+        // 图形管线烘焙时若 rtLayout 与 swapchain 默认 RP 不兼容，
         // 这里持有一个"仅用于 pipeline compatibility"的临时 VkRenderPass。
         // 销毁 pipeline 时一同释放；若引用的是 swapchain 默认 RP 则 owned=false。
         VkRenderPass           compatRenderPass = VK_NULL_HANDLE;
         bool                   ownsCompatRenderPass = false;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追管线（P1，任务 14）：SBT buffer 与四个 region 的地址/步长，供 TraceRays 使用。
+        // 光追管线：SBT buffer 与四个 region 的地址/步长，供 TraceRays 使用。
         bool                            isRayTracing = false;
         VkBuffer                        sbtBuffer = VK_NULL_HANDLE;
         VkDeviceMemory                  sbtMemory = VK_NULL_HANDLE;
@@ -104,7 +103,7 @@ namespace TitusVkGraphics
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
     // ------------------------------------------------------------------------
-    // 加速结构条目（光追，任务 8 / 需求 7.1）
+    // 加速结构条目（光追）
     //   - as：VkAccelerationStructureKHR 本体
     //   - buffer/memory：AS 的 backing storage（ACCELERATION_STRUCTURE_STORAGE usage）
     //   - deviceAddress：TLAS 引用 BLAS / 描述符绑定时使用
@@ -123,7 +122,7 @@ namespace TitusVkGraphics
         TitusRHI::AccelerationStructureType type =
             TitusRHI::AccelerationStructureType::BottomLevel;
 
-        // 动态更新（P2，任务 16 / 需求 15.3）：仅当创建时带 AllowUpdate 标志的 TLAS
+        // 动态更新：仅当创建时带 AllowUpdate 标志的 TLAS
         // 才保留以下资源，供命令流内 refit（vkCmdBuildAccelerationStructuresKHR
         // 的 UPDATE 模式）复用。
         bool                        allowUpdate    = false;
@@ -144,7 +143,7 @@ namespace TitusVkGraphics
         VkSemaphore renderFinished = VK_NULL_HANDLE;
         VkFence     inFlightFence  = VK_NULL_HANDLE;
         std::unique_ptr<VkCommandBufferWrapper> primaryCmd;
-        // 任务 7v-2：每帧一个 DescriptorPool，BeginFrame 时整池 reset
+        // 每帧一个 DescriptorPool，BeginFrame 时整池 reset
         VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     };
 
@@ -165,28 +164,28 @@ namespace TitusVkGraphics
         // ====================================================================
         TitusRHI::GBackend GetBackend() const override { return TitusRHI::GBackend::Vulkan; }
 
-        // 任务 10：VK 后端自管 VkWindow，主循环 ShouldClose() 需要从这里问询。
+        // VK 后端自管 VkWindow，主循环 ShouldClose() 需要从这里问询。
         bool IsWindowClosed() const override;
 
-        // 任务 12：VK 后端自管 VkWindow，INPUT_MANAGER 通过此接口拿到 GLFWwindow*。
+        // VK 后端自管 VkWindow，INPUT_MANAGER 通过此接口拿到 GLFWwindow*。
         void* GetWindowNativeHandle() const override;
 
-        // ImGui-A：ImGui Overlay 录制 Hook（详见 IGDevice.h）。
+        // ImGui Overlay 录制 Hook（详见 IGDevice.h）。
         // VK 后端实现：开 swapchain 默认 RenderPass（loadOp=Load）+
         // 调用注入的 callback（其中会执行 ImGui_ImplVulkan_RenderDrawData
         // 到当前帧的 primary cmdbuf）+ EndRenderPass。
         void SetImGuiOverlayCallback(ImGuiOverlayCallback cb, void* userData) override;
         void RenderImGuiOverlay() override;
 
-        // ImGui-A：暴露当前帧的 primary VkCommandBuffer（仅供 RendererInterface
+        // 暴露当前帧的 primary VkCommandBuffer（仅供 RendererInterface
         // IMGUI 模块在 RenderImGuiOverlay 回调内使用，业务侧绝不应直接使用）。
         VkCommandBuffer GetCurrentPrimaryCommandBuffer() const;
 
-        // ImGui-A：one-shot 命令缓冲的对外暴露（imgui 上传 Font 纹理时需要）。
+        // one-shot 命令缓冲的对外暴露（imgui 上传 Font 纹理时需要）。
         VkCommandBuffer ImGuiBeginOneTimeCommands();
         void            ImGuiEndOneTimeCommands(VkCommandBuffer cb);
 
-        // ImGui-A 修复：内部辅助——把 imgui draw 录到当前 primaryCmd 上。
+        // 修复：内部辅助——把 imgui draw 录到当前 primaryCmd 上。
         // 在 SubmitImpl 内的 primaryCmd->End() 之前调用。public override
         // RenderImGuiOverlay() 已变成 no-op（PassScheduler 在 Submit *后*
         // 才调，那时 cmdbuf 已 End）。
@@ -199,7 +198,7 @@ namespace TitusVkGraphics
         VkSwapchainWrapper*  GetVkSwapchain()  { return m_swapchain.get(); }
 
         const VKBufferEntry*       LookupBuffer(TitusRHI::BufferHandle h)             const;
-        // 任务 7v-3：BindResourceSet 中需要在写入前转换 storage image layout，
+        // BindResourceSet 中需要在写入前转换 storage image layout，
         //           因此提供可写访问以更新 currentLayout。
         VKTextureEntry*            MutableLookupTexture(TitusRHI::TextureHandle h);
         const VKTextureEntry*      LookupTexture(TitusRHI::TextureHandle h)           const;
@@ -208,7 +207,7 @@ namespace TitusVkGraphics
         const VKPipelineEntry*     LookupPipeline(TitusRHI::PipelineHandle h)         const;
         const VKRenderTargetEntry* LookupRenderTarget(TitusRHI::RenderTargetHandle h) const;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追（任务 8/9 / 需求 7.1）：供 VKCommandList 绑定 TLAS 描述符使用。
+        // 光追：供 VKCommandList 绑定 TLAS 描述符使用。
         const VKAccelStructEntry*  LookupAccelStruct(TitusRHI::AccelerationStructureHandle h) const;
 #endif
 
@@ -223,7 +222,7 @@ namespace TitusVkGraphics
         }
 
         // ====================================================================
-        // 任务 7v-2：DescriptorSet 分配（仅供 VKCommandList 使用）
+        // DescriptorSet 分配（仅供 VKCommandList 使用）
         //   每帧一个 DescriptorPool，BeginFrame 时整池 reset。
         //   返回的 VkDescriptorSet 在 SubmitImpl 完成 + 下一次 BeginFrameImpl
         //   到达同一帧之间有效。
@@ -248,15 +247,15 @@ namespace TitusVkGraphics
         bool CreateSamplerImpl     (uint64_t id, const TitusRHI::SamplerDesc& desc)           override;
         bool CreateShaderImpl      (uint64_t id, const TitusRHI::ShaderDesc& desc)            override;
         bool CreatePipelineImpl    (uint64_t id, const TitusRHI::GraphicsPipelineDesc& desc)  override;
-        // 任务 7v-1：Compute 管线创建（GDevice 基类已默认返回 false，这里 override 启用）
+        // Compute 管线创建（GDevice 基类已默认返回 false，这里 override 启用）
         bool CreatePipelineImpl    (uint64_t id, const TitusRHI::ComputePipelineDesc&  desc)  override;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追管线创建（P1，任务 14）：仅在设备支持 RT 管线时成功。
+        // 光追管线创建：仅在设备支持 RT 管线时成功。
         bool CreatePipelineImpl    (uint64_t id, const TitusRHI::RayTracingPipelineDesc& desc) override;
 #endif
         bool CreateRenderTargetImpl(uint64_t id, const TitusRHI::RenderTargetDesc& desc)      override;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追（任务 8 / 需求 7.2）：加速结构创建/销毁。基类默认返回 false/空实现，
+        // 光追：加速结构创建/销毁。基类默认返回 false/空实现，
         // 这里 override 启用真正的 VK 实现。
         bool CreateAccelerationStructureImpl(uint64_t id,
                                              const TitusRHI::AccelerationStructureDesc& desc) override;
@@ -289,10 +288,10 @@ namespace TitusVkGraphics
         void CreateCommandPool();
         void CreateSyncObjects(uint32_t framesInFlight);
         void DestroySyncObjects();
-        // 任务 7v-2：DescriptorPool 创建与销毁（每帧一个）
+        // DescriptorPool 创建与销毁（每帧一个）
         void CreateDescriptorPools(uint32_t framesInFlight);
         void DestroyDescriptorPools();
-        // 任务 7v-3：用 immediate one-shot CmdBuffer 把 image 转 layout
+        // 用 immediate one-shot CmdBuffer 把 image 转 layout
         void TransitionImageLayoutImmediate(VkImage image,
                                             VkImageAspectFlags aspect,
                                             uint32_t mipLevels,
@@ -300,19 +299,19 @@ namespace TitusVkGraphics
                                             VkImageLayout oldLayout,
                                             VkImageLayout newLayout);
 
-        // 任务 11：根据 RenderTargetLayout 构造一个仅用于 graphics pipeline
+        // 根据 RenderTargetLayout 构造一个仅用于 graphics pipeline
         // compatibility 的临时 VkRenderPass（attachment count + format + samples
         // 与实际 RT 的 RenderPass 兼容；loadOp / storeOp / layout 不影响兼容性）。
         // 由调用方持有所有权。
         VkRenderPass CreateCompatibleRenderPass(const TitusRHI::RenderTargetLayout& rtLayout);
 
-        // 任务 10：通用 immediate one-shot CmdBuffer 基础设施。
+        // 通用 immediate one-shot CmdBuffer 基础设施。
         // 用于资源初始化期的 staging upload / image layout 转换 / blit 等。
         // 走 graphicsQueue + vkQueueWaitIdle，与 frame in flight 同步无关。
         VkCommandBuffer BeginOneTimeCommands();
         void            EndOneTimeCommands(VkCommandBuffer cb);
 
-        // 任务 10：把 host 数据通过 staging buffer 拷到 device-local buffer。
+        // 把 host 数据通过 staging buffer 拷到 device-local buffer。
         //   1) 创建 host-visible staging buffer + memcpy；
         //   2) one-shot CmdBuffer：vkCmdCopyBuffer(staging → dst)；
         //   3) 释放 staging。
@@ -321,7 +320,7 @@ namespace TitusVkGraphics
                                     const void* src,
                                     VkDeviceSize bytes);
 
-        // 任务 10：把 host 像素数据通过 staging buffer 拷到 image 的指定 subresource。
+        // 把 host 像素数据通过 staging buffer 拷到 image 的指定 subresource。
         //   1) 创建 host-visible staging buffer + memcpy；
         //   2) one-shot CmdBuffer：UNDEFINED→TRANSFER_DST → vkCmdCopyBufferToImage
         //                          → TRANSFER_DST→SHADER_READ_OPTIMAL；
@@ -344,7 +343,7 @@ namespace TitusVkGraphics
         void AllocateBufferMemory(VKBufferEntry& entry, VkMemoryPropertyFlags props);
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追（任务 8 / 需求 7.3）：创建一个裸 VkBuffer + 内存（供 AS backing /
+        // 光追：创建一个裸 VkBuffer + 内存（供 AS backing /
         // scratch / instance buffer 使用）。usage 含 SHADER_DEVICE_ADDRESS 时自动
         // 挂接 VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT。失败返回 false。
         bool CreateRawBuffer(VkDeviceSize size,
@@ -392,11 +391,11 @@ namespace TitusVkGraphics
         std::unordered_map<uint64_t, VKPipelineEntry>     m_pipelines;
         std::unordered_map<uint64_t, VKRenderTargetEntry> m_renderTargets;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追（任务 8 / 需求 7.1）：加速结构映射表。
+        // 光追：加速结构映射表。
         std::unordered_map<uint64_t, VKAccelStructEntry>  m_accelStructs;
 #endif
 
-        // ImGui-A：Overlay 回调与用户上下文（由 RendererInterface 的 IMGUI 模块注入）
+        // Overlay 回调与用户上下文（由 RendererInterface 的 IMGUI 模块注入）
         ImGuiOverlayCallback m_imGuiCallback = nullptr;
         void*                m_imGuiUserData = nullptr;
     };

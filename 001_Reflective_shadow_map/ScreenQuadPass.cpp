@@ -49,7 +49,7 @@ void ScreenQuadPass::Init(TitusRHI::IGDevice& device)
         m_sampler = device.CreateSampler(sd);
     }
 
-    // 3) Shader / Pipeline（任务 8b：GL/VK 共用 .glsl）
+    // 3) Shader / Pipeline（GL/VK 共用 .glsl）
     const std::string shaderDir = std::string(SOLUTION_DIR) + "001_Reflective_shadow_map/Shader/";
     const std::string vsPath = shaderDir + "ScreenQuad_VS.glsl";
     const std::string fsPath = shaderDir + "ScreenQuad_FS.glsl";

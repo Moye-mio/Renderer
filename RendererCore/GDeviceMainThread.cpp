@@ -103,8 +103,8 @@ namespace TitusRHI
     {
         ZoneScopedN("MainThread::BeginFrame");
         // 等待 Worker 处理完上一帧的所有命令（Submit/Present），避免本帧 Acquire
-        // 到的 cmd buffer 仍被 Worker 使用。M2 阶段的简化同步策略；M3 任务 7 引入
-        // 客户端代理后会用更细粒度的 fence。
+        // 到的 cmd buffer 仍被 Worker 使用。当前为简化同步策略；后续可引入
+        // 客户端代理与更细粒度的 fence。
         if (m_worker)
         {
             ZoneScopedN("MainThread::WaitWorker");
@@ -212,7 +212,7 @@ namespace TitusRHI
         return m_realDevice ? m_realDevice->CreatePipeline(desc) : PipelineHandle{};
     }
 
-    // 光追管线（P1 路线 B，任务 13）：透传到 RealDevice。
+    // 光追管线：透传到 RealDevice。
     PipelineHandle GDeviceMainThread::CreatePipeline(const RayTracingPipelineDesc& desc)
     {
         std::lock_guard<std::mutex> lk(m_resourceMutex);

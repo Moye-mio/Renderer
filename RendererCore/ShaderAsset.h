@@ -1,14 +1,12 @@
 #pragma once
 // ============================================================================
 // RendererCore - ShaderAsset
-// 跨后端 Shader 资源抽象（任务 9 / M-A 最小可用版）：
+// 跨后端 Shader 资源抽象：
 //   - 业务侧填一份 ShaderAssetDesc：vertex/fragment 各自给 GLSL 路径 + SPIR-V 路径
 //   - LoadAndCreate(device) 按 device.GetBackend() 自动选源、读字节、CreateShader
-//   - 任务 13 (M-B) 接入 spirv-cross 后会在此处填充 ShaderParameterMap
-//
-// 设计参考：requirements.md 需求 18-MA / 9.x。
+//   - 接入 spirv-cross 后会在此处填充 ShaderParameterMap
 // 注意：本类仅是"工厂样板"——它本身**不**继承 RHIShader；RHIShader 的元数据
-// 由 GDevice::FindShader(handle) 反查（任务 7 已落地）。
+// 由 GDevice::FindShader(handle) 反查。
 // ============================================================================
 #include <cstdint>
 #include <string>
@@ -50,7 +48,7 @@ namespace TitusRHI
         const ShaderAssetDesc& GetDesc() const { return m_desc; }
         bool                   IsValid() const { return m_vs.IsValid() && m_fs.IsValid(); }
 
-        // -------------------- 任务 13 / M6：反射 --------------------
+        // -------------------- 反射 --------------------
         // 可读反射信息（合并后的 VS+FS）
         const ReflectionInfo&  GetReflection() const { return m_reflection; }
         ReflectionInfo&        MutableReflection()   { return m_reflection; }

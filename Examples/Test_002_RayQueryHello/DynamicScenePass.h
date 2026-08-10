@@ -1,9 +1,9 @@
 #pragma once
 // ============================================================================
-// 0xx_RayQueryHello - DynamicScenePass（P2，任务 16 / 需求 15）
+// 0xx_RayQueryHello - DynamicScenePass
 // 动态场景光追示例：用 RayTracingManager 管理多个引用同一
 // BLAS 的 instance（BLAS 去重），每帧移动 instance 并 refit TLAS（增量更新），
-// 再用 rayQuery compute 渲染。验证需求 15.1/15.2/15.3。
+// 再用 rayQuery compute 渲染。
 // 仅使用 TitusRHI 后端无关抽象，不接触任何 VkXxx。
 // ============================================================================
 #include <memory>

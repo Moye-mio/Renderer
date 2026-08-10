@@ -5,15 +5,12 @@
 // AcquireCommandList / Submit / Present / WaitIdle 序列化到 CommandRingBuffer
 // 中由 Worker 线程消费；其余资源 API 直接同步透传到 RealDevice（持锁），保证
 // 现有跨后端代码无需改动即可在 Threaded 模式下工作。
-//
-// M2 阶段最小可用版：
+// 最小可用版：
 //   - Init / Shutdown / WaitIdle 透传到 RealDevice，自身不分配 backend；
 //   - BeginFrame / Submit / Present 转成 GCommand 写入 stream；
 //   - AcquireCommandList 同步阻塞调用 RealDevice；
 //   - 资源 Create*/Destroy/UpdateBuffer/UpdateTexture：直接 override 公共 API，
-//     转发到 RealDevice（持 m_resourceMutex 锁），M3 任务 7 再改为流式延迟创建。
-//
-// 设计参考：requirements.md 需求 11.4 / 11.5 / 11.6 / 11.7。
+//     转发到 RealDevice（持 m_resourceMutex 锁），后续可改为流式延迟创建。
 // ============================================================================
 #include <memory>
 #include <mutex>
@@ -51,10 +48,10 @@ namespace TitusRHI
         ShaderHandle CreateShader(const ShaderDesc& desc) override;
         PipelineHandle CreatePipeline(const GraphicsPipelineDesc& desc) override;
         PipelineHandle CreatePipeline(const ComputePipelineDesc& desc) override;
-        // 光追管线（P1 路线 B，任务 13）
+        // 光追管线
         PipelineHandle CreatePipeline(const RayTracingPipelineDesc& desc) override;
         RenderTargetHandle CreateRenderTarget(const RenderTargetDesc& desc) override;
-        // 光追（任务 5/11 / 需求 11）：透传到 RealDevice（持锁）
+        // 光追：透传到 RealDevice（持锁）
         AccelerationStructureHandle CreateAccelerationStructure(const AccelerationStructureDesc& desc) override;
 
         void Destroy(BufferHandle handle) override;
@@ -72,7 +69,7 @@ namespace TitusRHI
         void UpdateTexture(TextureHandle texture,
                            const TextureUploadDesc& upload) override;
 
-        // —— 资源查询：转发到 RealDevice（任务 7），避免上层拿到 Client 时看到空表 ——
+        // —— 资源查询：转发到 RealDevice，避免上层拿到 Client 时看到空表 ——
         const RHIBuffer* FindBuffer(BufferHandle h) const override;
         const RHITexture* FindTexture(TextureHandle h) const override;
         const RHIShader* FindShader(ShaderHandle h) const override;

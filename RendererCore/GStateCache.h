@@ -1,13 +1,9 @@
 #pragma once
 // ============================================================================
 // RendererCore - GStateCache
-// 状态对象哈希去重缓存（任务 8）：相同 SamplerDesc / GraphicsPipelineDesc 只
+// 状态对象哈希去重缓存：相同 SamplerDesc / GraphicsPipelineDesc 只
 // 创建一次，后续请求复用已有句柄，降低无谓的 GPU 状态对象创建（特别是 Vulkan
 // VkPipeline / VkSampler，创建开销很高）。
-//
-// 设计参考：requirements.md 需求 16.4（RasterState/DepthState/BlendState/
-// SamplerState 等状态对象的缓存复用）。
-//
 // 注意：
 //   - SamplerDesc 仅含 trivially-copyable 字段（debugName 为 const char*，按指针
 //     比较即可），可直接 memcmp 哈希。

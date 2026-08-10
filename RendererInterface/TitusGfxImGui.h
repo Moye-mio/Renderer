@@ -1,7 +1,7 @@
 #pragma once
 // ============================================================================
 // RendererInterface - TitusGfxImGui
-// 极薄的 ImGui 集成层（任务 ImGui-A，对应方案 A）：
+// 极薄的 ImGui 集成层（方案 A）：
 //   - 内部封装 imgui_impl_glfw + imgui_impl_opengl3 / imgui_impl_vulkan，
 //     根据当前 GBackend 自动分流；
 //   - 不与 RendererCore / Renderer / RendererVK 头部强耦合：

@@ -1,6 +1,6 @@
 // ============================================================================
 // 001_Reflective_shadow_map - ShadingWithRSMPass.cpp
-// 阶段 2（任务 7）：真正的 Compute Pass。
+// 真正的 Compute Pass。
 // ============================================================================
 #include "ShadingWithRSMPass.h"
 
@@ -85,7 +85,7 @@ void ShadingWithRSMPass::Init(TitusRHI::IGDevice& device)
 
     // ----------------------------------------------------------------------
     // 3) Compute shader & pipeline
-    //    任务 8b：VK 后端不再要求 .spv 预编译产物——VKDevice::CreateShaderImpl
+    //    VK 后端不再要求 .spv 预编译产物——VKDevice::CreateShaderImpl
     //    会按 magic word 嗅探，对 GLSL 文本自动走 glslang 在线编译。
     // ----------------------------------------------------------------------
     const std::string shaderDir = std::string(SOLUTION_DIR) + "001_Reflective_shadow_map/Shader/";
@@ -255,7 +255,7 @@ void ShadingWithRSMPass::Record(TitusRHI::IGDevice& /*device*/,
 
             // u_Matrices4ProjectionWorld (binding=2)：CS 中未实际使用，但需占位以满足
             // DescriptorSetLayout 完整性。复用任意已存在的 UBO——这里偷懒共用 m_vplUbo。
-            // 任务 9 联调时若 Validation Layer 报 "binding=2 unbound"，再补一个真正的
+            // 联调时若 Validation Layer 报 "binding=2 unbound"，再补一个真正的
             // matrices UBO。
             ResourceBindingValue uboMat{};
             uboMat.binding = 2;

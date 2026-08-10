@@ -61,7 +61,7 @@ namespace TitusGraphics
                          int32_t vertexOffset = 0,
                          uint32_t firstInstance = 0) override;
 
-        // 任务 7：计算 + 屏障
+        // 计算 + 屏障
         void Dispatch(uint32_t groupCountX,
                       uint32_t groupCountY,
                       uint32_t groupCountZ) override;
@@ -81,9 +81,9 @@ namespace TitusGraphics
         uint64_t m_currentIndexOffset = 0;
         GLuint m_currentVAO = 0;
         GLuint m_currentProgram = 0;
-        // 任务 7：当前 Pipeline 是否为计算管线；Dispatch 需要该状态。
+        // 当前 Pipeline 是否为计算管线；Dispatch 需要该状态。
         bool m_currentIsCompute = false;
-        // 任务 7 / GL PushConstants 反射：当前 Pipeline 的 push_constant 布局。
+        // GL PushConstants 反射：当前 Pipeline 的 push_constant 布局。
         // GL 后端把 push_constant 语义拆为连续的“多个 uniform”。
         std::vector<TitusRHI::PushConstantRange> m_currentPushRanges;
         // 当前 Pipeline 的 vertex binding 表（binding 槽 → stride / 输入速率）。

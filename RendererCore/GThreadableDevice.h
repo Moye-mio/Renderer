@@ -4,13 +4,10 @@
 // 在 GDevice 之上叠加"渲染线程感知"能力：
 //   - PostInitBackend(onRenderThread) 在 Init 末尾被基类回调，子类可
 //     在此处把当前线程登记为"OwnerThread"。
-//   - AcquireThreadOwnership() / ReleaseThreadOwnership() 在多线程模式（M2 任务 6）
-//     接入：GDeviceWorker 的工作线程在循环开始处 Acquire，结束时 Release。
-//
-// 任务 1 阶段：本类只提供线程归属字段与简单的 AssertOnRenderThread 校验，
-// 真正的"主线程门面 / Worker"机制留给任务 6（GDeviceMainThread + Worker）。
-//
-// 设计参考：requirements.md 需求 3.2 / 11.2 / 11.3。
+//   - AcquireThreadOwnership() / ReleaseThreadOwnership() 在多线程模式下
+//     由 GDeviceWorker 的工作线程在循环开始处 Acquire，结束时 Release。
+// 本类提供线程归属字段与简单的 AssertOnRenderThread 校验；
+// 主线程门面 / Worker 机制由 GDeviceMainThread + GDeviceWorker 实现。
 // ============================================================================
 #include <atomic>
 #include <thread>

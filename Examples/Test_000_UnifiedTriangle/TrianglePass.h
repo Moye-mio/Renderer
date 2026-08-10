@@ -2,8 +2,8 @@
 // ============================================================================
 // 010_UnifiedTriangle - TrianglePass
 // 业务侧 Pass 只继承 TitusRHI::IRenderPass，**仅** include
-// "RendererInterface/TitusGfxPass.h"（需求 9.3 / 10.2 静态扫描通过）。
-// 同一份 .cpp 不修改即可在 Vulkan / OpenGL 两个后端上运行（任务 9）。
+// "RendererInterface/TitusGfxPass.h"（静态扫描应通过）。
+// 同一份 .cpp 不修改即可在 Vulkan / OpenGL 两个后端上运行。
 // ============================================================================
 #include "RendererInterface/TitusGfxPass.h"
 

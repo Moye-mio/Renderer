@@ -1,10 +1,8 @@
 #pragma once
 // ============================================================================
 // RendererCore - MaterialInstance
-//
 // "导入态"的材质实例：从 AssetLoader 的 MaterialAssetData 上传 GPU 后产出的
 // 后端无关数据包（句柄聚合 + CPU 端可调标量）。
-//
 // 与 RendererCore::Material（运行期材质对象，持 ShaderAsset+PropertySheet）
 // 的关系：
 //   ┌───────────────────────┐    ┌─────────────────────┐
@@ -12,8 +10,6 @@
 //   │  Asset Data (CPU)     │    │   Instance（本类）  │     可被进一步包装为
 //   │                       │    │                     │     运行期 Material
 //   └───────────────────────┘    └─────────────────────┘
-//
-// 任务 12 / M5-B：requirements.md 17.7 / 17.10(M-B) / 17.11 / 18.4。
 // ============================================================================
 #include <array>
 #include <cstdint>

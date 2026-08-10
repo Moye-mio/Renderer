@@ -45,7 +45,7 @@ namespace TitusVkGraphics
     // ------------------------------------------------------------------------
     bool VKDevice::OnInitBackend(const GDeviceDesc& desc, IWindow* /*window*/)
     {
-        // 任务 9：无视上层传来的 IWindow*。RendererInterface 在 VK 模式下不会创建
+        // 无视上层传来的 IWindow*。RendererInterface 在 VK 模式下不会创建
         // GLFWWindow（参见 InitApp），且 VKDevice 期望的 native handle 是 VkWindow*，
         // 与 GLFWWindow 类型不兼容（之前的强转 static_cast<VkWindow*>(GetNativeHandle())
         // 是 type-confusion bug，会在 device.Init 阶段触发 0xC0000005）。
@@ -95,7 +95,7 @@ namespace TitusVkGraphics
         const uint32_t fif = std::max(1u, m_desc.framesInFlight);
         CreateSyncObjects(fif);
 
-        // 3) 任务 7v-2：每帧一个 DescriptorPool
+        // 3) 每帧一个 DescriptorPool
         CreateDescriptorPools(fif);
 
         // 4) 准备一个供业务录制的 RenderCommandList
@@ -120,7 +120,7 @@ namespace TitusVkGraphics
         vkDeviceWaitIdle(m_context->GetDevice());
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // —— 光追（任务 8）：释放业务侧未显式销毁的加速结构 ——
+        // —— 光追：释放业务侧未显式销毁的加速结构 ——
         for (auto& kv : m_accelStructs)
         {
             auto& e = kv.second;
@@ -142,7 +142,7 @@ namespace TitusVkGraphics
             if (kv.second.layout)   vkDestroyPipelineLayout(m_context->GetDevice(), kv.second.layout, nullptr);
             for (auto& sl : kv.second.setLayouts)
                 if (sl) vkDestroyDescriptorSetLayout(m_context->GetDevice(), sl, nullptr);
-            // 任务 11：释放 pipeline 自有 compat RenderPass（不释放 swapchain 默认 RP）
+            // 释放 pipeline 自有 compat RenderPass（不释放 swapchain 默认 RP）
             if (kv.second.ownsCompatRenderPass && kv.second.compatRenderPass)
                 vkDestroyRenderPass(m_context->GetDevice(), kv.second.compatRenderPass, nullptr);
 #if defined(RENDERER_ENABLE_RAY_TRACING)
@@ -282,7 +282,7 @@ namespace TitusVkGraphics
         ai.memoryTypeIndex = m_context->FindMemoryType(req.memoryTypeBits, props);
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追（任务 7 / 需求 7.3）：当 buffer 声明 SHADER_DEVICE_ADDRESS 用途时，
+        // 光追：当 buffer 声明 SHADER_DEVICE_ADDRESS 用途时，
         // 分配内存必须挂接 VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT，否则后续
         // vkGetBufferDeviceAddress 非法。默认（无 device address）路径行为不变。
         VkMemoryAllocateFlagsInfo flagsInfo{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO };
@@ -305,7 +305,7 @@ namespace TitusVkGraphics
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
     // ------------------------------------------------------------------------
-    // 光追（任务 8 / 需求 7）：加速结构辅助与创建/销毁实现
+    // 光追：加速结构辅助与创建/销毁实现
     // ------------------------------------------------------------------------
     bool VKDevice::CreateRawBuffer(VkDeviceSize size,
                                    VkBufferUsageFlags usage,
@@ -489,7 +489,7 @@ namespace TitusVkGraphics
             entry.instanceCapacity = instCount; // refit 时不得超过此容量
         }
 
-        // 动态更新（P2，任务 16）：记录 build flags / AllowUpdate，供命令流内 refit 使用。
+        // 动态更新：记录 build flags / AllowUpdate，供命令流内 refit 使用。
         entry.buildFlags  = ToVkASBuildFlags(desc.buildFlags);
         entry.allowUpdate = HasFlag(desc.buildFlags, ASBuildFlags::AllowUpdate);
 
@@ -617,7 +617,7 @@ namespace TitusVkGraphics
 #endif // RENDERER_ENABLE_RAY_TRACING
 
     // ------------------------------------------------------------------------
-    // 任务 10：VK 后端自管 VkWindow，外部主循环通过 IsWindowClosed 问询关闭状态。
+    // VK 后端自管 VkWindow，外部主循环通过 IsWindowClosed 问询关闭状态。
     // ------------------------------------------------------------------------
     bool VKDevice::IsWindowClosed() const
     {
@@ -627,7 +627,7 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // 任务 12：暴露 GLFWwindow* 给 RendererInterface::INPUT_MANAGER 查询输入。
+    // 暴露 GLFWwindow* 给 RendererInterface::INPUT_MANAGER 查询输入。
     // ------------------------------------------------------------------------
     void* VKDevice::GetWindowNativeHandle() const
     {
@@ -654,7 +654,7 @@ namespace TitusVkGraphics
         m_caps.supportsTessellation      = feats.tessellationShader == VK_TRUE;
         m_caps.supportsMultiDrawIndirect = feats.multiDrawIndirect == VK_TRUE;
 
-        // 光追能力（任务 4 / 需求 2）：源自 VkContext 探测结果。
+        // 光追能力：源自 VkContext 探测结果。
         // 未定义 RENDERER_ENABLE_RAY_TRACING 时 VkContext 的 getter 恒返回 false。
         m_caps.supportsRayTracing = m_context->SupportsRayTracing();
         m_caps.supportsRayQuery   = m_context->SupportsRayQuery();
@@ -673,7 +673,7 @@ namespace TitusVkGraphics
         e.usage = ToVkBufferUsage(desc.usage);
         e.memProps = ToVkMemoryProps(desc.memory);
 
-        // 任务 10：GpuOnly + initialData 时需要从 staging buffer 拷贝过来，
+        // GpuOnly + initialData 时需要从 staging buffer 拷贝过来，
         // 因此目标 buffer 的 usage 必须包含 TRANSFER_DST_BIT。业务侧 BufferDesc
         // 通常只声明 VertexBuffer/IndexBuffer/UniformBuffer 等"用途位"，不会
         // 主动加 TransferDst；这里在 VkBufferUsageFlags 上自动补一份。
@@ -745,7 +745,7 @@ namespace TitusVkGraphics
         e.width        = desc.width;
         e.height       = desc.height;
 
-        // 任务 10：与 GLDevice 行为一致，对 desc.mipLevels=0 / desc.arrayLayers=0 自动归一化。
+        // 与 GLDevice 行为一致，对 desc.mipLevels=0 / desc.arrayLayers=0 自动归一化。
         //   - mipLevels=0 表示"由后端按 max 计算"（AssetGpuUploader 的 generateMipmaps 路径会传 0）；
         //   - arrayLayers=0 一律归一化到 1（避免 vkCreateImage VUID 报错）。
         uint32_t resolvedMipLevels = desc.mipLevels;
@@ -805,7 +805,7 @@ namespace TitusVkGraphics
         vi.subresourceRange.layerCount     = resolvedArrayLayers;
         VK_CHECK(vkCreateImageView(m_context->GetDevice(), &vi, nullptr, &e.defaultView));
 
-        // 任务 7v-3：Storage Image 必须从 UNDEFINED 转到 GENERAL，否则 Compute Shader
+        // Storage Image 必须从 UNDEFINED 转到 GENERAL，否则 Compute Shader
         // 中 imageStore 会触发 Validation Layer "Image Layout invalid" 报错。
         // 这里走 immediate one-shot CmdBuffer 把 layout 提前固化为 GENERAL，
         // 之后业务侧不需要再做 layout 转换（GENERAL 同时支持 storage read/write 和 sampled）。
@@ -835,7 +835,7 @@ namespace TitusVkGraphics
 
     void VKDevice::UpdateTextureImpl(TextureHandle texture, const TextureUploadDesc& upload)
     {
-        // 任务 10：通过 staging buffer 上传像素数据。
+        // 通过 staging buffer 上传像素数据。
         //   1) 找到目标 VKTextureEntry；
         //   2) 调用 UploadImageViaStaging（内部完成 layout UNDEFINED→TRANSFER_DST→finalLayout
         //      和 vkCmdCopyBufferToImage）；
@@ -917,7 +917,7 @@ namespace TitusVkGraphics
 
     // ------------------------------------------------------------------------
     // Shader（接收 SPIR-V 字节码或 GLSL 源码）
-    //   任务 8b：推荐 GLSL 文本路径——走 glslang 在线编译为 SPIR-V，让
+    //   推荐 GLSL 文本路径——走 glslang 在线编译为 SPIR-V，让
     //   GL/VK 两端可以共用同一份 *.glsl，避免预编译 .spv 产物与源码不同步。
     //   只要 desc.code 首 4 字节是 SPIR-V magic word(0x07230203) 就直接使用，
     //   其他情况当作 GLSL 文本处理。
@@ -1005,7 +1005,7 @@ namespace TitusVkGraphics
         }
 
         // 2) 选取目标 RenderPass：
-        //    任务 11：根据 desc.rtLayout 构建一个仅用于 pipeline compatibility 的
+        //    根据 desc.rtLayout 构建一个仅用于 pipeline compatibility 的
         //    临时 VkRenderPass（VK 要求 pipeline.renderPass 与实际 BeginRenderPass
         //    使用的 RenderPass "兼容"——attachment 数量、format、samples 一致）。
         //    若业务未指定 colorFormats（空），退化到 swapchain 默认 RP（单色 attachment）。
@@ -1146,7 +1146,7 @@ namespace TitusVkGraphics
         dy.pDynamicStates    = dyns;
 
         // 6) PipelineLayout
-        // 任务 10：按 stageFlags 分组合并 PushConstantRange。
+        // 按 stageFlags 分组合并 PushConstantRange。
         // 业务侧（按 GL 习惯）会为每个 uniform 注册一个独立 PushConstantRange，
         // 但 Vulkan VUID-VkPipelineLayoutCreateInfo-pPushConstantRanges-00292
         // 要求同一 stage 在 PipelineLayout 中只能出现一个 PushConstantRange。
@@ -1204,7 +1204,7 @@ namespace TitusVkGraphics
         pi.subpass             = 0;
         VK_CHECK(vkCreateGraphicsPipelines(m_context->GetDevice(), VK_NULL_HANDLE, 1, &pi, nullptr, &pe.pipeline));
 
-        // 任务 7v-1：显式标记为图形管线，供 BindPipeline 选择 BindPoint
+        // 显式标记为图形管线，供 BindPipeline 选择 BindPoint
         pe.isCompute = false;
         pe.bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 
@@ -1213,11 +1213,11 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // Compute Pipeline（任务 7v-1）
+    // Compute Pipeline
     //   - 与 GraphicsPipeline 同句柄空间，isCompute=true 区分
     //   - 根据 resourceBindings 按 set 构造 DescriptorSetLayout（与 Graphics 同逻辑）
     //   - 由 PushConstantRange 构造 PipelineLayout
-    //   - 这里仅创建 Pipeline；DescriptorPool / VkDescriptorSet 分配留到 7v-2。
+    //   - 这里仅创建 Pipeline；DescriptorPool / VkDescriptorSet 分配在 BindResourceSet 路径。
     // ------------------------------------------------------------------------
     bool VKDevice::CreatePipelineImpl(uint64_t id, const ComputePipelineDesc& desc)
     {
@@ -1263,7 +1263,7 @@ namespace TitusVkGraphics
         }
 
         // 2) PipelineLayout
-        // 任务 10：按 stageFlags 分组合并 PushConstantRange（理由同 graphics pipeline 路径）。
+        // 按 stageFlags 分组合并 PushConstantRange（理由同 graphics pipeline 路径）。
         std::vector<VkPushConstantRange> pcs;
         {
             std::unordered_map<VkShaderStageFlags, VkPushConstantRange> byStage;
@@ -1318,7 +1318,7 @@ namespace TitusVkGraphics
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
     // ------------------------------------------------------------------------
-    // 光追管线（P1，任务 14 / 需求 9.3-9.5）
+    // 光追管线
     //   1) 构建 DescriptorSetLayout + PipelineLayout（与 compute 同款逻辑）
     //   2) stages + groups → vkCreateRayTracingPipelinesKHR
     //   3) vkGetRayTracingShaderGroupHandlesKHR 取 group handle
@@ -1561,11 +1561,11 @@ namespace TitusVkGraphics
         if (it->second.layout)   vkDestroyPipelineLayout(m_context->GetDevice(), it->second.layout, nullptr);
         for (auto& sl : it->second.setLayouts)
             if (sl) vkDestroyDescriptorSetLayout(m_context->GetDevice(), sl, nullptr);
-        // 任务 11：仅当 compat RP 由 pipeline 拥有时才释放（swapchain 默认 RP 共享，不在此释放）
+        // 仅当 compat RP 由 pipeline 拥有时才释放（swapchain 默认 RP 共享，不在此释放）
         if (it->second.ownsCompatRenderPass && it->second.compatRenderPass)
             vkDestroyRenderPass(m_context->GetDevice(), it->second.compatRenderPass, nullptr);
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追管线（任务 14）：一并释放 SBT buffer/memory。
+        // 光追管线：一并释放 SBT buffer/memory。
         if (it->second.sbtBuffer) vkDestroyBuffer(m_context->GetDevice(), it->second.sbtBuffer, nullptr);
         if (it->second.sbtMemory) vkFreeMemory(m_context->GetDevice(), it->second.sbtMemory, nullptr);
 #endif
@@ -1573,7 +1573,7 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // RenderTarget（任务 11）
+    // RenderTarget
     //   - 根据 colorAttachments + depthStencilAttachment 创建多 attachment
     //     VkRenderPass + VkFramebuffer，attachment view 复用各 VKTexture.defaultView。
     //   - 颜色 attachment 的 finalLayout 设为 SHADER_READ_ONLY_OPTIMAL，方便后续
@@ -1710,7 +1710,7 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // 任务 11：仅供 graphics pipeline 烘焙时用的"compatibility RenderPass"。
+    // 仅供 graphics pipeline 烘焙时用的"compatibility RenderPass"。
     //   VK 要求 pipeline.renderPass 与实际 BeginRenderPass 用的 RenderPass
     //   compatible（attachment count + format + samples 一致）。这里按 rtLayout
     //   构造一个最小 RP；loadOp/storeOp/initialLayout/finalLayout 不影响兼容性。
@@ -1769,7 +1769,7 @@ namespace TitusVkGraphics
         subpass.pColorAttachments       = colorRefs.empty() ? nullptr : colorRefs.data();
         subpass.pDepthStencilAttachment = hasDepth ? &depthRef : nullptr;
 
-        // 任务 11.x 修复：Vulkan 1.4 spec 的 RenderPass Compatibility 规则要求两端
+        // 修复：Vulkan 1.4 spec 的 RenderPass Compatibility 规则要求两端
         // RenderPass 的 dependencyCount 也必须相等（VUID-vkCmdDrawIndexed-renderPass-02684
         // 关联章节）。CreateRenderTargetImpl 中给 RT 的 RenderPass 加了 2 个
         // SubpassDependency（external↔subpass），这里 compatibility RP 必须保持一致，
@@ -1863,7 +1863,7 @@ namespace TitusVkGraphics
         // 在 INITIAL 状态下 reset pool 是安全的（CB 无绑定状态）。
         frame.primaryCmd->Reset();
 
-        // 任务 7v-2：整池 reset，回收上一轮的 DescriptorSet
+        // 整池 reset，回收上一轮的 DescriptorSet
         if (frame.descriptorPool)
         {
             vkResetDescriptorPool(m_context->GetDevice(), frame.descriptorPool, 0);
@@ -1887,7 +1887,7 @@ namespace TitusVkGraphics
         if (!m_frameInProgress || m_frames.empty()) return;
         auto& frame = m_frames[m_currentFrameIndex];
 
-        // ImGui-A 修复：业务 Pass 录制完成、End() 之前，把 imgui draw 也
+        // 修复：业务 Pass 录制完成、End() 之前，把 imgui draw 也
         // 录入同一 primaryCmd（独立 RenderPass，loadOp=LOAD 叠加在场景之上）。
         // 必须在 End() 之前，否则 cmdbuf 已关闭无法再录命令。
         RecordImGuiOverlayInPrimaryCmd();
@@ -1954,7 +1954,7 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // ImGui-A：Overlay Hook 实现
+    // ImGui Overlay Hook 实现
     // ------------------------------------------------------------------------
     void VKDevice::SetImGuiOverlayCallback(ImGuiOverlayCallback cb, void* userData)
     {
@@ -1981,7 +1981,7 @@ namespace TitusVkGraphics
 
     void VKDevice::RenderImGuiOverlay()
     {
-        // ImGui-A 修复：VK 后端的 imgui draw 必须录在 primaryCmd 内，但
+        // 修复：VK 后端的 imgui draw 必须录在 primaryCmd 内，但
         // PassScheduler 调用本接口的时机在 Submit 之后，那时 primaryCmd
         // 已经 End。因此 VK 端真正的录制逻辑挪到了 SubmitImpl 内、
         // primaryCmd->End() 之前（参见 RecordImGuiOverlayInPrimaryCmd）。
@@ -1999,7 +1999,7 @@ namespace TitusVkGraphics
         VkCommandBuffer cb = frame.primaryCmd->Get();
         if (cb == VK_NULL_HANDLE) return;
 
-        // 任务 ImGui-A 修复：使用 swapchain 的 ImGui Overlay 专用 RenderPass
+        // 修复：使用 swapchain 的 ImGui Overlay 专用 RenderPass
         //   - color attachment loadOp=LOAD（保留 ScreenQuadPass 的输出，不再清成黑屏）
         //   - initialLayout=PRESENT_SRC_KHR（接续 default RP 的 finalLayout）
         //   - finalLayout=PRESENT_SRC_KHR（直接交给 Present）
@@ -2063,14 +2063,14 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // 任务 7v-2：DescriptorPool 池化（per-frame，整池 reset）
+    // DescriptorPool 池化（per-frame，整池 reset）
     //   策略：每帧一个 pool，BeginFrameImpl 中 vkResetDescriptorPool 整体回收。
     //   容量按"足以承载 001 这种中等规模 pass 集合"取保守上限 256（每种 type）。
     //   后续若资源数量增长，可按需扩容或改用动态分裂池。
     // ------------------------------------------------------------------------
     void VKDevice::CreateDescriptorPools(uint32_t framesInFlight)
     {
-        // 任务 11.x：Sponza 模型每帧产生 ~400 个 SubMesh draw，每个 draw 一次
+        // Sponza 模型每帧产生 ~400 个 SubMesh draw，每个 draw 一次
         // BindResourceSet → 单帧分配 ~800+ DescriptorSet（GBuffer + RSM 两 Pass 都遍历模型）。
         // 之前 256 上限会触发 VK_ERROR_OUT_OF_POOL_MEMORY (-1000069000)。
         // 这里取 4096 作为安全上限；Per-type 上限按 set 内最大 binding 数 ×  maxSets 估算：
@@ -2139,7 +2139,7 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // 任务 10：通用 immediate one-shot CmdBuffer 基础设施。
+    // 通用 immediate one-shot CmdBuffer 基础设施。
     // 走 graphicsQueue + vkQueueWaitIdle 模式，资源初始化期专用。
     // ------------------------------------------------------------------------
     VkCommandBuffer VKDevice::BeginOneTimeCommands()
@@ -2179,7 +2179,7 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // 任务 7v-3：immediate one-shot CmdBuffer 做 image layout 转换
+    // immediate one-shot CmdBuffer 做 image layout 转换
     //   仅供 Storage Image 创建时的 UNDEFINED→GENERAL 这一类初始化路径使用。
     //   走 graphicsQueue + vkQueueWaitIdle，避免污染 frame in flight 同步。
     // ------------------------------------------------------------------------
@@ -2220,7 +2220,7 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // 任务 10：把 host 数据经 staging buffer 拷到 device-local buffer。
+    // 把 host 数据经 staging buffer 拷到 device-local buffer。
     // ------------------------------------------------------------------------
     void VKDevice::UploadBufferViaStaging(VkBuffer dstBuffer,
                                           VkDeviceSize dstOffset,
@@ -2276,7 +2276,7 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // 任务 10：把 host 像素数据经 staging buffer 拷到 image 指定 subresource。
+    // 把 host 像素数据经 staging buffer 拷到 image 指定 subresource。
     //   layout 流程：UNDEFINED → TRANSFER_DST_OPTIMAL → vkCmdCopyBufferToImage
     //                → finalLayout（一般是 SHADER_READ_ONLY_OPTIMAL）。
     // ------------------------------------------------------------------------

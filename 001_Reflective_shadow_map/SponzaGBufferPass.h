@@ -46,7 +46,7 @@ private:
     TitusRHI::ShaderHandle m_fs;
     TitusRHI::PipelineHandle m_pipeline;
 
-    // 任务 7：与 Sponza_VS.glsl 的 std140 UBO u_Matrices4ProjectionWorld 对齐
+    // 与 Sponza_VS.glsl 的 std140 UBO u_Matrices4ProjectionWorld 对齐
     //   binding=0：mat4 u_ProjectionMatrix; mat4 u_ViewMatrix;
     TitusRHI::BufferHandle m_matricesUbo;
 

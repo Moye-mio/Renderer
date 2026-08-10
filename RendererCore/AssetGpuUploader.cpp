@@ -1,6 +1,5 @@
 // ============================================================================
 // RendererCore - AssetGpuUploader.cpp
-//
 // 把 TitusAsset::* IR 上传成 IGDevice 的 GPU 资源。所有路径都 #include
 // AssetLoader 头（cpp 内部依赖；头文件层面仍是前向声明）。
 // ============================================================================
@@ -186,7 +185,7 @@ namespace TitusRHI
         if (!m_device || image.mips.empty())
             return TextureHandle{};
 
-        // 任务 10：RGB（3 通道）→ RGBA（4 通道）自动扩展。
+        // RGB（3 通道）→ RGBA（4 通道）自动扩展。
         // 原因：R8G8B8_UNORM / R8G8B8_SRGB 在桌面 GPU（包括 NVIDIA）大多不被原生支持，
         // vkCreateImage 会返回 VK_ERROR_FORMAT_NOT_SUPPORTED；R32G32B32_SFLOAT 同理。
         // 这里在 host 侧把每像素 3 通道扩成 4 通道（alpha=255 / 1.0），让 GL/VK 两端

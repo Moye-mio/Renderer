@@ -3,7 +3,6 @@
 // RendererCore - GEnums
 // 后端无关的纯枚举集合：所有枚举值均不映射到任何具体后端值（GLenum / VkXxx）。
 // 后端各自维护 Translate 表把这里的枚举翻译为原生值。
-// 设计参考：RendererCore 设计方案 §3.4。
 // ============================================================================
 #include <cstdint>
 
@@ -176,7 +175,7 @@ namespace TitusRHI
         Compute = 1u << 3,
         TessControl = 1u << 4,
         TessEvaluation = 1u << 5,
-        // 光追管线阶段（任务 12 / 需求 3.3，P1 路线 B）：仅追加，位标志语义不变。
+        // 光追管线阶段：仅追加，位标志语义不变。
         RayGen = 1u << 6,
         Miss = 1u << 7,
         ClosestHit = 1u << 8,
@@ -208,11 +207,11 @@ namespace TitusRHI
         TransferSrc = 1u << 4,
         TransferDst = 1u << 5,
         Indirect = 1u << 6,
-        // 光追（任务 2 / 需求 3）：仅追加，不改动上方既有位值。
+        // 光追：仅追加，不改动上方既有位值。
         ShaderDeviceAddress = 1u << 7,              // 可取设备地址（BDA），AS 输入/scratch 必需
         AccelerationStructureStorage = 1u << 8,     // AS backing buffer
         AccelerationStructureBuildInput = 1u << 9,  // BLAS/TLAS 几何/instance 输入（只读）
-        ShaderBindingTable = 1u << 10,              // SBT buffer（P1 路线 B 使用）
+        ShaderBindingTable = 1u << 10,              // SBT buffer
     };
 
     inline constexpr BufferUsage operator|(BufferUsage a, BufferUsage b)

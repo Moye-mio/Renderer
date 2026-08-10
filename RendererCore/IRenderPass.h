@@ -4,7 +4,6 @@
 // 后端无关的 Pass 基类。虚方法只接收 IGDevice& 与 RenderCommandList&，
 // 不再依赖 Renderer/IRenderPass.h 与 RendererVK/IVkRenderPass.h。
 // 业务 Pass 一旦继承本类，同一份源代码即可在两个后端复用。
-// 设计参考：RendererCore 设计方案 §3.6、需求 5。
 // ============================================================================
 #include <cstdint>
 

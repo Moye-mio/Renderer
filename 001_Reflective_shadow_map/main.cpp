@@ -6,10 +6,10 @@
 // CPU 端 IR（`TitusAsset::ModelAssetData`），再交给 `gfx` 上传得到
 // `GpuModelHandle`，最后由 Sponza 持有 handle 给 4 个 Pass 共用。
 //
-// 阶段 2（GL + VK）：
+// GL + VK 双后端：
 //   - 默认 OpenGL 后端；
 //   - `--backend=vk` 走 Vulkan 全栈（Compute Pipeline + DescriptorPool + glslang
-//     在线编译已在阶段 2 任务 7v / 8 / 8b 中接入）。
+//     在线编译）。
 // ============================================================================
 #include <iostream>
 #include <memory>
@@ -36,7 +36,7 @@
 #endif
 
 // ----------------------------------------------------------------------------
-// 任务 12：FPS 飞行相机已下沉到 RendererInterface（CAMERA::EnableBuiltinFlyCamera）。
+// FPS 飞行相机已下沉到 RendererInterface（CAMERA::EnableBuiltinFlyCamera）。
 //   - WASD：前后左右平移；Q/E：上下平移；LSHIFT 加速、LCTRL 减速
 //   - 鼠标右键拖拽：旋转视角（yaw/pitch）
 // 业务侧只需配置初始位姿/速度，主循环由 APP::UpdateApp 自动驱动。
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
     //      若想完全替换默认面板，再调用：
     //          OVERLAY::SetDefaultPanelEnabled(false);
 
-    // 4) 配置内置 FPS 飞行相机（任务 12 下沉版本）：
+    // 4) 配置内置 FPS 飞行相机：
     //    sponza.obj 自身尺度约 ±2，地板 y≈-2，房间纵深 z≈±5。
     //    相机放在房间内 (0, 0, 4) 朝 -Z（yaw=-90）能看到沿 -Z 方向的内饰。
     //    aspect=0 → 跟随窗口；nearPlane/farPlane 与原 FlyCamera 一致。

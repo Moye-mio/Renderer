@@ -1,7 +1,7 @@
 #pragma once
 // ============================================================================
 // RendererInterface - TitusGfxOverlay
-// 默认的 ImGui Overlay UI 管理类（任务 ImGui-B）：
+// 默认的 ImGui Overlay UI 管理类：
 //   - 默认绘制一个"Renderer Info"面板，展示：
 //       · FPS / 平均帧时
 //       · 当前 Backend（OpenGL / Vulkan）

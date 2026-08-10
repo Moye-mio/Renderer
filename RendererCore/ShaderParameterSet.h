@@ -3,8 +3,6 @@
 // RendererCore - ShaderParameterSet
 // shader 参数集：运行期 SetFloat / SetVector / SetMatrix / SetTexture，
 // 绘制时由 Material::Apply 取出与 ShaderParameterMap 对齐后一次性写入 GPU。
-//
-// 设计参考：requirements.md 需求 16.3 / 9.x（Material 系统）。
 // 本文件仅是"键值容器"，不与具体后端绑定；GContextData 持有一份默认全局表，
 // Material 层会在 Apply 阶段合并自身覆盖项后提交。
 // ============================================================================

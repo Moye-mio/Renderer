@@ -1,13 +1,11 @@
 // ============================================================================
 // RendererCore - GDeviceFactory.cpp
 // 仅依赖 IGDevice 接口与桥接函数，避免 RendererCore 直接依赖任何后端 SDK。
-//
 // 桥接函数声明：
 //   - extern std::unique_ptr<IGDevice> CreateVKDevice();
 //   - extern std::unique_ptr<IGDevice> CreateGLDevice();
 // 它们位于各后端模块的 .cpp 中（见 RendererVK/VKDeviceFactory.cpp 与
 // Renderer/GLDeviceFactory.cpp），通过 weak link 在缺席后端时回退为 nullptr。
-//
 // 本仓库不使用 weak symbol，转而采用编译期宏开关：
 //   - RENDERER_ENABLE_VK：启用 Vulkan 后端
 //   - RENDERER_ENABLE_GL：启用 OpenGL 后端

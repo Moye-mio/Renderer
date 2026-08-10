@@ -7,6 +7,6 @@ namespace TitusAsset
 {
     const char* GetAssetLoaderVersion()
     {
-        return "AssetLoader/0.1.0 (M5-A)";
+        return "AssetLoader/0.1.0";
     }
 } // namespace TitusAsset

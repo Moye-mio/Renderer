@@ -7,7 +7,6 @@
 //   - 维护"GHandle ↔ GLuint"映射表（基类不持有任何后端原生类型）
 //   - 内部复用 GLCommandList 的 std::function 延迟队列
 //   - WaitIdle 退化为 glFinish
-// 设计参考：requirements.md 需求 4.2 / 4.5 / 5.6 / 8.1。
 // ============================================================================
 #include <GL/glew.h>
 #include <unordered_map>
@@ -70,7 +69,7 @@ namespace TitusGraphics
         std::vector<TitusRHI::PushConstantRange> pushConstantRanges;
         // VAO：根据 vertexLayout 创建（与 program 解耦），按 binding+attribute 配置
         GLuint vao = 0;
-        // 任务 7：是否为计算管线（program 仅 attach 了 compute shader）
+        // 是否为计算管线（program 仅 attach 了 compute shader）
         bool isCompute = false;
     };
 
@@ -100,7 +99,7 @@ namespace TitusGraphics
         // ====================================================================
         TitusRHI::GBackend GetBackend() const override { return TitusRHI::GBackend::OpenGL; }
 
-        // ImGui-A：Overlay 录制 Hook（详见 IGDevice.h）。
+        // Overlay 录制 Hook（详见 IGDevice.h）。
         // GL 后端实现：ScreenQuadPass 已结束 RP（默认 FB 仍绑定），
         // 直接调用注入的 callback —— 内部会执行 ImGui_ImplOpenGL3_RenderDrawData。
         void SetImGuiOverlayCallback(ImGuiOverlayCallback cb, void* userData) override
@@ -147,7 +146,7 @@ namespace TitusGraphics
         bool CreateSamplerImpl(uint64_t id, const TitusRHI::SamplerDesc& desc) override;
         bool CreateShaderImpl(uint64_t id, const TitusRHI::ShaderDesc& desc) override;
         bool CreatePipelineImpl(uint64_t id, const TitusRHI::GraphicsPipelineDesc& desc) override;
-        // 任务 7：计算管线创建
+        // 计算管线创建
         bool CreatePipelineImpl(uint64_t id, const TitusRHI::ComputePipelineDesc& desc) override;
         bool CreateRenderTargetImpl(uint64_t id, const TitusRHI::RenderTargetDesc& desc) override;
 
@@ -188,7 +187,7 @@ namespace TitusGraphics
         uint32_t m_defaultWidth = 0;
         uint32_t m_defaultHeight = 0;
 
-        // ImGui-A：Overlay 回调（由 RendererInterface 的 IMGUI 模块注入）
+        // Overlay 回调（由 RendererInterface 的 IMGUI 模块注入）
         ImGuiOverlayCallback m_imGuiCallback = nullptr;
         void*                m_imGuiUserData = nullptr;
     };

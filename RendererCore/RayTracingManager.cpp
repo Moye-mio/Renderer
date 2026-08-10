@@ -1,5 +1,5 @@
 // ============================================================================
-// RendererCore - RayTracingManager.cpp（P2，任务 16）
+// RendererCore - RayTracingManager.cpp
 // 仅依赖 IGDevice / RenderCommandList 抽象接口。
 // ============================================================================
 #include "RayTracingManager.h"
@@ -26,7 +26,7 @@ namespace TitusRHI
         const BlasKey key{ geom.vertexBuffer.id, geom.indexBuffer.id, geom.vertexCount, geom.indexCount };
         auto it = m_blasCache.find(key);
         if (it != m_blasCache.end() && it->second.IsValid())
-            return it->second; // 复用/去重（需求 15.2）
+            return it->second; // 复用/去重
 
         AccelerationStructureDesc desc{};
         desc.type = AccelerationStructureType::BottomLevel;
@@ -114,7 +114,7 @@ namespace TitusRHI
 
         AccelerationStructureDesc desc{};
         desc.type = AccelerationStructureType::TopLevel;
-        // 带 AllowUpdate，使后续仅 transform 变化时可走 refit（需求 15.3）。
+        // 带 AllowUpdate，使后续仅 transform 变化时可走 refit。
         desc.buildFlags = ASBuildFlags::PreferFastTrace | ASBuildFlags::AllowUpdate;
         desc.instances = std::move(live);
         desc.debugName = "RTASManager.TLAS";
@@ -134,7 +134,7 @@ namespace TitusRHI
             return m_tlas;
         }
 
-        // 仅 transform 变化 → 命令流内 refit（增量更新，需求 15.3）。
+        // 仅 transform 变化 → 命令流内 refit（增量更新）。
         if (m_transformDirty)
         {
             AccelerationStructureBuildInfo info{};

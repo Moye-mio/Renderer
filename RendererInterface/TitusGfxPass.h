@@ -10,7 +10,6 @@
 // `namespace TitusRHI` 下声明，外部代码引用方式与原来完全一致：
 //     class MyPass : public TitusRHI::IRenderPass { ... };
 //     TitusRHI::ShaderDesc desc{};
-// 设计参考：requirements.md 需求 7.5 / 9.3 / 10.2。
 // ============================================================================
 #include "TitusGfx.h"
 

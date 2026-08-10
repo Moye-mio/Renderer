@@ -218,6 +218,7 @@ namespace TitusVkGraphics
 
     // ------------------------------------------------------------------------
     // 着色器阶段
+    // Shader desc, UBO/Texture/Constant, Shader compile and reflection need shader stage
     // ------------------------------------------------------------------------
     VkShaderStageFlagBits ToVkShaderStage(ShaderStage stage)
     {
@@ -230,7 +231,6 @@ namespace TitusVkGraphics
         case ShaderStage::TessControl:    return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
         case ShaderStage::TessEvaluation: return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追管线阶段（任务 12 / 需求 10.3，P1）
         case ShaderStage::RayGen:         return VK_SHADER_STAGE_RAYGEN_BIT_KHR;
         case ShaderStage::Miss:           return VK_SHADER_STAGE_MISS_BIT_KHR;
         case ShaderStage::ClosestHit:     return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
@@ -253,7 +253,6 @@ namespace TitusVkGraphics
         if (v & static_cast<uint32_t>(ShaderStage::TessControl))    flags |= VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
         if (v & static_cast<uint32_t>(ShaderStage::TessEvaluation)) flags |= VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追管线阶段（任务 12 / 需求 10.3，P1）
         if (v & static_cast<uint32_t>(ShaderStage::RayGen))         flags |= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
         if (v & static_cast<uint32_t>(ShaderStage::Miss))           flags |= VK_SHADER_STAGE_MISS_BIT_KHR;
         if (v & static_cast<uint32_t>(ShaderStage::ClosestHit))     flags |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
@@ -279,7 +278,6 @@ namespace TitusVkGraphics
         if (v & static_cast<uint32_t>(BufferUsage::TransferDst))   flags |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         if (v & static_cast<uint32_t>(BufferUsage::Indirect))      flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追（任务 7 / 需求 3.2）：新增 buffer usage 映射为对应 KHR 位。
         if (v & static_cast<uint32_t>(BufferUsage::ShaderDeviceAddress))
             flags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
         if (v & static_cast<uint32_t>(BufferUsage::AccelerationStructureStorage))
@@ -356,7 +354,6 @@ namespace TitusVkGraphics
         case ResourceBindingType::Sampler:              return VK_DESCRIPTOR_TYPE_SAMPLER;
         case ResourceBindingType::CombinedImageSampler: return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-        // 光追（任务 7 / 需求 8.1）：TLAS 描述符类型。
         case ResourceBindingType::AccelerationStructure: return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 #endif
         }

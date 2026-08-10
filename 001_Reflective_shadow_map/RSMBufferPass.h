@@ -40,7 +40,7 @@ private:
     TitusRHI::ShaderHandle m_fs;
     TitusRHI::PipelineHandle m_pipeline;
 
-    // 任务 7：与 RSMBuffer_VS.glsl 的 std140 UBO u_Matrices4ProjectionWorld 对齐
+    // 与 RSMBuffer_VS.glsl 的 std140 UBO u_Matrices4ProjectionWorld 对齐
     TitusRHI::BufferHandle m_matricesUbo;
 
     int m_resolution = 256;

@@ -1,16 +1,12 @@
 #pragma once
 // ============================================================================
 // RendererCore - GpuModel
-//
 // 跨后端 Model 包装：GpuMesh + 与 SubMesh 一一对应的 MaterialInstance 数组 + AABB。
 // 充当 "AssetLoader CPU IR" 与 "业务侧渲染逻辑" 的统一桥接对象。
-//
 // 与遗留 Renderer/Model 的关系：
-//   - 遗留 Model 直接持有 GLuint VAO/Texture，与 GL 链路耦合（任务 12 不强制下线）
+//   - 遗留 Model 直接持有 GLuint VAO/Texture，与 GL 链路耦合（不强制下线）
 //   - GpuModel 仅持有跨后端 Handle，可在 GL/VK 任意后端复用
 //   - 业务代码二选一：新 Pass 走 GpuModel；旧 Pass 维持 Renderer/Model
-//
-// 任务 12 / M5-B 收尾：requirements.md 17.7 / 17.10(M-B) / 17.11 / 18.4。
 // ============================================================================
 #include <memory>
 #include <string>

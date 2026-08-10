@@ -1,6 +1,6 @@
 #pragma once
 // ============================================================================
-// 0xx_RayQueryHello - RayPipelinePass（RT Pipeline / 路线 B，P1）
+// 0xx_RayQueryHello - RayPipelinePass（RT Pipeline / 路线 B）
 // 验证 Ray Tracing Pipeline + SBT + TraceRays 的 raygen→miss/hit 完整流程。
 // 仅使用 TitusRHI 后端无关抽象，不接触任何 VkXxx。
 //

@@ -38,7 +38,7 @@ namespace TitusRHI
         cmd.BindPipeline(m_pipeline);
 
         // ----------------------------------------------------------------
-        // 任务 13 / M6：基于 reflection 自动绑定 Texture / Sampler。
+        // 基于 reflection 自动绑定 Texture / Sampler。
         // 步骤：
         //   1) 取出 shader 反射出的 binding 列表
         //   2) 按 set 分桶，每桶组装一个 ResourceSetDesc

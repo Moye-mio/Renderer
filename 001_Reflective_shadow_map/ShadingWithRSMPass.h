@@ -2,7 +2,7 @@
 // ============================================================================
 // 001_Reflective_shadow_map - ShadingWithRSMPass
 //
-// 阶段 2（任务 7 落地后）：真正的 Compute Pass。
+// 真正的 Compute Pass。
 //   - 创建一张 RGBA32F storage texture 作为输出（u_OutputImage @ binding=0）
 //   - 创建 VPL sample coords UBO（binding=1）
 //   - 创建 ComputePipeline（载入 ShadingWithRSM_CS.glsl 编译为 compute shader）

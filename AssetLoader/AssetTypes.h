@@ -9,7 +9,6 @@
 //
 // 设计参考：通用资源包（AssetBundle）的 BinaryAsset / Mesh / Texture2D
 // 数据布局 + Renderer/Mesh.h 的现有字段。
-// 任务 11（M5-A）：requirements.md 11.x、task-item.md M5-A。
 // ============================================================================
 
 #include <cstdint>

@@ -1,12 +1,9 @@
 #pragma once
 // ============================================================================
 // RendererCore - GpuMesh
-//
 // 后端无关的"GPU 网格"：仅持有 BufferHandle / 计数 / 顶点布局描述。
 // 不持有任何 GLuint/VkBuffer 等后端原生类型。
 // 由 AssetGpuUploader::CreateGpuMesh 创建；由 Pass / DrawCall 消费。
-//
-// 任务 12 / M5-B。
 // ============================================================================
 #include <cstdint>
 #include <string>

@@ -1,19 +1,16 @@
 #pragma once
 // ============================================================================
 // RendererCore - GResources
-// 统一资源对象基类（任务 7）：
+// 统一资源对象基类：
 //   - RHIBuffer  ：buffer 资源对象；持 BufferDesc + BufferHandle
 //   - RHITexture ：render surface（color/depth）；持 desc + handle
 //   - RHIShader  ：shader 程序；持 ShaderDesc + ShaderHandle + reflection 占位
-//
 // 用途：
-//   1) 给 Material 层提供"通过句柄反查资源元数据"的能力（任务 9 复用）。
+//   1) 给 Material 层提供"通过句柄反查资源元数据"的能力。
 //   2) 给延迟销毁队列提供更类型安全的"待删除条目"形式（虽然目前队列仍以
 //      kind+id 表示，但子类可以在自己的查询表里持有这些基类指针）。
-//
 // 注意：本基类**不**含任何后端原生类型字段（GLuint/VkBuffer 等）；后端子类
-// 在自己的 Entry 表中扩展（GLBufferEntry 已持 GLuint）。设计参考：requirements.md
-// 需求 12.1 / 12.2 / 12.3 / 12.4 / 12.5 / 12.6。
+// 在自己的 Entry 表中扩展（GLBufferEntry 已持 GLuint）。
 // ============================================================================
 #include <cstdint>
 #include <string>
@@ -68,7 +65,7 @@ namespace TitusRHI
     // ------------------------------------------------------------------------
     struct ShaderParameterMap
     {
-        // 任务 9 (M-A)：先给最小占位；任务 13 (M-B) 用 spirv-cross 反射填满。
+        // 先给最小占位；后续用 spirv-cross 反射填满。
         struct UniformEntry { std::string name; uint32_t set = 0; uint32_t binding = 0; uint32_t size = 0; };
         struct TextureEntry { std::string name; uint32_t set = 0; uint32_t binding = 0; };
 

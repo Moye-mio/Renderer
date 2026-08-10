@@ -79,7 +79,7 @@ namespace TitusRHI
     }
 
     // ------------------------------------------------------------------------
-    // 任务 13 / M6：AutoReflect
+    // AutoReflect
     //  - VK 后端：会拿到 SPIR-V 字节流，调 ShaderReflector::ReflectFromSPIRV。
     //    如果未定义 TITUS_ENABLE_SPIRV_CROSS 则返回 false。
     //  - GL 后端：会拿到 GLSL 文本，调 ShaderReflector::ReflectFromGLSLSource。

@@ -2,20 +2,14 @@
 // ============================================================================
 // RendererCore - GDevice
 // 后端无关的"真正的基类"（class 而非纯接口）。
-//
 // 与原 IGDevice 的关系：
 //   - IGDevice 仍然作为"对外可见的最小接口"保留（向后兼容）。
 //   - GDevice 继承 IGDevice，并把"参数校验 + 句柄分配 + 流程编排"等通用逻辑
 //     落地为基类的非虚 API，子类只实现各自后端强相关的 *Impl() 钩子。
 //   - GL/VK 子类之后会改为继承 GThreadableDevice（其继承 GDevice），并改写
-//     XxxImpl() 而非直接 override IGDevice::CreateBuffer 等。任务 1 阶段先给出
-//     基类骨架与默认实现：GDevice 把 IGDevice 的全部纯虚方法委托给同名
-//     XxxImpl()，使得"现有继承自 IGDevice 的 GLDevice / VKDevice"在改造为
-//     "继承 GDevice + 实现 *Impl()" 后能够无缝替换。
-//
-// 设计参考：
-//   - 句柄分配器 / 上下文数据 / 延迟销毁队列 / 当前帧索引 + 模板方法骨架
-//   - 需求 3.1 / 3.3 / 3.4 / 3.5 / 3.6 / 4.1 / 5.1
+//     XxxImpl() 而非直接 override IGDevice::CreateBuffer 等。GDevice 把
+//     IGDevice 的全部纯虚方法委托给同名 XxxImpl()，使得"现有继承自 IGDevice 的
+//     GLDevice / VKDevice"在改造为 "继承 GDevice + 实现 *Impl()" 后能够无缝替换。
 // ============================================================================
 #include <cstdint>
 #include <memory>
@@ -31,9 +25,7 @@
 namespace TitusRHI
 {
     // ------------------------------------------------------------------------
-    // PendingDestroy —— 延迟销毁队列条目（任务 7 会扩充）
-    // 任务 1 阶段保留极简结构，使基类构造期就能编译；In-Flight 资源延迟释放的真正
-    // 落地由任务 7 接管。
+    // PendingDestroy —— 延迟销毁队列条目
     // ------------------------------------------------------------------------
     enum class PendingDestroyKind : uint8_t
     {
@@ -43,7 +35,7 @@ namespace TitusRHI
         Shader,
         Pipeline,
         RenderTarget,
-        // 光追（任务 2 / 需求 5）：加速结构纳入既有延迟销毁机制。仅追加。
+        // 光追：加速结构纳入既有延迟销毁机制。仅追加。
         AccelerationStructure,
     };
 
@@ -92,8 +84,8 @@ namespace TitusRHI
         //   基类：参数校验 + 句柄 ID 分配；
         //   子类：实现 Create*Impl(id, desc) 把 id 与后端原生对象关联。
         //   销毁路径：基类压入 m_PendingDestroyQueue，等 frame+framesInFlight 后调用
-        //   Delete*Impl(id) 真正释放（任务 7 落地）。
-        // 任务 1 阶段：基类把 CreateBuffer 等公共非虚 API 实现委托到 *Impl()，
+        //   Delete*Impl(id) 真正释放。
+        // 基类把 CreateBuffer 等公共非虚 API 实现委托到 *Impl()，
         // 子类既可选择 override CreateBuffer 直接返回（保持现有写法），也可
         // override Create*Impl()（推荐方式，子类无需关心 id 分配）。
         // ====================================================================
@@ -103,10 +95,10 @@ namespace TitusRHI
         ShaderHandle CreateShader(const ShaderDesc& desc) override;
         PipelineHandle CreatePipeline(const GraphicsPipelineDesc& desc) override;
         PipelineHandle CreatePipeline(const ComputePipelineDesc& desc) override;
-        // 光追管线（P1 路线 B，任务 13）
+        // 光追管线
         PipelineHandle CreatePipeline(const RayTracingPipelineDesc& desc) override;
         RenderTargetHandle CreateRenderTarget(const RenderTargetDesc& desc) override;
-        // 光追（任务 5 / 需求 4、5）
+        // 光追
         AccelerationStructureHandle CreateAccelerationStructure(const AccelerationStructureDesc& desc) override;
 
         void Destroy(BufferHandle handle) override;
@@ -142,12 +134,12 @@ namespace TitusRHI
         const GCaps& GetCaps() const override { return m_caps; }
 
         // ====================================================================
-        // 资源查询（任务 7）：
+        // 资源查询：
         //   为 Material / Shader / Pass 提供"通过句柄反查基类资源对象"。
         //   基类在 Create*Impl 返回 true 后自动在内部元数据表中记录一条
         //   RHIBuffer / RHITexture / RHIShader 条目（仅含 desc + handle）；
         //   上层代码只读 desc/handle，不依赖后端原生句柄。子类可选择 override
-        //   返回自己的扩展子类指针（M3-9 / M-A 使用）。
+        //   返回自己的扩展子类指针。
         // ====================================================================
         virtual const RHIBuffer* FindBuffer(BufferHandle h) const;
         virtual const RHITexture* FindTexture(TextureHandle h) const;
@@ -178,14 +170,14 @@ namespace TitusRHI
         virtual bool CreateSamplerImpl(uint64_t id, const SamplerDesc& desc) = 0;
         virtual bool CreateShaderImpl(uint64_t id, const ShaderDesc& desc) = 0;
         virtual bool CreatePipelineImpl(uint64_t id, const GraphicsPipelineDesc& desc) = 0;
-        // 任务 7：计算管线。提供默认空实现以避免所有现有子类都被迫
+        // 计算管线。提供默认空实现以避免所有现有子类都被迫
         // 同步追加实现；GL/VK 后端接入后会各自 override。
         // 返回 false 表示不支持；调用者应需检查返回句柄的 IsValid 。
         virtual bool CreatePipelineImpl(uint64_t /*id*/, const ComputePipelineDesc& /*desc*/)
         {
             return false;
         }
-        // 光追管线钩子（P1 路线 B，任务 13）。默认返回 false（不支持），
+        // 光追管线钩子。默认返回 false（不支持），
         // 未接入 RT 管线的后端（GL/Null，以及仅 ray query 的 VK 设备）无需实现。
         virtual bool CreatePipelineImpl(uint64_t /*id*/, const RayTracingPipelineDesc& /*desc*/)
         {
@@ -194,7 +186,7 @@ namespace TitusRHI
 
         virtual bool CreateRenderTargetImpl(uint64_t id, const RenderTargetDesc& desc) = 0;
 
-        // 光追（任务 5 / 需求 4、5）：加速结构创建。提供默认实现（返回 false =
+        // 光追：加速结构创建。提供默认实现（返回 false =
         // 不支持），使 GL / Null 等未接入后端无需被迫实现即可编译。VK 后端 override。
         virtual bool CreateAccelerationStructureImpl(uint64_t /*id*/,
                                                      const AccelerationStructureDesc& /*desc*/)
@@ -227,7 +219,7 @@ namespace TitusRHI
         virtual void PresentImpl() = 0;
 
         // ====================================================================
-        // 基类侧延迟销毁（任务 7 落地）：
+        // 基类侧延迟销毁：
         //   - Destroy(handle) 将条目入队，记录入队时的 m_currentFrameIndex。
         //   - Present() 在进入下一帧前调用 ProcessPendingDestroysIfReady()：
         //     凡 entry.submitFrame + framesInFlight <= m_currentFrameIndex 的条目
@@ -256,13 +248,13 @@ namespace TitusRHI
         uint32_t m_currentFrameIndex = 0; // 在 [0, framesInFlight) 内循环
         uint64_t m_submitFrameCount = 0; // 单调递增；用于延迟销毁判定
 
-        // 任务 7：后端无关元数据表，供 FindBuffer / FindTexture / FindShader 查询。
+        // 后端无关元数据表，供 FindBuffer / FindTexture / FindShader 查询。
         // key = handle.id；value = 仅含 desc + handle 的基类包装。
         std::unordered_map<uint64_t, std::unique_ptr<RHIBuffer>> m_bufferRegistry;
         std::unordered_map<uint64_t, std::unique_ptr<RHITexture>> m_textureRegistry;
         std::unordered_map<uint64_t, std::unique_ptr<RHIShader>> m_shaderRegistry;
 
-        // 任务 8：状态对象去重缓存。记录 desc → handle 的反向映射，
+        // 状态对象去重缓存。记录 desc → handle 的反向映射，
         // CreateSampler / CreatePipeline 会先查询本表。
         SamplerCache m_samplerCache;
         PipelineCache m_pipelineCache;

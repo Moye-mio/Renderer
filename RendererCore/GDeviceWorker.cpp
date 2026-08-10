@@ -50,10 +50,10 @@ namespace TitusRHI
 #ifdef TRACY_ENABLE
         tracy::SetThreadName("GDeviceWorker");
 #endif
-        // M2 最小可用版：**不**在这里 Acquire/Release 渲染线程所有权。
+        // 最小可用版：**不**在这里 Acquire/Release 渲染线程所有权。
         // 原因：资源公共 API（CreateBuffer / Update 等）仍由 Client 在主线程
         // 同步调用 RealDevice，RealDevice 内部的 m_ownerThread 仍该为主线程，
-        // 才不会触发调试断言。M3 任务 7 将所有资源调用也流化后，Worker
+        // 才不会触发调试断言。待所有资源调用也流化后，Worker
         // 才真正接管线程所有权。
         while (m_running.load() && m_stream && !m_stream->IsClosed())
         {

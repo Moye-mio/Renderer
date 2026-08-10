@@ -1,18 +1,13 @@
 #pragma once
 // ============================================================================
 // RendererCore - AssetGpuUploader
-//
 // 把 AssetLoader 输出的纯 CPU IR（TitusAsset::*）通过 IGDevice 上传成
 // 后端无关的 GPU 资源（GpuMesh / Material / TextureHandle）。
-//
 // 单向依赖：
 //   AssetLoader (CPU) ◄── AssetGpuUploader ──► IGDevice (GPU)
-//
 // 不引入：
 //   - 任何 OpenGL / Vulkan 头文件
 //   - Renderer/RendererVK 项目（仅依赖 IGDevice 抽象）
-//
-// 任务 12 / M5-B。
 // ============================================================================
 #include <memory>
 #include <string>
@@ -52,8 +47,7 @@ namespace TitusRHI
 
     // ------------------------------------------------------------------------
     // AssetGpuUploader
-    //
-    // 持有 IGDevice 引用（不拥有），并在内部缓存"已上传的图像 → TextureHandle"
+        // 持有 IGDevice 引用（不拥有），并在内部缓存"已上传的图像 → TextureHandle"
     // 的映射，避免同一张 sharedImage 被重复上传。
     // 析构时释放缓存中的纹理；vertex/index buffer 与 sampler 的所有权由
     // GpuMesh / Material 的持有者管理。

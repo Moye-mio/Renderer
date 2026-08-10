@@ -1,7 +1,7 @@
 // ============================================================================
 // 001_Reflective_shadow_map - RSMBufferPass.cpp
 // 后端无关：派生自 TitusRHI::IRenderPass。
-// 阶段 1（GL-only 路径①）：见 SponzaGBufferPass.cpp 顶部备注。
+// GL-only 路径①：见 SponzaGBufferPass.cpp 顶部备注。
 // ============================================================================
 #include "RSMBufferPass.h"
 #include "Sponza.h"
@@ -78,7 +78,7 @@ void RSMBufferPass::Init(TitusRHI::IGDevice& device)
 
     // ------------------------------------------------------------------
     // 3) Shader / Pipeline
-    //    任务 8b：GL/VK 共用同一份 .glsl；VK 端 VKDevice::CreateShaderImpl 内部
+    //    GL/VK 共用同一份 .glsl；VK 端 VKDevice::CreateShaderImpl 内部
     //    通过 glslang 在线编译为 SPIR-V。
     // ------------------------------------------------------------------
     const std::string shaderDir = std::string(SOLUTION_DIR) + "001_Reflective_shadow_map/Shader/";
@@ -149,7 +149,7 @@ void RSMBufferPass::Init(TitusRHI::IGDevice& device)
         rbUbo.stages = ShaderStage::Vertex;
         pd.resourceBindings.push_back(rbUbo);
         // u_DiffuseTexture at set=0, binding=1
-        // 任务 10：Vulkan 同 set 内 binding 唯一，UBO 占 0 后 sampler 使用 1。
+        // Vulkan 同 set 内 binding 唯一，UBO 占 0 后 sampler 使用 1。
         ResourceBinding rbDiff{};
         rbDiff.name = "u_DiffuseTexture";
         rbDiff.set = 0;

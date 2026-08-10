@@ -39,7 +39,7 @@ namespace TitusVkGraphics
             case ShaderStage::Compute:        return EShLangCompute;
             case ShaderStage::TessControl:    return EShLangTessControl;
             case ShaderStage::TessEvaluation: return EShLangTessEvaluation;
-            // 光追管线阶段（任务 15 / 需求 10.2）：需 SPIR-V ≥ 1.4 目标（已设为 1.5）
+            // 光追管线阶段：需 SPIR-V ≥ 1.4 目标（已设为 1.5）
             // 与 GL_EXT_ray_tracing 扩展。
             case ShaderStage::RayGen:         return EShLangRayGen;
             case ShaderStage::Miss:           return EShLangMiss;
@@ -96,12 +96,12 @@ namespace TitusVkGraphics
         shader.setStringsWithLengthsAndNames(&srcPtr, &srcLen, &srcName, 1);
         shader.setEnvInput (glslang::EShSourceGlsl, lang, glslang::EShClientVulkan, 100);
         shader.setEnvClient(glslang::EShClientVulkan,    glslang::EShTargetVulkan_1_2);
-        // 光追（任务 10 / 需求 10.1）：目标 SPIR-V 1.5（≥ 1.4），使含
+        // 光追：目标 SPIR-V 1.5（≥ 1.4），使含
         // `#extension GL_EXT_ray_query` 的 compute/fragment 着色器可编译，
         // 产出字节码可被 vkCreateShaderModule 接受。
         shader.setEnvTarget(glslang::EShTargetSpv,       glslang::EShTargetSpv_1_5);
 
-        // 任务 11.x 修复：glslang 的 setEnvClient(EShClientVulkan,...) 并不会自动
+        // 修复：glslang 的 setEnvClient(EShClientVulkan,...) 并不会自动
         // `#define VULKAN`。我们的 GLSL 用 `#ifdef VULKAN` 区分两端 binding 装饰
         // (LAYOUT_BIND 宏) 与 push_constant block，必须在此显式注入预定义宏，
         // 否则 GLSL 走 GL 分支：所有 binding 不带 set/explicit binding，glslang

@@ -2,7 +2,7 @@
 // ============================================================================
 // RendererCore - MockDevice
 // 用于验证 IGDevice 的纯虚方法签名"可以被一个空实现完整覆盖"，
-// 也是 P0 阶段头文件能否独立编译的最小验证用例。
+// 也是头文件能否独立编译的最小验证用例。
 // 不参与生产构建（仅在 Tests 目录下编译）。
 // ============================================================================
 #include <atomic>
@@ -49,7 +49,7 @@ namespace TitusRHI
             SamplerHandle CreateSampler(const SamplerDesc&) override { return SamplerHandle{AllocateMockId()}; }
             ShaderHandle CreateShader(const ShaderDesc&) override { return ShaderHandle{AllocateMockId()}; }
             PipelineHandle CreatePipeline(const GraphicsPipelineDesc&) override { return PipelineHandle{AllocateMockId()}; }
-            // 任务 7：Compute Pipeline 重载
+            // Compute Pipeline 重载
             PipelineHandle CreatePipeline(const ComputePipelineDesc&) override { return PipelineHandle{AllocateMockId()}; }
             RenderTargetHandle CreateRenderTarget(const RenderTargetDesc&) override { return RenderTargetHandle{AllocateMockId()}; }
 

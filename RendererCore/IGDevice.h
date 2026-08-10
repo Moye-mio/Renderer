@@ -3,7 +3,6 @@
 // RendererCore - IGDevice
 // 后端无关的设备接口：所有方法签名仅使用 RendererCore 自定义 Handle / Desc / Enum。
 // 业务代码与后续高层封装（Material / Mesh / Camera）只依赖该接口。
-// 设计参考：RendererCore 设计方案 §3.2、需求 3。
 // ============================================================================
 #include <cstdint>
 
@@ -49,14 +48,14 @@ namespace TitusRHI
         virtual SamplerHandle CreateSampler(const SamplerDesc& desc) = 0;
         virtual ShaderHandle CreateShader(const ShaderDesc& desc) = 0;
         virtual PipelineHandle CreatePipeline(const GraphicsPipelineDesc& desc) = 0;
-        // 任务 7 / M2-A：计算管线创建重载（同名不同参数）。
+        // 计算管线创建重载（同名不同参数）。
         // 后端可选择与 Graphics PSO 在同一句柄空间中跟踪。
         virtual PipelineHandle CreatePipeline(const ComputePipelineDesc& desc) = 0;
-        // 光追管线创建重载（P1 路线 B，任务 13 / 需求 9.2）。不支持 RT 管线的
+        // 光追管线创建重载。不支持 RT 管线的
         // 后端返回 invalid 句柄（调用方以 IsValid 判定）。
         virtual PipelineHandle CreatePipeline(const RayTracingPipelineDesc& desc) = 0;
         virtual RenderTargetHandle CreateRenderTarget(const RenderTargetDesc& desc) = 0;
-        // 光追（任务 5 / 需求 4、5）：创建加速结构（BLAS/TLAS）。
+        // 光追：创建加速结构（BLAS/TLAS）。
         // 不支持光追的后端返回 invalid 句柄（调用方以 IsValid 判定）。
         virtual AccelerationStructureHandle CreateAccelerationStructure(const AccelerationStructureDesc& desc) = 0;
 
@@ -107,18 +106,18 @@ namespace TitusRHI
         virtual GBackend GetBackend() const = 0;
         virtual const GCaps& GetCaps() const = 0;
 
-        // 任务 10：当后端自管窗口（VK 路径）时，业务侧 g.window 可能为 nullptr，
+        // 当后端自管窗口（VK 路径）时，业务侧 g.window 可能为 nullptr，
         // 此时主循环的 ShouldClose() 需要从设备侧问询窗口关闭状态。GL 路径下
         // g.window 由 RendererInterface 管理，IsWindowClosed 默认 false 即可。
         virtual bool IsWindowClosed() const { return false; }
 
-        // 任务 12：当后端自管窗口时（VK 路径下 m_internalWindow），输入服务（键盘
+        // 当后端自管窗口时（VK 路径下 m_internalWindow），输入服务（键盘
         // /鼠标）需要通过此接口拿到原生 GLFWwindow* 才能查询。GL 路径下
         // RendererInterface 已经持有 IWindow 句柄，无需经过此接口；默认返回 nullptr。
         // 业务侧绝不应直接使用，仅供 RendererInterface 内部 INPUT_MANAGER 调用。
         virtual void* GetWindowNativeHandle() const { return nullptr; }
 
-        // 任务 ImGui-A：ImGui Overlay 录制 Hook
+        // ImGui Overlay 录制 Hook
         //   - 由 PassScheduler::DrawFrame 在所有 Pass 录制完成后、Submit 之前调用；
         //   - GL 后端：默认 FB 仍绑定（ScreenQuadPass 已结束 RP），直接调用
         //     ImGui_ImplOpenGL3_RenderDrawData 即可；

@@ -26,7 +26,7 @@
 // 业务模块看不到 Platform/* 头）。
 #include "Platform/GLFWWindow.h"
 
-// 任务 10：VK 路径下 g.window 为 nullptr，UpdateApp 需要直接 glfwPollEvents
+// VK 路径下 g.window 为 nullptr，UpdateApp 需要直接 glfwPollEvents
 // 让 GLFW 事件循环运转（含窗口关闭事件）。
 #include <GLFW/glfw3.h>
 
@@ -89,7 +89,7 @@ namespace TitusRHI
             TitusMath::Mat4 cameraProj{1.0f};
             TitusMath::Vec3 cameraPos{0.0f, 0.0f, 0.0f};
 
-            // -- 内置 FlyCamera 控制器状态（任务 12 下沉版本） --
+            // -- 内置 FlyCamera 控制器状态 --
             // 仅当 flyCameraEnabled=true 时被 UpdateApp 每帧 Tick；
             // 派生量（front/right）由 yaw/pitch 在 Tick 内重算。
             bool flyCameraEnabled = false;
@@ -110,13 +110,13 @@ namespace TitusRHI
             return g;
         }
 
-        // 默认线程模式：VK→Threaded、GL→Direct（与需求 15.3 对齐）
+        // 默认线程模式：当前各后端均走 Direct（见下方说明）
         GThreadingMode PickDefaultThreading(GBackend b)
         {
-            // 任务 9：暂时把所有后端都默认设为 Direct。Vulkan 端的 GDeviceMainThread
+            // 暂时把所有后端都默认设为 Direct。Vulkan 端的 GDeviceMainThread
             // （Threaded 包装层）尚未完整支持 ComputePipeline 创建/Dispatch 与
-            // DescriptorSet 绑定，会在 device.Init 阶段触发空指针。直到 M2 任务 6
-            // 把 Worker 路径补齐前，VK 也走同步直调路径与 GL 对齐。用户可显式
+            // DescriptorSet 绑定，会在 device.Init 阶段触发空指针。在 Worker
+            // 路径补齐前，VK 也走同步直调路径与 GL 对齐。用户可显式
             // 通过 `--threading=threaded` 启用旧路径用于回归测试。
             switch (b)
             {
@@ -325,7 +325,7 @@ namespace TitusRHI
                 g.windowWidth = static_cast<int>(g.window->GetWidth());
                 g.windowHeight = static_cast<int>(g.window->GetHeight());
             }
-            // 任务 9：VK 后端的窗口完全由 VKDevice 接管。
+            // VK 后端的窗口完全由 VKDevice 接管。
 
             // 2) 创建设备
             g.device = TitusRHIInterface::GDeviceFactory::Create(g.backend, g.threading);
@@ -376,7 +376,7 @@ namespace TitusRHI
             // 5) AssetGpuUploader：供 APP::UploadGpuModel 使用
             g.uploader = std::make_unique<AssetGpuUploader>(g.device.get());
 
-            // 6) ImGui Overlay：仅当 enableGUI=true 时初始化（任务 ImGui-A 方案 A）。
+            // 6) ImGui Overlay：仅当 enableGUI=true 时初始化（方案 A）。
             //    在 device + scheduler 都就绪之后调用，以确保 IMGUI::Init 内部
             //    通过 GetGlobalDeviceForImGui() 拿到的 device 是有效的。
             //    Null 后端会在 IMGUI::Init 内被跳过；不影响主循环。
@@ -391,15 +391,15 @@ namespace TitusRHI
             ZoneScopedN("APP::UpdateApp");
             auto& g = Get();
             if (g.window) g.window->PollEvents();
-                // 任务 10：VK 后端 g.window 为 nullptr（由 VKDevice 自管 VkWindow），
+                // VK 后端 g.window 为 nullptr（由 VKDevice 自管 VkWindow），
                 // 需要在这里统一 PollEvents 让 GLFW 事件循环运转。
             else glfwPollEvents();
 
-            // 任务 12：内置 FlyCamera 在 PollEvents 之后、DrawFrame 之前消费
+            // 内置 FlyCamera 在 PollEvents 之后、DrawFrame 之前消费
             // 输入并刷新主相机；未启用时本调用为 no-op。
             FlyCameraTickIfEnabled();
 
-            // 任务 ImGui-A：在 DrawFrame 之前完成 imgui NewFrame + 业务回调 +
+            // 在 DrawFrame 之前完成 imgui NewFrame + 业务回调 +
             // ImGui::Render。生成的 draw data 在 DrawFrame 内部由 device 通过
             // RenderImGuiOverlay hook 录到 backbuffer / cmdbuf 上。
             if (g.enableGUI && TitusRHI::IMGUI::IsInitialized())
@@ -421,7 +421,7 @@ namespace TitusRHI
             auto& g = Get();
             if (g.device) g.device->WaitIdle();
 
-            // 任务 ImGui-A：在 device.Shutdown 之前先 Shutdown imgui，
+            // 在 device.Shutdown 之前先 Shutdown imgui，
             // 让 imgui_impl_vulkan 在 VkDevice 仍有效时释放自身的 buffer/image/pipeline。
             TitusRHI::IMGUI::Shutdown();
 
@@ -460,7 +460,7 @@ namespace TitusRHI
         bool ShouldClose()
         {
             auto& g = Get();
-            // 任务 10：优先问上层 g.window（GL 路径）；若为空则转问 device
+            // 优先问上层 g.window（GL 路径）；若为空则转问 device
             // 是否自管窗口并已被关闭（VK 路径）。
             if (g.window) return g.window->ShouldClose();
             if (g.device) return g.device->IsWindowClosed();
@@ -488,8 +488,7 @@ namespace TitusRHI
             }
             else
             {
-                // InitApp 之前调用：缓存到临时队列，等 InitApp 后推入。
-                // M1 阶段为避免复杂化，要求调用者在 InitApp 后再 AddPass。
+                // InitApp 之前调用：要求调用者在 InitApp 后再 AddPass。
                 LOG_STREAM_WARN("TitusRHI::APP") << "AddPass called before InitApp; ignored";
             }
         }
@@ -536,8 +535,8 @@ namespace TitusRHI
 
         int RunUnitTests()
         {
-            // 任务 10 / M4-10：路由到 RendererCore::Tests 里的 Null 后端测试入口。
-            // 任务 11 / M5-A：同时跑 AssetLoader 的纯 CPU 烟雾测试。
+            // 路由到 RendererCore::Tests 里的 Null 后端测试入口。
+            // 同时跑 AssetLoader 的纯 CPU 烟雾测试。
             // 业务侧仅看到 APP::RunUnitTests()，不需要任何 RendererCore include。
             int failures = 0;
 
@@ -564,7 +563,7 @@ namespace TitusRHI
             auto& g = Get();
             g.windowWidth = width;
             g.windowHeight = height;
-            // 任务 5 会接管 IWindow 后通过 Resize 通知后端。
+            // IWindow 接入后通过 Resize 通知后端。
         }
 
         void SetIsCursorDisable(bool isCursorDisable) { Get().cursorDisable = isCursorDisable; }
@@ -582,7 +581,7 @@ namespace TitusRHI
     }
 
     // ------------------------------------------------------------------------
-    // ImGui-A：内部访问器，供 RendererInterface/TitusGfxImGui.cpp 使用。
+    // 内部访问器，供 RendererInterface/TitusGfxImGui.cpp 使用。
     // 业务侧不可见；通过 extern 在同一命名空间下解析。
     // ------------------------------------------------------------------------
     namespace IMGUI
@@ -612,13 +611,13 @@ namespace TitusRHI
     // ------------------------------------------------------------------------
     namespace RESOURCE_MANAGER
     {
-        // M1 阶段：本文件中 IGRenderPass 等价于 RendererCore::IRenderPass；
-        // 这里暂以前向声明形式占位，真正落地由任务 5 的 TitusGfxPass.h 提供。
+        // 本文件中 IGRenderPass 等价于 RendererCore::IRenderPass；
+        // 这里暂以前向声明形式占位，完整定义见 TitusGfxPass.h。
         void RegisterRenderPass(const std::shared_ptr<IGRenderPass>& /*pass*/)
         {
-            // 任务 5 接入：把 IGRenderPass 转成 std::shared_ptr<RendererCore::IRenderPass>
+            // TODO：把 IGRenderPass 转成 std::shared_ptr<RendererCore::IRenderPass>
             // 后调用 g.scheduler->AddPass(...)。
-            LOG_STREAM_WARN("TitusRHI::RESOURCE_MANAGER") << "RegisterRenderPass: stub (wired in M1-5)";
+            LOG_STREAM_WARN("TitusRHI::RESOURCE_MANAGER") << "RegisterRenderPass: stub";
         }
 
         void RemoveAllPasses()
@@ -717,8 +716,7 @@ namespace TitusRHI
     // ------------------------------------------------------------------------
     namespace CAMERA
     {
-        // 当前 RendererCore 没有相机抽象；M1 阶段以静态值作为占位，
-        // 任务 5 会接入 RendererCore::Camera。
+        // 当前 RendererCore 没有相机抽象；以静态值作为占位。
         static double s_fov = 60.0;
         double GetMainCameraFov() { return s_fov; }
         void SetMainCameraFov(double fov) { s_fov = fov; }

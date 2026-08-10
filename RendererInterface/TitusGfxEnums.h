@@ -17,7 +17,6 @@
 // 设计取向：仅暴露真正属于"门面 API 形参/返回值"的轻量枚举头，避免把
 // GDescs / GHandle / IGDevice 等"实现侧"头一起拉进来——后者由
 // TitusGfxPass.h 单独承担。
-// 设计参考：requirements.md 需求 1.5 / 9.3 / 10.2。
 // ============================================================================
 
 // GBackend：APP::SetBackend / GetBackend / GDeviceFactory::Create 形参

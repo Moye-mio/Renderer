@@ -116,7 +116,7 @@ namespace TitusVkGraphics
         VkFramebuffer framebuffer = VK_NULL_HANDLE;
         VkExtent2D    extent      = { 0, 0 };
 
-        // 任务 11：保存当前 RT，EndRenderPass 时同步 attachment.currentLayout
+        // 保存当前 RT，EndRenderPass 时同步 attachment.currentLayout
         m_activeRenderTarget = info.renderTarget;
 
         if (!info.renderTarget.IsValid())
@@ -173,7 +173,7 @@ namespace TitusVkGraphics
         if (!m_cmd) return;
         vkCmdEndRenderPass(m_cmd);
 
-        // 任务 11：自定义 RT 的 RenderPass.finalLayout 设为 SHADER_READ_ONLY_OPTIMAL，
+        // 自定义 RT 的 RenderPass.finalLayout 设为 SHADER_READ_ONLY_OPTIMAL，
         // 这里同步更新所有 color attachment 的 currentLayout 跟踪状态，
         // 让后续 Pass 的 BindResourceSet 走 sampled-image 路径不再误判为 GENERAL/UNDEFINED。
         if (m_activeRenderTarget.IsValid())
@@ -237,7 +237,7 @@ namespace TitusVkGraphics
             LOG_STREAM_ERROR("VKCommandList") << "BindPipeline: invalid handle";
             return;
         }
-        // 任务 11.x：切换 pipeline 时清空 set 状态缓存与「当前已绑定」标记。
+        // 切换 pipeline 时清空 set 状态缓存与「当前已绑定」标记。
         // 不同 pipeline 的 setLayout 可能不兼容（descriptor 类型 / binding 数量
         // 不同），复用旧状态是 UB；即使切回同一 pipeline 也清空——保守但安全。
         // 帧内 DS 内容缓存按 layout 区分 key，可跨 pipeline 保留。
@@ -246,12 +246,12 @@ namespace TitusVkGraphics
             m_boundSets.fill(VK_NULL_HANDLE);
             for (auto& s : m_setStateCache) s = TitusRHI::ResourceSetDesc{};
         }
-        // 任务 7v-1：按 PipelineEntry 记录的 bindPoint 区分 Graphics / Compute
+        // 按 PipelineEntry 记录的 bindPoint 区分 Graphics / Compute
         vkCmdBindPipeline(m_cmd, pe->bindPoint, pe->pipeline);
         m_currentPipeline = pe->pipeline;
         m_currentLayout   = pe->layout;
         m_currentBindPoint = pe->bindPoint;
-        m_currentPipelineEntry = pe;   // 任务 7v-2：供 BindResourceSet 查 setLayouts
+        m_currentPipelineEntry = pe;   // 供 BindResourceSet 查 setLayouts
     }
 
     void VKCommandList::BindVertexBuffer(uint32_t slot, BufferHandle buffer, uint64_t offset)
@@ -274,7 +274,7 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // BindResourceSet —— 任务 7v-2 + 帧内 DS 内容缓存
+    // BindResourceSet —— 帧内 DS 内容缓存
     //   1) 合并增量 binding 得到完整 ResourceSetDesc
     //   2) 按 (layout + 内容) 查本帧缓存：命中则复用 DS
     //   3) 未命中：Allocate + Update，写入缓存
@@ -488,11 +488,11 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // Compute（任务 7v-1）
+    // Compute
     //   - Dispatch 直接转发为 vkCmdDispatch
     //   - PipelineBarrier 采用保守翻译：src/dstStage 走不完全映射表，全局内存
-    //     屏障只处理 storage write → shader read 这类常见依赖。textureBarriers 在
-    //     任务 7v-2 / 7v-3 补齐（需要查 VKTextureEntry.currentLayout）。
+    //     屏障只处理 storage write → shader read 这类常见依赖。textureBarriers
+    //     需查 VKTextureEntry.currentLayout。
     // ------------------------------------------------------------------------
     void VKCommandList::Dispatch(uint32_t groupCountX,
                                  uint32_t groupCountY,
@@ -508,7 +508,7 @@ namespace TitusVkGraphics
     }
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-    // 光追派发（P1，任务 15 / 需求 8.4）：使用当前绑定 RT 管线的四个 SBT region。
+    // 光追派发：使用当前绑定 RT 管线的四个 SBT region。
     void VKCommandList::TraceRays(uint32_t width, uint32_t height, uint32_t depth)
     {
         if (!m_cmd) return;
@@ -532,7 +532,7 @@ namespace TitusVkGraphics
                              width, height, depth);
     }
 
-    // 加速结构构建/refit（P2，任务 16 / 需求 15.1、15.3）：
+    // 加速结构构建/refit：
     //   命令流内更新 TLAS。要求 target 为创建时带 AllowUpdate 的 TLAS，且本次
     //   instance 数量不超过创建容量。instance 数量与创建时相同且 info.update 为
     //   true 时走 UPDATE（refit）模式，否则在原 AS 上就地 BUILD（重建）。
@@ -632,7 +632,7 @@ namespace TitusVkGraphics
             if (v & static_cast<uint32_t>(PipelineStage::AllGraphics))     f |= VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
             if (v & static_cast<uint32_t>(PipelineStage::AllCommands))     f |= VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-            // 光追（任务 6）：AS 构建阶段
+            // 光追：AS 构建阶段
             if (v & static_cast<uint32_t>(PipelineStage::AccelerationStructureBuild))
                 f |= VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
 #endif
@@ -655,7 +655,7 @@ namespace TitusVkGraphics
             if (v & static_cast<uint32_t>(AccessFlags::TransferRead))         f |= VK_ACCESS_TRANSFER_READ_BIT;
             if (v & static_cast<uint32_t>(AccessFlags::TransferWrite))        f |= VK_ACCESS_TRANSFER_WRITE_BIT;
 #if defined(RENDERER_ENABLE_RAY_TRACING)
-            // 光追（任务 6）：AS 读写访问
+            // 光追：AS 读写访问
             if (v & static_cast<uint32_t>(AccessFlags::AccelerationStructureRead))
                 f |= VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR;
             if (v & static_cast<uint32_t>(AccessFlags::AccelerationStructureWrite))
@@ -698,7 +698,7 @@ namespace TitusVkGraphics
         mb.srcAccessMask = ToVkAccessFlags(desc.srcGlobalAccess);
         mb.dstAccessMask = ToVkAccessFlags(desc.dstGlobalAccess);
 
-        // 任务 7v-3：textureBarriers —— layout 转换（含 access scope）
+        // textureBarriers —— layout 转换（含 access scope）
         std::vector<VkImageMemoryBarrier> imageBars;
         imageBars.reserve(desc.textureBarriers.size());
         for (const auto& tb : desc.textureBarriers)

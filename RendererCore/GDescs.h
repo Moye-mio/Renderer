@@ -6,7 +6,6 @@
 //  - 管线状态：VertexLayout / RasterizerState / DepthStencilState / BlendState / GraphicsPipelineDesc
 //  - 渲染通道：RenderPassBeginInfo / Viewport / Rect2D / ClearValue
 //  - 设备级：GDeviceDesc / GCaps
-// 设计参考：RendererCore 设计方案 §3.4。
 // ============================================================================
 #include <cstdint>
 #include <array>
@@ -136,7 +135,6 @@ namespace TitusRHI
         StorageTexture,
         Sampler,
         CombinedImageSampler,
-        // 光追（任务 2 / 需求 3、4）：可绑定 TLAS 的描述符类型。仅追加。
         AccelerationStructure,
     };
 
@@ -155,7 +153,7 @@ namespace TitusRHI
         ShaderStage stages = ShaderStage::None;
         uint32_t offset = 0;
         uint32_t size = 0;
-        // 任务 7：GL 后端用 push_constant 反射回 glUniform 时，按 (offset, size) 锁定一个
+        // GL 后端用 push_constant 反射回 glUniform 时，按 (offset, size) 锁定一个
         // sub-range；通过本字段 glName 直接查找对应的传统 uniform 名（如 "u_ModelMatrix"）。
         // VK 后端忽略本字段。Empty 表示走默认 fallback（按 PC_<offset> 命名查找）。
         std::string glName;
@@ -286,7 +284,7 @@ namespace TitusRHI
     };
 
     // ------------------------------------------------------------------------
-    // 计算管线 Desc（任务 7 / M2-A）
+    // 计算管线 Desc
     //   - 仅一个 Compute 阶段着色器；后端需以 ComputePipelineDesc 重载创建管线。
     //   - resourceBindings / pushConstantRanges 语义与 GraphicsPipelineDesc 一致：
     //     描述完整的 descriptor / push constant 布局，供 VK 创建 DescriptorSetLayout +
@@ -301,7 +299,7 @@ namespace TitusRHI
     };
 
     // ------------------------------------------------------------------------
-    // 光追管线（P1 路线 B，任务 13 / 需求 9.1）
+    // 光追管线
     //   - 后端无关描述：shader stage 集合 + shader group（general / hit）+
     //     maxRayRecursionDepth + resourceBindings + pushConstantRanges。
     //   - 全部字段仅使用 RendererCore 自定义句柄/枚举/POD，禁止出现 VkXxx。
@@ -344,7 +342,7 @@ namespace TitusRHI
     };
 
     // ------------------------------------------------------------------------
-    // 加速结构（光追，任务 3 / 需求 4）
+    // 加速结构（光追）
     //   - 后端无关描述：BLAS 从 vertex/index buffer 构建三角形几何；TLAS 由若干
     //     引用 BLAS 的 instance 构成。
     //   - 全部字段仅使用 RendererCore 自定义句柄/枚举/POD，禁止出现 VkXxx。
@@ -363,7 +361,7 @@ namespace TitusRHI
         None = 0,
         PreferFastTrace = 1u << 0, // 优先追踪性能（静态几何）
         PreferFastBuild = 1u << 1, // 优先构建速度
-        AllowUpdate = 1u << 2,     // 允许后续 refit（动态场景，需求 15）
+        AllowUpdate = 1u << 2,     // 允许后续 refit（动态场景）
         AllowCompaction = 1u << 3,
     };
 
@@ -405,7 +403,7 @@ namespace TitusRHI
         };
         uint32_t instanceCustomIndex = 0;              // gl_InstanceCustomIndexEXT（24 位）
         uint32_t mask = 0xFF;                          // 光线 mask
-        uint32_t shaderBindingTableOffset = 0;         // hit group 偏移（P1 使用）
+        uint32_t shaderBindingTableOffset = 0;         // hit group 偏移
         uint32_t flags = 0;                            // VkGeometryInstanceFlagsKHR 语义
     };
 
@@ -482,7 +480,7 @@ namespace TitusRHI
         TextureHandle texture;
         SamplerHandle sampler;
 
-        // 光追（任务 2 / 需求 8）：type == AccelerationStructure 时使用。
+        // 光追：type == AccelerationStructure 时使用。
         AccelerationStructureHandle accelStruct;
     };
 
@@ -521,17 +519,17 @@ namespace TitusRHI
         bool supportsTessellation = false;
         bool supportsMultiDrawIndirect = false;
         bool supportsBindlessTextures = false;
-        // 光追能力（任务 4 / 需求 2）：仅当后端探测到硬件光追且编译期开启
+        // 光追能力：仅当后端探测到硬件光追且编译期开启
         // RENDERER_ENABLE_RAY_TRACING 时为 true；GL / Null 后端恒 false。
         bool supportsRayTracing = false;
         bool supportsRayQuery = false;
-        // 光追管线（P1 路线 B，任务 12/15）：仅 VK 后端探测到 RT 管线扩展时为 true。
+        // 光追管线：仅 VK 后端探测到 RT 管线扩展时为 true。
         bool supportsRayTracingPipeline = false;
         std::string deviceName;
     };
 
     // ------------------------------------------------------------------------
-    // PipelineBarrier 描述（任务 7 / M2-A）
+    // PipelineBarrier 描述
     //   - 描述"Storage 写入 → Shader 采样读取"这类依赖。VK 后端按 src/dst stage
     //     + 额外的 ImageBarrier 指定 layout 转换；GL 后端用 glMemoryBarrier(
     //     GL_SHADER_IMAGE_ACCESS_BARRIER_BIT / GL_TEXTURE_FETCH_BARRIER_BIT /
@@ -550,7 +548,7 @@ namespace TitusRHI
         Transfer = 1u << 6,
         AllGraphics = 1u << 7,
         AllCommands = 1u << 8,
-        // 光追（任务 6 / 需求 6.5）：加速结构构建阶段。用于表达
+        // 光追：加速结构构建阶段。用于表达
         // 「AS build 写 → shader（rayQuery）读」依赖。VK 后端映射为
         // VK_PIPELINE_STAGE_2_ACCELERATION_STRUCTURE_BUILD_BIT_KHR。
         AccelerationStructureBuild = 1u << 9,
@@ -577,7 +575,7 @@ namespace TitusRHI
         DepthWrite = 1u << 5,
         TransferRead = 1u << 6,
         TransferWrite = 1u << 7,
-        // 光追（任务 6 / 需求 6.5）：加速结构读写访问。VK 后端映射为
+        // 光追：加速结构读写访问。VK 后端映射为
         // VK_ACCESS_2_ACCELERATION_STRUCTURE_READ/WRITE_BIT_KHR。
         AccelerationStructureRead = 1u << 8,
         AccelerationStructureWrite = 1u << 9,

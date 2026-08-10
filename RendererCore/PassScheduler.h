@@ -4,7 +4,6 @@
 // 后端无关的 Pass 调度器：仅依赖 IGDevice 与 RenderCommandList。
 // DrawFrame 流程对两个后端完全相同：
 //   BeginFrame → AcquireCommandList → 遍历 Pass.Update/Record → Submit → Present
-// 设计参考：RendererCore 设计方案 §4、需求 6.2/6.3。
 // ============================================================================
 #include <vector>
 #include <memory>
