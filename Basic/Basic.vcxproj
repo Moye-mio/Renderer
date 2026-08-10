@@ -31,6 +31,7 @@
         <ClCompile Include="Test.cpp"/>
         <ClCompile Include="Logger.cpp"/>
         <ClCompile Include="TitusMath.cpp"/>
+        <ClCompile Include="TracySupport.cpp"/>
         <!-- Tracy client：全进程只编译这一份；由 Directory.Build.props 控制 TRACY_ENABLE -->
         <ClCompile Include="..\Third-Party\tracy\public\TracyClient.cpp">
             <PrecompiledHeader>NotUsing</PrecompiledHeader>

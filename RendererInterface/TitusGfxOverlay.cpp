@@ -18,6 +18,7 @@
 #include "RendererGL/GLDevice.h"
 #include "RendererVK/VKDevice.h"
 #include "RendererVK/VkContext.h"
+#include "TracySupport.h"
 
 #include <GL/glew.h>
 #include <vulkan/vulkan.h>
@@ -156,6 +157,25 @@ namespace TitusRHI
                 ImGui::Text("Resolution: %d x %d",
                             WINDOW_KEYWORD::GetWindowWidth(),
                             WINDOW_KEYWORD::GetWindowHeight());
+
+                ImGui::Separator();
+#ifdef TRACY_ENABLE
+                {
+                    bool capture = TitusTracyCaptureEnabled();
+                    if (ImGui::Checkbox("Tracy Capture", &capture))
+                        TitusTracySetCaptureEnabled(capture);
+                    ImGui::SameLine();
+                    ImGui::TextDisabled(TracyIsConnected ? "(connected)" : "(not connected)");
+                    if (ImGui::IsItemHovered())
+                    {
+                        ImGui::SetTooltip(
+                            "On-demand: events are only recorded while a Tracy Profiler is connected.\n"
+                            "Uncheck to pause capture without disconnecting.");
+                    }
+                }
+#else
+                ImGui::TextDisabled("Tracy: build disabled");
+#endif
 
                 if (APP::GetBackend() == GBackend::Vulkan)
                 {
