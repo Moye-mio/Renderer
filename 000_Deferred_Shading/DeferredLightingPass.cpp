@@ -13,6 +13,7 @@
 
 #include "FileSystem.h"
 #include "Logger.h"
+#include "TracySupport.h"
 
 #ifndef SOLUTION_DIR
 #define SOLUTION_DIR ""
@@ -146,6 +147,7 @@ void DeferredLightingPass::Record(TitusRHI::IGDevice& device,
     // 每帧把世界空间光源变换到视空间，写入 UBO
     if (m_lightUbo.IsValid())
     {
+        ZoneScopedN("Lighting::UpdateLights");
         LightBlockData data{};
         const TitusMath::Mat4 view = CAMERA::GetMainCameraViewMatrix();
         const int n = static_cast<int>(std::min(m_lights.size(), static_cast<size_t>(MAX_LIGHTS)));
@@ -177,50 +179,54 @@ void DeferredLightingPass::Record(TitusRHI::IGDevice& device,
     rp.renderArea.width = 0;
     rp.renderArea.height = 0;
 
-    cmd.BeginRenderPass(rp);
-
-    const uint32_t vpW = static_cast<uint32_t>(WINDOW_KEYWORD::GetWindowWidth());
-    const uint32_t vpH = static_cast<uint32_t>(WINDOW_KEYWORD::GetWindowHeight());
-    Viewport vp{};
-    vp.width = static_cast<float>(vpW);
-    vp.height = static_cast<float>(vpH);
-    cmd.SetViewport(vp);
-    Rect2D sc{};
-    sc.width = vpW;
-    sc.height = vpH;
-    cmd.SetScissor(sc);
-
-    cmd.BindPipeline(m_pipeline);
-
-    // 绑定 UBO + 3 张 G-Buffer 纹理
     {
-        ResourceSetDesc rs{};
+        ZoneScopedN("Lighting::DrawFullscreen");
 
-        ResourceBindingValue ubo{};
-        ubo.binding = 0;
-        ubo.type = ResourceBindingType::UniformBuffer;
-        ubo.buffer = m_lightUbo;
-        ubo.bufferOffset = 0;
-        ubo.bufferRange = sizeof(LightBlockData);
-        rs.bindings.push_back(ubo);
+        cmd.BeginRenderPass(rp);
 
-        auto pushTex = [&](TextureHandle h, uint32_t binding)
+        const uint32_t vpW = static_cast<uint32_t>(WINDOW_KEYWORD::GetWindowWidth());
+        const uint32_t vpH = static_cast<uint32_t>(WINDOW_KEYWORD::GetWindowHeight());
+        Viewport vp{};
+        vp.width = static_cast<float>(vpW);
+        vp.height = static_cast<float>(vpH);
+        cmd.SetViewport(vp);
+        Rect2D sc{};
+        sc.width = vpW;
+        sc.height = vpH;
+        cmd.SetScissor(sc);
+
+        cmd.BindPipeline(m_pipeline);
+
+        // 绑定 UBO + 3 张 G-Buffer 纹理
         {
-            ResourceBindingValue bv{};
-            bv.binding = binding;
-            bv.type = ResourceBindingType::CombinedImageSampler;
-            bv.texture = h;
-            bv.sampler = m_sampler;
-            rs.bindings.push_back(bv);
-        };
-        pushTex(albedo, 1);
-        pushTex(normal, 2);
-        pushTex(position, 3);
+            ResourceSetDesc rs{};
 
-        cmd.BindResourceSet(0, rs);
+            ResourceBindingValue ubo{};
+            ubo.binding = 0;
+            ubo.type = ResourceBindingType::UniformBuffer;
+            ubo.buffer = m_lightUbo;
+            ubo.bufferOffset = 0;
+            ubo.bufferRange = sizeof(LightBlockData);
+            rs.bindings.push_back(ubo);
+
+            auto pushTex = [&](TextureHandle h, uint32_t binding)
+            {
+                ResourceBindingValue bv{};
+                bv.binding = binding;
+                bv.type = ResourceBindingType::CombinedImageSampler;
+                bv.texture = h;
+                bv.sampler = m_sampler;
+                rs.bindings.push_back(bv);
+            };
+            pushTex(albedo, 1);
+            pushTex(normal, 2);
+            pushTex(position, 3);
+
+            cmd.BindResourceSet(0, rs);
+        }
+
+        cmd.Draw(3); // 全屏三角形
+
+        cmd.EndRenderPass();
     }
-
-    cmd.Draw(3); // 全屏三角形
-
-    cmd.EndRenderPass();
 }

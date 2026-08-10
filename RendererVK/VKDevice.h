@@ -143,7 +143,8 @@ namespace TitusVkGraphics
         VkSemaphore renderFinished = VK_NULL_HANDLE;
         VkFence     inFlightFence  = VK_NULL_HANDLE;
         std::unique_ptr<VkCommandBufferWrapper> primaryCmd;
-        // 每帧一个 DescriptorPool，BeginFrame 时整池 reset
+        // 每帧一个 DescriptorPool；与 CommandList 的 per-frame DS 缓存配套跨帧复用，
+        // 仅在 Allocate 失败时整池 reset（见 AllocateDescriptorSet）。
         VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     };
 

@@ -13,6 +13,54 @@
 
 namespace TitusRHI
 {
+    namespace
+    {
+        // 固定字面量，便于 Tracy 按 zone 名聚合（避免两个 Pass 挤在同一 "Pass::Record"）。
+        const char* PassZoneName(ERenderPassEvent e)
+        {
+            switch (e)
+            {
+            case ERenderPassEvent::ShadowMap:     return "Pass:ShadowMap";
+            case ERenderPassEvent::GBuffer:       return "Pass:GBuffer";
+            case ERenderPassEvent::Lighting:      return "Pass:Lighting";
+            case ERenderPassEvent::OpaqueShading: return "Pass:OpaqueShading";
+            case ERenderPassEvent::Transparent:   return "Pass:Transparent";
+            case ERenderPassEvent::PostProcess:   return "Pass:PostProcess";
+            case ERenderPassEvent::FinalBlit:     return "Pass:FinalBlit";
+            default:                              return "Pass:Other";
+            }
+        }
+
+        const char* UpdateZoneName(ERenderPassEvent e)
+        {
+            switch (e)
+            {
+            case ERenderPassEvent::ShadowMap:     return "Update:ShadowMap";
+            case ERenderPassEvent::GBuffer:       return "Update:GBuffer";
+            case ERenderPassEvent::Lighting:      return "Update:Lighting";
+            case ERenderPassEvent::OpaqueShading: return "Update:OpaqueShading";
+            case ERenderPassEvent::Transparent:   return "Update:Transparent";
+            case ERenderPassEvent::PostProcess:   return "Update:PostProcess";
+            case ERenderPassEvent::FinalBlit:     return "Update:FinalBlit";
+            default:                              return "Update:Other";
+            }
+        }
+
+        const char* RecordZoneName(ERenderPassEvent e)
+        {
+            switch (e)
+            {
+            case ERenderPassEvent::ShadowMap:     return "Record:ShadowMap";
+            case ERenderPassEvent::GBuffer:       return "Record:GBuffer";
+            case ERenderPassEvent::Lighting:      return "Record:Lighting";
+            case ERenderPassEvent::OpaqueShading: return "Record:OpaqueShading";
+            case ERenderPassEvent::Transparent:   return "Record:Transparent";
+            case ERenderPassEvent::PostProcess:   return "Record:PostProcess";
+            case ERenderPassEvent::FinalBlit:     return "Record:FinalBlit";
+            default:                              return "Record:Other";
+            }
+        }
+    }
     void PassScheduler::AddPass(const std::shared_ptr<IRenderPass>& pass)
     {
         if (!pass) return;
@@ -78,14 +126,15 @@ namespace TitusRHI
             ZoneScopedN("PassLoop");
             for (auto& p : m_passes)
             {
-                ZoneScopedN("Pass");
-                ZoneValue(static_cast<uint64_t>(p->passEvent));
+                const ERenderPassEvent ev = p->passEvent;
+                ZoneTransientN(passZone, PassZoneName(ev), true);
+                ZoneValue(static_cast<uint64_t>(ev));
                 {
-                    ZoneScopedN("Pass::Update");
+                    ZoneTransientN(updateZone, UpdateZoneName(ev), true);
                     p->Update(*m_device, frameIndex);
                 }
                 {
-                    ZoneScopedN("Pass::Record");
+                    ZoneTransientN(recordZone, RecordZoneName(ev), true);
                     p->Record(*m_device, *cmd, frameIndex, imageIndex);
                 }
             }

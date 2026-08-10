@@ -12,6 +12,7 @@
 //     TitusRHI::ShaderDesc desc{};
 // ============================================================================
 #include "TitusGfx.h"
+#include "TracySupport.h"
 
 // 注意：以下 include 路径是 RendererInterface 工程的内部细节，不会泄露给
 // 业务模块（业务模块只 include "RendererInterface/TitusGfxPass.h"）。CI 静态
@@ -106,6 +107,8 @@ namespace TitusRHI
                                         uint32_t setIndex,
                                         uint32_t bindingSlot)
     {
+        ZoneScopedN("DrawGpuModelWithDiffuse");
+
         const void* p = TitusRHI::APP::GetGpuModelInternal(handle);
         if (!p) return;
         const GpuModel* model = static_cast<const GpuModel*>(p);
@@ -117,6 +120,10 @@ namespace TitusRHI
         TextureHandle lastDiffuseTex{};
         SamplerHandle lastDiffuseSampler{};
         bool hasLastDiffuse = false;
+
+        // 循环外复用 ResourceSetDesc，避免每个材质切换都重新构造 vector。
+        ResourceSetDesc rs{};
+        rs.bindings.resize(1);
 
         for (size_t i = 0; i < mesh.subMeshes.size(); ++i)
         {
@@ -136,13 +143,12 @@ namespace TitusRHI
                         && binding.sampler.id == lastDiffuseSampler.id;
                     if (!sameAsLast)
                     {
-                        ResourceSetDesc rs{};
-                        ResourceBindingValue bv{};
+                        ResourceBindingValue& bv = rs.bindings[0];
+                        bv = ResourceBindingValue{};
                         bv.binding = bindingSlot;
                         bv.type = ResourceBindingType::CombinedImageSampler;
                         bv.texture = binding.texture;
                         bv.sampler = binding.sampler;
-                        rs.bindings.push_back(bv);
                         cmd.BindResourceSet(setIndex, rs);
                         lastDiffuseTex = binding.texture;
                         lastDiffuseSampler = binding.sampler;

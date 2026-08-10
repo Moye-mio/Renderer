@@ -33,8 +33,15 @@ namespace TitusVkGraphics
         explicit VKCommandList(VKDevice* device);
         ~VKCommandList() override = default;
 
-        // 由 VKDevice 在每帧的 BeginFrame 中调用，重置内部状态与本帧计数
-        void Reset(VkCommandBuffer cmd);
+        // 由 VKDevice 在每帧的 BeginFrame 中调用，重置绑定状态与本帧计数。
+        // frameIndex 选择对应 FIF 槽位的 DS 内容缓存（跨帧复用，避免每帧重分配）。
+        void Reset(VkCommandBuffer cmd, uint32_t frameIndex);
+
+        // DescriptorPool 销毁/重建时调用，丢弃所有槽位的 DS 缓存
+        void InvalidateDescriptorCaches();
+
+        // 单个 FIF 槽位 pool reset 时调用
+        void InvalidateDescriptorCache(uint32_t frameIndex);
 
         // 由 VKDevice 在 Submit 末尾调用：把本帧计数固化，供下一帧 Overlay 读取
         // （Overlay 在 DrawFrame 之前绘制，不能依赖 BeginFrame/Reset 时机）
@@ -180,14 +187,17 @@ namespace TitusVkGraphics
         // GL 端 binding 是全局状态机，前后两次绑互不干扰；VK 端需要模拟这个行为。
         //
         // 修复策略：维护 per-set 的完整 ResourceSetDesc 状态，每次 BindResourceSet
-        // 时把新 binding 合并进去，然后按完整内容查帧内 DS 缓存（命中则复用，
-        // 未命中再 Allocate + Update）。这样既避免更新已绑定 DS，又保留增量语义。
+        // 时把新 binding 合并进去，然后按完整内容查当前 FIF 槽位的 DS 缓存（命中则
+        // 复用，未命中再 Allocate + Update）。这样既避免更新已绑定 DS，又保留增量语义。
         static constexpr uint32_t kMaxCachedSets = 8;
         std::array<TitusRHI::ResourceSetDesc, kMaxCachedSets> m_setStateCache{};
         // 当前 cmd 上已绑定的 DS（同 setIndex 相同 DS 时跳过 vkCmdBindDescriptorSets）
         std::array<VkDescriptorSet, kMaxCachedSets> m_boundSets{};
-        // 帧内按 (layout + 完整 binding 内容) 复用已分配的 DS
-        std::unordered_map<DsContentKey, VkDescriptorSet, DsContentKeyHash> m_dsContentCache;
+        // 按 FIF 槽位缓存 (layout + 完整 binding 内容) → DS。
+        // 同一槽位在 WaitFence 之后 GPU 已用完该 pool 上的 DS，可跨帧复用，
+        // 避免每帧 vkResetDescriptorPool + 重新 Allocate/Update。
+        std::vector<std::unordered_map<DsContentKey, VkDescriptorSet, DsContentKeyHash>> m_dsCacheByFrame;
+        uint32_t m_activeFrameIndex = 0;
 
         DescriptorBindStats m_frameStats{};
         DescriptorBindStats m_lastFrameStats{};

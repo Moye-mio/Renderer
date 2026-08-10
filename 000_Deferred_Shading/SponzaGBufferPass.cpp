@@ -16,6 +16,7 @@
 
 #include "FileSystem.h"
 #include "Logger.h"
+#include "TracySupport.h"
 
 #ifndef SOLUTION_DIR
 #define SOLUTION_DIR ""
@@ -253,6 +254,7 @@ void SponzaGBufferPass::Record(TitusRHI::IGDevice& device,
     // 更新 + 绑定 u_Matrices4ProjectionWorld UBO（proj 在前，view 在后，与 GLSL std140 对齐）
     if (m_matricesUbo.IsValid())
     {
+        ZoneScopedN("GBuffer::UpdateMatrices");
         TitusMath::Mat4 mats[2] = {
             CAMERA::GetMainCameraProjectionMatrix(),
             CAMERA::GetMainCameraViewMatrix()
@@ -273,6 +275,7 @@ void SponzaGBufferPass::Record(TitusRHI::IGDevice& device,
     // PushConstants：仅发送 ModelMatrix；然后逐 SubMesh 绑定 diffuse 纹理并绘制。
     if (m_sponza)
     {
+        ZoneScopedN("GBuffer::DrawModel");
         const TitusMath::Mat4 model = m_sponza->GetModelMatrix();
         cmd.PushConstants(ShaderStage::Vertex, 0, sizeof(TitusMath::Mat4), &model);
         DrawGpuModelWithDiffuse(cmd, m_sponza->GetModelHandle(), 0, 1);

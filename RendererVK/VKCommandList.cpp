@@ -15,6 +15,7 @@
 #include <cassert>
 #include <iostream>
 #include "Logger.h"
+#include "TracySupport.h"
 
 
 namespace TitusVkGraphics
@@ -67,13 +68,26 @@ namespace TitusVkGraphics
             }
             key.slots.push_back(s);
         }
-        std::sort(key.slots.begin(), key.slots.end(),
-                  [](const DsContentKey::Slot& a, const DsContentKey::Slot& b)
-                  { return a.binding < b.binding; });
+        // 业务侧通常按 binding 升序写入；已有序则跳过 sort（GBuffer 材质切换热路径）。
+        bool sorted = true;
+        for (size_t i = 1; i < key.slots.size(); ++i)
+        {
+            if (key.slots[i].binding < key.slots[i - 1].binding)
+            {
+                sorted = false;
+                break;
+            }
+        }
+        if (!sorted)
+        {
+            std::sort(key.slots.begin(), key.slots.end(),
+                      [](const DsContentKey::Slot& a, const DsContentKey::Slot& b)
+                      { return a.binding < b.binding; });
+        }
         return key;
     }
 
-    void VKCommandList::Reset(VkCommandBuffer cmd)
+    void VKCommandList::Reset(VkCommandBuffer cmd, uint32_t frameIndex)
     {
         m_frameStats = {};
 
@@ -82,15 +96,47 @@ namespace TitusVkGraphics
         m_currentLayout   = VK_NULL_HANDLE;
         m_currentBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
         m_currentPipelineEntry = nullptr;
-        // 每帧重置：pool 整池 reset 后旧 DS 失效，内容缓存必须清空
         m_boundSets.fill(VK_NULL_HANDLE);
-        m_dsContentCache.clear();
         for (auto& s : m_setStateCache) s = TitusRHI::ResourceSetDesc{};
+
+        m_activeFrameIndex = frameIndex;
+        if (m_dsCacheByFrame.size() <= frameIndex)
+            m_dsCacheByFrame.resize(static_cast<size_t>(frameIndex) + 1);
+        // 注意：不清理 m_dsCacheByFrame[frameIndex] —— 与 per-frame pool 跨帧复用配套
+    }
+
+    void VKCommandList::InvalidateDescriptorCaches()
+    {
+        for (auto& cache : m_dsCacheByFrame)
+            cache.clear();
+        m_boundSets.fill(VK_NULL_HANDLE);
+    }
+
+    void VKCommandList::InvalidateDescriptorCache(uint32_t frameIndex)
+    {
+        if (frameIndex < m_dsCacheByFrame.size())
+            m_dsCacheByFrame[frameIndex].clear();
+        if (frameIndex == m_activeFrameIndex)
+            m_boundSets.fill(VK_NULL_HANDLE);
     }
 
     void VKCommandList::PublishFrameStats()
     {
         m_lastFrameStats = m_frameStats;
+
+        // Tracy plot：不在 BindResourceSet 内打 Zone（每帧数百次会污染数据）
+        static bool s_plotConfigured = false;
+        if (!s_plotConfigured)
+        {
+            s_plotConfigured = true;
+            TracyPlotConfig("VK DS BindCalls", tracy::PlotFormatType::Number, false, true, 0);
+            TracyPlotConfig("VK DS Allocs", tracy::PlotFormatType::Number, false, true, 0);
+            TracyPlotConfig("VK DS CacheHits", tracy::PlotFormatType::Number, false, true, 0);
+        }
+        TracyPlot("VK DS BindCalls", static_cast<int64_t>(m_frameStats.bindResourceSetCalls));
+        TracyPlot("VK DS Allocs", static_cast<int64_t>(m_frameStats.descriptorAllocs));
+        TracyPlot("VK DS CacheHits", static_cast<int64_t>(m_frameStats.descriptorCacheHits));
+
         // 排查用：首个非空帧打一次，确认 DS alloc 已从 ~SubMesh 数降到材质量级
         static bool s_loggedOnce = false;
         if (!s_loggedOnce && m_frameStats.bindResourceSetCalls > 0)
@@ -274,10 +320,10 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // BindResourceSet —— 帧内 DS 内容缓存
+    // BindResourceSet —— per-FIF DS 内容缓存（跨帧复用）
     //   1) 合并增量 binding 得到完整 ResourceSetDesc
-    //   2) 按 (layout + 内容) 查本帧缓存：命中则复用 DS
-    //   3) 未命中：Allocate + Update，写入缓存
+    //   2) 按 (layout + 内容) 查当前 FIF 槽位缓存：命中则复用 DS
+    //   3) 未命中：Allocate + Update，写入该槽位缓存
     //   4) 若与当前已绑定 DS 不同，再 vkCmdBindDescriptorSets
     // ------------------------------------------------------------------------
     void VKCommandList::BindResourceSet(uint32_t setIndex, const ResourceSetDesc& setDesc)
@@ -327,8 +373,12 @@ namespace TitusVkGraphics
         const DsContentKey key = MakeContentKey(layout, fullDesc);
         VkDescriptorSet set = VK_NULL_HANDLE;
 
-        auto it = m_dsContentCache.find(key);
-        if (it != m_dsContentCache.end())
+        if (m_activeFrameIndex >= m_dsCacheByFrame.size())
+            m_dsCacheByFrame.resize(static_cast<size_t>(m_activeFrameIndex) + 1);
+        auto& frameCache = m_dsCacheByFrame[m_activeFrameIndex];
+
+        auto it = frameCache.find(key);
+        if (it != frameCache.end())
         {
             set = it->second;
             ++m_frameStats.descriptorCacheHits;
@@ -445,7 +495,7 @@ namespace TitusVkGraphics
                                        writes.data(), 0, nullptr);
             }
 
-            m_dsContentCache.emplace(key, set);
+            frameCache.emplace(key, set);
         }
 
         if (setIndex < kMaxCachedSets && m_boundSets[setIndex] == set)

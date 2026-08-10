@@ -23,6 +23,7 @@
 #include <cstring>
 #include <iostream>
 #include "Logger.h"
+#include "TracySupport.h"
 #include <algorithm>
 
 namespace TitusVkGraphics
@@ -1834,12 +1835,19 @@ namespace TitusVkGraphics
         auto& frame = m_frames[m_currentFrameIndex];
 
         // 等待上一帧
-        vkWaitForFences(m_context->GetDevice(), 1, &frame.inFlightFence, VK_TRUE, UINT64_MAX);
+        {
+            ZoneScopedN("VK::WaitInFlightFence");
+            vkWaitForFences(m_context->GetDevice(), 1, &frame.inFlightFence, VK_TRUE, UINT64_MAX);
+        }
 
         // 获取 swapchain image
-        VkResult acq = vkAcquireNextImageKHR(
-            m_context->GetDevice(), m_swapchain->GetSwapchain(),
-            UINT64_MAX, frame.imageAvailable, VK_NULL_HANDLE, &m_currentImageIndex);
+        VkResult acq = VK_SUCCESS;
+        {
+            ZoneScopedN("VK::AcquireNextImage");
+            acq = vkAcquireNextImageKHR(
+                m_context->GetDevice(), m_swapchain->GetSwapchain(),
+                UINT64_MAX, frame.imageAvailable, VK_NULL_HANDLE, &m_currentImageIndex);
+        }
         if (acq == VK_ERROR_OUT_OF_DATE_KHR)
         {
             m_swapchain->Recreate(*m_context, *m_windowPtr);
@@ -1855,25 +1863,16 @@ namespace TitusVkGraphics
 
         vkResetFences(m_context->GetDevice(), 1, &frame.inFlightFence);
 
-        // 先 Reset CommandBuffer（→ INITIAL 状态），再 reset DescriptorPool，
-        // 最后 Begin CommandBuffer（→ RECORDING 状态）。
-        // 顺序关键：vkResetDescriptorPool 使上一帧分配的 DS 失效；若此时 CB 已在
-        // RECORDING 状态，Validation Layer 会认为"绑定了失效 DS 的 CB 变 INVALID"，
-        // 导致后续所有 vkCmd* 调用都报 "commandBuffer not in recording state"。
-        // 在 INITIAL 状态下 reset pool 是安全的（CB 无绑定状态）。
+        // WaitFence 之后本 FIF 槽位上的 DS/CB 已不被 GPU 使用，可跨帧复用
+        // DescriptorSet（见 VKCommandList per-frame cache），不再每帧
+        // vkResetDescriptorPool。池耗尽时由 AllocateDescriptorSet 懒重置。
         frame.primaryCmd->Reset();
-
-        // 整池 reset，回收上一轮的 DescriptorSet
-        if (frame.descriptorPool)
-        {
-            vkResetDescriptorPool(m_context->GetDevice(), frame.descriptorPool, 0);
-        }
 
         // Begin Primary CmdBuffer（CB 进入 RECORDING 状态）
         frame.primaryCmd->Begin();
 
-        // 让 VKCommandList 接管该 CmdBuffer
-        m_commandList->Reset(frame.primaryCmd->Get());
+        // 让 VKCommandList 接管该 CmdBuffer（保留本槽位 DS 内容缓存）
+        m_commandList->Reset(frame.primaryCmd->Get(), m_currentFrameIndex);
         m_frameInProgress = true;
     }
 
@@ -2063,20 +2062,15 @@ namespace TitusVkGraphics
     }
 
     // ------------------------------------------------------------------------
-    // DescriptorPool 池化（per-frame，整池 reset）
-    //   策略：每帧一个 pool，BeginFrameImpl 中 vkResetDescriptorPool 整体回收。
-    //   容量按"足以承载 001 这种中等规模 pass 集合"取保守上限 256（每种 type）。
-    //   后续若资源数量增长，可按需扩容或改用动态分裂池。
+    // DescriptorPool 池化（per-frame，跨帧复用）
+    //   策略：每帧一个 pool；与 CommandList 的 per-frame DS 内容缓存一起，在
+    //   WaitFence 后复用已分配的 DescriptorSet，避免每帧 Allocate+Update。
+    //   仅当 Allocate 失败（池耗尽）时整池 reset 并清空该槽位缓存。
     // ------------------------------------------------------------------------
     void VKDevice::CreateDescriptorPools(uint32_t framesInFlight)
     {
-        // Sponza 模型每帧产生 ~400 个 SubMesh draw，每个 draw 一次
-        // BindResourceSet → 单帧分配 ~800+ DescriptorSet（GBuffer + RSM 两 Pass 都遍历模型）。
-        // 之前 256 上限会触发 VK_ERROR_OUT_OF_POOL_MEMORY (-1000069000)。
-        // 这里取 4096 作为安全上限；Per-type 上限按 set 内最大 binding 数 ×  maxSets 估算：
-        //   ShadingWithRSMPass 单 set 含 6 个 sampler + 3 个 UBO + 1 个 storage image，
-        //   GBuffer/RSM 单 set 含 1 个 UBO + 1 个 sampler。
-        // 综合给每类 4096 配额（远大于实际峰值）以避免重复扩容。
+        // Sponza 稳定场景下唯一 DS 约等于材质量级（连续同 Diffuse 合并后），
+        // 但首帧/缓存失效时仍可能冲高。取 4096 作为安全上限。
         constexpr uint32_t kMaxSetsPerFrame = 4096;
         constexpr uint32_t kPerTypeCount    = 4096;
 
@@ -2104,6 +2098,8 @@ namespace TitusVkGraphics
 
     void VKDevice::DestroyDescriptorPools()
     {
+        if (m_commandList)
+            m_commandList->InvalidateDescriptorCaches();
         if (!m_context) return;
         for (auto& f : m_frames)
         {
@@ -2128,7 +2124,16 @@ namespace TitusVkGraphics
         ai.pSetLayouts        = &layout;
 
         VkDescriptorSet set = VK_NULL_HANDLE;
-        const VkResult r = vkAllocateDescriptorSets(m_context->GetDevice(), &ai, &set);
+        VkResult r = vkAllocateDescriptorSets(m_context->GetDevice(), &ai, &set);
+        if (r != VK_SUCCESS)
+        {
+            // 池耗尽：仅回收当前 FIF 槽位并丢掉对应缓存后重试一次
+            if (m_commandList)
+                m_commandList->InvalidateDescriptorCache(m_currentFrameIndex);
+            vkResetDescriptorPool(m_context->GetDevice(), frame.descriptorPool, 0);
+            set = VK_NULL_HANDLE;
+            r = vkAllocateDescriptorSets(m_context->GetDevice(), &ai, &set);
+        }
         if (r != VK_SUCCESS)
         {
             LOG_STREAM_ERROR("VKDevice") << "AllocateDescriptorSet failed (vk=" << r
