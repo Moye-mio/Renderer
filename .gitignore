@@ -68,3 +68,6 @@ GraphicSDK/
 
 # === RenderDoc ===
 Rdcs/
+
+# === 本地 Profiler（Tracy Viewer 等，不入库）===
+/Profiler/
