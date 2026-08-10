@@ -87,6 +87,7 @@
 - 提供 ImGui 初始化与业务侧的 Overlay 绘制封装；
 - 通过 `IGDevice::SetImGuiOverlayCallback(cb, userData)`（见 `10_RendererCore.md §4`）把真正的 imgui 绘制回调注入后端；
 - 后端只负责"在正确时机（`PassScheduler::DrawFrame` 中 Submit 后 / VK 的 `SubmitImpl` End 前）以正确的 FB/RenderPass 状态调用回调"，实现"后端无关的 Overlay"（时序坑见 `90_Flows.md`/`99_Pitfalls.md`）。
+- 默认「Renderer Info」面板含 **Tracy Capture** 勾选（`TitusTracySetCaptureEnabled`）与连接状态；完整语义见 `50_Tracy.md`。自定义 `IMGUI::SetUserCallback` 时若未调用 `OVERLAY::Render()`，该控件不会出现。
 
 ---
 

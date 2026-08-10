@@ -127,14 +127,14 @@ namespace TitusRHI
             for (auto& p : m_passes)
             {
                 const ERenderPassEvent ev = p->passEvent;
-                ZoneTransientN(passZone, PassZoneName(ev), true);
+                ZoneTransientN(passZone, PassZoneName(ev), TitusTracyCaptureEnabled());
                 ZoneValue(static_cast<uint64_t>(ev));
                 {
-                    ZoneTransientN(updateZone, UpdateZoneName(ev), true);
+                    ZoneTransientN(updateZone, UpdateZoneName(ev), TitusTracyCaptureEnabled());
                     p->Update(*m_device, frameIndex);
                 }
                 {
-                    ZoneTransientN(recordZone, RecordZoneName(ev), true);
+                    ZoneTransientN(recordZone, RecordZoneName(ev), TitusTracyCaptureEnabled());
                     p->Record(*m_device, *cmd, frameIndex, imageIndex);
                 }
             }

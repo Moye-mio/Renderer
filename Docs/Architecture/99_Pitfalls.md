@@ -90,3 +90,14 @@ GL 后端复用同一个 `mCommandList` 对象（`GLDevice.cpp:701`），跨帧�
 
 - Compute/RayTracing 管线、加速结构等 `*Impl` 在不支持的后端默认返回 `false`/invalid 句柄（`GDevice.h:185/191/200`）。上层必须以返回句柄的 `IsValid()` 判定，而非假设某后端一定支持。
 - VK 是否支持光追由 `VkContext` 运行期探测（`SupportsRayTracing` 等），且受 `RENDERER_ENABLE_RAY_TRACING` 宏门控。
+
+---
+
+## 7. Tracy：勿把「Capture 关闭」当成零开销，也勿绕过门控
+
+完整说明见 `50_Tracy.md`。要点：
+
+1. **测真实帧率**用编译期关 Tracy（`/p:TitusTracyEnable=false` 或 Release 默认），不要只靠 ImGui「Tracy Capture」。
+2. 开启 Tracy 时 props 强制 `/Zi`；Edit and Continue `/ZI` 下 `__LINE__` 非常量 → `ZoneScoped` **C2131**。
+3. `ZoneTransient*(..., active)` / `ZoneNamed*(..., active)` 的 `active` 必须传 `TitusTracyCaptureEnabled()`，写死 `true` 会绕过 ImGui 开关。
+4. 改 `TitusTracyEnable` 后需大范围重编；`TRACY_ENABLE` 不一致属于预处理级混链风险。

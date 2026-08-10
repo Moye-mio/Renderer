@@ -217,6 +217,7 @@ classDiagram
 | 2 | `10_RendererCore.md` / `20_RendererVK.md` / `30_RendererGL.md` / `40_Interface.md` | 逐模块职责（文件→class/struct→一句话职责） | ⏳ 待确认后开始 |
 | 3 | （并入各模块文档的"细节"章节） | class/struct 字段/生命周期/热点函数下钻 + 代码行号引用 | ⏳ |
 | 4 | `90_Flows.md` / `99_Pitfalls.md` | 关键流程时序图 + 设计陷阱 | ⏳ |
+| — | `50_Tracy.md` | Tracy 构建开关 / on-demand / ImGui 运行时采集 / 插桩地图 | ✅ |
 
 ---
 
@@ -225,4 +226,5 @@ classDiagram
 1. 先读本文建立分层与继承链的心智模型；
 2. 再看 `10_RendererCore.md` 吃透抽象契约（句柄/描述/`GDevice` 模板方法）；
 3. 然后任选一个后端（推荐 GL 更直观 → `30_RendererGL.md`，或 VK 更完整 → `20_RendererVK.md`）看"契约如何被实现"；
-4. 最后用 `90_Flows.md` 把静态结构串成一帧的动态流程。
+4. 最后用 `90_Flows.md` 把静态结构串成一帧的动态流程；
+5. 做 CPU 帧路径分析时读 `50_Tracy.md`（编译 / 连接 / ImGui Capture 三层开关）。

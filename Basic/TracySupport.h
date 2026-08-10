@@ -8,7 +8,8 @@
 // 若仍遇到 C2131，可在 include 本头之前手动：#define TracyLine 0
 //
 // 运行时：TitusTracySetCaptureEnabled / ImGui「Tracy Capture」可在已连接时
-// 暂停采集（Zone/FrameMark/Plot 走 active=false 早退）。
+// 暂停采集（ZoneScoped*/FrameMark/Plot 已包装；ZoneTransient* 需自行把
+// active 写成 TitusTracyCaptureEnabled()）。
 // ============================================================================
 
 #include <tracy/Tracy.hpp>
