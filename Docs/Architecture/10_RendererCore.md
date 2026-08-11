@@ -175,7 +175,7 @@ GL/VK 后端均继承本类（`GLDevice.h:89` / `VKDevice.h:155`）。
 ## 8. 线程模型三件套
 
 ### 8.1 `GThreadingMode.h`
-`enum class GThreadingMode : uint8_t`（`:13`）：`Direct`（GL 默认）/`NonThreaded`/`Threaded`（VK 默认）。
+`enum class GThreadingMode : uint8_t`（`:13`）：`Direct`（**GL/VK 当前默认**）/`NonThreaded`/`Threaded`（可选，`--threading=threaded`）。
 
 ### 8.2 主线程门面 · `GDeviceMainThread.{h,cpp}`
 `class GDeviceMainThread final : public GThreadableDevice`（`GDeviceMainThread.h:27`），构造时接管一个 `unique_ptr<GDevice> mRealDevice`（`:148`）。

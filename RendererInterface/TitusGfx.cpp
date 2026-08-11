@@ -5,7 +5,7 @@
 // 设备；APP::UpdateApp 内驱动 PassScheduler。
 //
 // 本文件只允许 include RendererCore（IWindow/PassScheduler/...）与
-// 自身工厂头；**禁止**直接 include Renderer/GLDevice.h、RendererVK/VKDevice.h。
+// 自身工厂头；**禁止**直接 include RendererGL/GLDevice.h、RendererVK/VKDevice.h。
 // ============================================================================
 #include "TitusGfx.h"
 #include "TitusGfxImGui.h"

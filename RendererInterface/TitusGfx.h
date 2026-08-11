@@ -2,7 +2,7 @@
 // ============================================================================
 // RendererInterface - TitusGfx.h
 // 唯一的对外门面头文件。外部模块只 include 这一个文件，**不**得直接 include
-// Renderer/、RendererCore/、RendererVK/ 任何头。
+// RendererGL/、RendererCore/、RendererVK/ 任何头。
 //
 // 命名空间分组（与旧 Renderer/Interface.h 的 TitusGraphics::* 对齐）：
 //   APP / WINDOW_KEYWORD / COMPONENT_CONFIG / RESOURCE_MANAGER / INPUT_MANAGER / CAMERA
@@ -157,7 +157,7 @@ namespace TitusRHI
         // -- 跨后端单元测试入口 --
         // 通过 GDeviceHeadless 跑一遍设备生命周期 + 资源 + 帧循环 + 延迟销毁的
         // 完整流程；无需 GPU/窗口；返回值为失败用例数（0 表示全通过）。
-        // 通常通过 `010_UnifiedTriangle --run-tests` 触发。
+        // 通常通过 `Test_000_UnifiedTriangle --run-tests` 触发。
         int RunUnitTests();
     }
 

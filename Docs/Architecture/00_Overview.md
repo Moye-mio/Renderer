@@ -11,7 +11,7 @@
 
 - **上层只描述"做什么"，后端负责"怎么做"**：业务/示例只依赖后端无关的接口与句柄，完全不感知底层是 OpenGL 还是 Vulkan。
 - **后端可插拔**：OpenGL 与 Vulkan 是两套并列的可替换实现，通过命令行 `--backend=gl|vk|null` 或 `APP::SetBackend(...)` 选择。
-- **线程模型可插拔**：`--threading=direct|threaded|nonthreaded`，VK 默认 `Threaded`，GL 默认 `Direct`。
+- **线程模型可插拔**：`--threading=direct|threaded|nonthreaded`；当前 **GL / VK 均默认 `Direct`**（`Threaded` 对 Compute / Descriptor / AS 尚未完全补齐，可用 `--threading=threaded` 回归）。
 
 ---
 
@@ -150,15 +150,15 @@ classDiagram
 
 | 模式 | 含义 | 默认用于 |
 |---|---|---|
-| `Direct` | 主线程直接驱动设备 | GL |
+| `Direct` | 主线程直接驱动设备 | **GL / VK（当前默认）** |
 | `NonThreaded` | 单线程录制 + 单线程提交，无 Worker | — |
-| `Threaded` | 主线程门面 + Worker 工作线程 | VK |
+| `Threaded` | 主线程门面 + Worker 工作线程 | 可选（`--threading=threaded`） |
 
 `Threaded` 模式的实现（M2 最小可用版）：
 - `GDeviceMainThread`（主线程）把 `BeginFrame/Submit/Present/WaitIdle` 序列化为 `GCommand` 写入 `CommandRingBuffer`（SPSC 字节流）；
 - `GDeviceWorker`（`RendererCore/GDeviceWorker.h:46`）在工作线程消费命令并 dispatch 到真实设备；
 - 资源类 API（`CreateBuffer/UpdateTexture/...`）暂时**持锁同步透传**到 RealDevice，未来（M3）再迁移到流式延迟创建。
-- **权衡**：先把最能受益的"帧提交/呈现的 `vkQueue` 调用"移出主线程；资源路径保守处理，保证现有跨后端代码零改动即可在 Threaded 下工作。
+- **当前默认不走 Threaded**：Worker 路径对 ComputePipeline / Dispatch / DescriptorSet / AS 尚未完全补齐，会在 Init 阶段踩空；故 `PickDefaultThreading` 对 GL/VK 均返回 `Direct`。用户仍可显式 `--threading=threaded` 做回归。
 
 ### 5.4 命令录制与执行分离
 `IGDevice::AcquireCommandList()` 取本帧命令列表，业务侧向 `RenderCommandList` 录命令，再 `Submit(cmd)`（`RendererCore/IGDevice.h:93`）。多帧 In-Flight 的 Fence/Semaphore **完全封装在后端内部，不外泄**（`IGDevice.h:87` 注释）。
@@ -209,14 +209,15 @@ classDiagram
 
 ---
 
-## 8. 文档导航（四遍扫描交付计划）
+## 8. 文档导航
 
 | # | 文档 | 视角 | 状态 |
 |---|---|---|---|
-| 1 | `00_Overview.md`（本文） | 架构地图 / Why / 分层 / 设计决策 | ✅ 已交付 |
-| 2 | `10_RendererCore.md` / `20_RendererVK.md` / `30_RendererGL.md` / `40_Interface.md` | 逐模块职责（文件→class/struct→一句话职责） | ⏳ 待确认后开始 |
-| 3 | （并入各模块文档的"细节"章节） | class/struct 字段/生命周期/热点函数下钻 + 代码行号引用 | ⏳ |
-| 4 | `90_Flows.md` / `99_Pitfalls.md` | 关键流程时序图 + 设计陷阱 | ⏳ |
+| 1 | `00_Overview.md`（本文） | 架构地图 / Why / 分层 / 设计决策 | ✅ |
+| 2 | `10_RendererCore.md` / `20_RendererVK.md` / `30_RendererGL.md` / `40_Interface.md` | 逐模块职责 + 热点函数下钻 | ✅ |
+| 2b | `21`–`24_VK_Step*.md` | VK 路径分步精读（启动帧 / Staging / Shader-Pipeline / Descriptor） | ✅ |
+| 3 | （并入各模块文档的"细节"章节） | class/struct 字段/生命周期/行号引用 | ✅（随模块文档） |
+| 4 | `90_Flows.md` / `99_Pitfalls.md` | 关键流程时序图 + 设计陷阱 | ✅ |
 | — | `50_Tracy.md` | Tracy 构建开关 / on-demand / ImGui 运行时采集 / 插桩地图 | ✅ |
 
 ---
@@ -226,5 +227,6 @@ classDiagram
 1. 先读本文建立分层与继承链的心智模型；
 2. 再看 `10_RendererCore.md` 吃透抽象契约（句柄/描述/`GDevice` 模板方法）；
 3. 然后任选一个后端（推荐 GL 更直观 → `30_RendererGL.md`，或 VK 更完整 → `20_RendererVK.md`）看"契约如何被实现"；
-4. 最后用 `90_Flows.md` 把静态结构串成一帧的动态流程；
-5. 做 CPU 帧路径分析时读 `50_Tracy.md`（编译 / 连接 / ImGui Capture 三层开关）。
+4. 深入 VK 时按 `21 → 22 → 23 → 24` 分步精读；
+5. 用 `90_Flows.md` 把静态结构串成一帧的动态流程；门面 API / 截图见 `40_Interface.md`；
+6. 做 CPU 帧路径分析时读 `50_Tracy.md`（编译 / 连接 / ImGui Capture 三层开关）。

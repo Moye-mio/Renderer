@@ -1,11 +1,11 @@
-# 0xx_RayQueryHello — Vulkan 光线追踪端到端示例
+# Test_002_RayQueryHello — Vulkan 光线追踪端到端示例
 
 验证 `RendererVK` 光线追踪通路的最小示例，覆盖两条路线：
 
-- **路线 A（Ray Query / P0，默认）**：compute 着色器内 `rayQuery` 求交。
-- **路线 B（Ray Tracing Pipeline / P1，`--rtpipeline`）**：独立 RT 管线 +
+- **路线 A（Ray Query，默认）**：compute 着色器内 `rayQuery` 求交。
+- **路线 B（Ray Tracing Pipeline，`--rtpipeline`）**：独立 RT 管线 +
   SBT + `TraceRays` 的 raygen→miss/hit 流程。
-- **动态场景（P2，`--dynamic`）**：`RayTracingManager`
+- **动态场景（`--dynamic`）**：`RayTracingManager`
   管理多个引用同一 BLAS 的 instance（BLAS 去重），每帧移动 instance 并
   refit TLAS（增量更新），再用 rayQuery 渲染。
 
@@ -28,7 +28,7 @@
 
 ## 分层约束
 
-- 源码**仅** include `RendererInterface/TitusGfxPass.h`（门面聚合 `::TitusGfx`
+- 源码**仅** include `RendererInterface/TitusGfxPass.h`（门面聚合 **`TitusRHI`**
   后端无关抽象），**不接触任何 `VkXxx` 或 `RendererVK/` 头**，通过
   `tools/check_no_backend_headers.bat` 静态扫描。
 - 光追资源全部经 `IGDevice::CreateAccelerationStructure` /
@@ -46,12 +46,12 @@ glslang 在线编译（目标 SPIR-V 1.5，支持 `GL_EXT_ray_query`）。
 
 ## 运行
 
-默认 Vulkan 后端、Direct 渲染模式（Threaded 路径当前不支持 Compute/AS）：
+默认 Vulkan 后端、**Direct** 渲染模式（Threaded 路径当前不支持 Compute/AS）：
 
 ```
-0xx_RayQueryHello.exe               # 路线 A：Ray Query
-0xx_RayQueryHello.exe --rtpipeline  # 路线 B：Ray Tracing Pipeline
-0xx_RayQueryHello.exe --dynamic     # P2：动态场景（AS 管理层 + 每帧 refit）
+Test_002_RayQueryHello.exe               # 路线 A：Ray Query
+Test_002_RayQueryHello.exe --rtpipeline  # 路线 B：Ray Tracing Pipeline
+Test_002_RayQueryHello.exe --dynamic     # 动态场景（AS 管理层 + 每帧 refit）
 ```
 
 路线 B 额外要求设备支持 `VK_KHR_ray_tracing_pipeline`
@@ -60,7 +60,7 @@ glslang 在线编译（目标 SPIR-V 1.5，支持 `GL_EXT_ray_query`）。
 ## 降级行为
 
 在**不支持** KHR 光追的 GPU 上，`GetCaps().supportsRayTracing == false`，
-示例检测后优雅提示并仅清屏（红底），不崩溃（需求 13.3）。
+示例检测后优雅提示并仅清屏（红底），不崩溃。
 
 ## 依赖
 

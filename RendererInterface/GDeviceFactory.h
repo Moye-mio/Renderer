@@ -6,7 +6,7 @@
 //   - 在 Direct 模式下直接返回真实 GLDevice/VKDevice；
 //   - 在 Null 模式下返回 RendererCore::GDeviceHeadless。
 //
-// 实现文件 GDeviceFactory.cpp 是**唯一**同时 include `Renderer/GLDevice.h` 与
+// 实现文件 GDeviceFactory.cpp 是**唯一**同时 include `RendererGL/GLDevice.h` 与
 // `RendererVK/VKDevice.h` 的源文件；其它任何源码都禁止同时引用两端 SDK。
 // ============================================================================
 #include <memory>

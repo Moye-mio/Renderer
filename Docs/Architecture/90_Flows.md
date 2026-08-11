@@ -20,11 +20,11 @@ sequenceDiagram
     Biz->>APP: AddPass(pass) *N
     Biz->>APP: InitApp()
     APP->>F: Create(backend, threading)
-    alt Threaded (VK 默认)
+    alt Threaded（可选 --threading=threaded）
         F->>Real: new GLDevice/VKDevice
         F->>Client: new GDeviceMainThread(move(real))
         F-->>APP: IGDevice = Client
-    else Direct / NonThreaded (GL 默认)
+    else Direct / NonThreaded（GL/VK 默认 Direct）
         F->>Real: new GLDevice/VKDevice
         F-->>APP: IGDevice = Real
     end
@@ -93,9 +93,11 @@ sequenceDiagram
 
 ---
 
-## 4. GL（Direct）与 VK（Threaded）在 `*Impl()` 层的差异
+## 4. GL 与 VK 在 `*Impl()` 层的差异（默认均为 Direct）
 
-| 步骤 | GL（Direct，主线程） | VK（Threaded，Worker 线程） |
+> 下表对比两后端 `*Impl()` 行为本身。默认线程模式均为 **Direct**（主线程直调）；若显式 `--threading=threaded`，VK/GL 的帧控制会经 Worker（见 §5），但 `*Impl()` 语义不变。
+
+| 步骤 | GL | VK |
 |---|---|---|
 | `BeginFrame` | `GLCommandList::Reset()` 清延迟队列（`GLDevice.cpp:696`） | `vkWaitForFences` + `vkAcquireNextImageKHR` |
 | `AcquireCommandList` | 返回复用的 `mCommandList`（`:701`） | 返回绑定 primary cmdbuf 的 `VKCommandList` |
@@ -105,9 +107,9 @@ sequenceDiagram
 
 ---
 
-## 5. Threaded 模式的命令跨线程流
+## 5. Threaded 模式的命令跨线程流（可选）
 
-`Threaded` 下帧控制经 `GDeviceMainThread` → `CommandRingBuffer` → `GDeviceWorker` → 真实设备：
+`Threaded` 下帧控制经 `GDeviceMainThread` → `CommandRingBuffer` → `GDeviceWorker` → 真实设备。**当前默认不启用**（Compute / Descriptor / AS 路径未完全补齐）：
 
 ```mermaid
 sequenceDiagram

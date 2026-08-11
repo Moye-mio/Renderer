@@ -1,7 +1,7 @@
 #pragma once
 // ============================================================================
 // RendererInterface - TitusGfxPass.h
-// 业务侧 Pass 转发头：当外部模块（如 Examples/010_UnifiedTriangle）需要继承
+// 业务侧 Pass 转发头：当外部模块（如 Examples/Test_000_UnifiedTriangle）需要继承
 // IRenderPass、调用 IGDevice / RenderCommandList、操作 GHandle / Desc /
 // Enums 时，**仅 include 本头文件**，禁止直接 include `RendererCore/*.h`。
 //

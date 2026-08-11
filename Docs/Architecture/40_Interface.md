@@ -30,7 +30,7 @@
 
 ## 2. 枚举转发 · `TitusGfxEnums.h`
 
-无自定义定义，仅三条转发：`../RendererCore/GEnums.h`（`GBackend`，权威定义 `GEnums.h:15`）、`../RendererCore/GThreadingMode.h`（`GThreadingMode`，`:13`，GL 默认 Direct / VK 默认 Threaded）、`../RendererCore/IRenderPass.h`（`ERenderPassEvent`）。让业务只 include 门面头即可拿到形参所需枚举。
+无自定义定义，仅三条转发：`../RendererCore/GEnums.h`（`GBackend`，权威定义 `GEnums.h:15`）、`../RendererCore/GThreadingMode.h`（`GThreadingMode`，`:13`，**GL/VK 均默认 Direct**）、`../RendererCore/IRenderPass.h`（`ERenderPassEvent`）。让业务只 include 门面头即可拿到形参所需枚举。
 
 ---
 
@@ -46,7 +46,7 @@
 ### 3.2 子命名空间 API 组
 | 命名空间 | 行号 | 职责 | 关键 API |
 |---|---|---|---|
-| `APP` | `:88` | 应用生命周期 + 后端/线程选择 + 截图 | `SetBackend`/`SetThreadingMode`/`GetBackend`/`ParseCommandLine`；`InitApp`/`UpdateApp`/`ShutdownApp`；`ShouldClose`/`RequestClose`/`WaitIdle`；`CaptureScreenshot`/`CaptureScreenshotNextFrameHideUi`/`GetLastScreenshot*`；`AddPass`；`UploadGpuModel`/`DestroyGpuModel`；`RunUnitTests` |
+| `APP` | `:90` | 应用生命周期 + 后端/线程/Validation + 截图 | `SetBackend`/`SetThreadingMode`/`SetEnableValidation`/`Get*`/`ParseCommandLine`；`InitApp`/`UpdateApp`/`ShutdownApp`；`ShouldClose`/`RequestClose`/`WaitIdle`；`CaptureScreenshot`/`CaptureScreenshotNextFrameHideUi`/`GetLastScreenshot*`；`AddPass`；`UploadGpuModel`/`DestroyGpuModel`；`RunUnitTests` |
 | `WINDOW_KEYWORD` | `:147` | 窗口属性 | `SetWindowSize`(149)/`SetIsCursorDisable`(150)/`GetWindowWidth`(151)/`GetWindowHeight`(152)/`SetWindowTitle`(153) |
 | `COMPONENT_CONFIG` | `:159` | 组件开关 | `SetIsEnableGUI`(161) |
 | `RESOURCE_MANAGER` | `:173` | Pass 注册 + 共享数据黑板 | `RegisterRenderPass`(178)/`RemoveAllPasses`(179)；模板 `RegisterSharedData<T>`(209)/`GetSharedDataByName<T>`(222) |
@@ -54,7 +54,7 @@
 | `CAMERA` | `:279` | 主相机访问 + 内置飞行相机 | 只读 `GetMainCamera*`(281-287)；注入 `SetMainCamera*`(282-294)；`struct FlyCameraConfig`(308)；`EnableBuiltinFlyCamera`(324)/`SetBuiltinFlyCameraConfig`(326) |
 
 ### 3.3 共享数据黑板（类型安全）
-`RESOURCE_MANAGER::detail`（`:182`）：`IsAllowedSharedDataType<T>`（`:187`）用白名单约束可存类型（`int/float/glm::vec3/vec4/mat4/GpuModelHandle/TextureHandle/BufferHandle/SamplerHandle`）；模板 `RegisterSharedData<T>`/`GetSharedDataByName<T>` 内联并携带 `static_assert`，底层走 `StoreSharedDataAny`/`FindSharedDataAny`（`:203-204`）。失败时 `GetSharedDataByName` 返回 `T{}`。
+`RESOURCE_MANAGER::detail`：`IsAllowedSharedDataType<T>` 用白名单约束可存类型（`int/float/TitusMath::Vec3/Vec4/Mat4/GpuModelHandle/TextureHandle/BufferHandle/SamplerHandle`）；模板 `RegisterSharedData<T>`/`GetSharedDataByName<T>` 内联并携带 `static_assert`，底层走 `StoreSharedDataAny`/`FindSharedDataAny`。失败时 `GetSharedDataByName` 返回 `T{}`。
 
 > **设计点**：黑板让不同 Pass 间以字符串 key 传递跨帧共享数据（如 GBuffer 纹理句柄），且在**编译期**限制可存类型，避免误存后端原生类型。
 
