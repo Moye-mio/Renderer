@@ -20,6 +20,7 @@
 #include "RendererCore/AssetGpuUploader.h"
 #include "RendererCore/Tests/DeviceLifecycleTest.h"
 #include "AssetLoader/AssetTypes.h"
+#include "AssetLoader/ImageWriter.h"
 #include "AssetLoader/Tests/AssetLoaderSmokeTest.h"
 
 // Platform 模块提供跨后端 GLFW 包装（仅 RendererInterface 内部 include，
@@ -32,7 +33,9 @@
 
 #include "TracySupport.h"
 
+#include <cstdlib>
 #include <cstring>
+#include <ctime>
 #include <iostream>
 #include "Logger.h"
 #include "LogMath.h"
@@ -43,6 +46,10 @@
 #include <chrono>
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <sstream>
+#include <iomanip>
+#include <vector>
 
 namespace TitusRHI
 {
@@ -102,12 +109,133 @@ namespace TitusRHI
             double flyLastCursorY = 0.0;
             std::chrono::steady_clock::time_point flyLastTickTime{};
             bool flyHasLastTickTime = false;
+
+            // -- Screenshot --
+            // screenshotAtSec < 0 表示 CLI 自动截图关闭。
+            double screenshotAtSec = -1.0;
+            bool screenshotQuitAfter = true;
+            bool screenshotDone = false;
+            std::string screenshotDir; // 空 = 默认 $(SolutionDir)<appName>/results/
+            std::chrono::steady_clock::time_point appStartTime{};
+            bool appStartTimeValid = false;
+
+            bool captureThisFrame = false;
+            bool captureImmediate = false;
+            bool pendingHideCapture = false;
+            bool quitAfterThisCapture = false;
+
+            bool lastScreenshotOk = false;
+            std::string lastScreenshotPath;
+            std::string lastScreenshotMessage;
         };
 
         GlobalState& Get()
         {
             static GlobalState g;
             return g;
+        }
+
+        const char* BackendFileTag(GBackend b)
+        {
+            switch (b)
+            {
+            case GBackend::OpenGL: return "gl";
+            case GBackend::Vulkan: return "vk";
+            case GBackend::Null:   return "null";
+            default:               return "unknown";
+            }
+        }
+
+        std::string ResolveDefaultScreenshotDir()
+        {
+            namespace fs = std::filesystem;
+            const std::string& appName = TitusBasic::Logger::Instance().GetAppName();
+            const std::string folder = appName.empty() ? std::string("TitusApp") : appName;
+#ifdef SOLUTION_DIR
+            try
+            {
+                fs::path solDir = fs::path(SOLUTION_DIR);
+                if (!solDir.empty() && fs::exists(solDir))
+                    return (solDir / folder / "results").string();
+            }
+            catch (...) { /* fallthrough */ }
+#endif
+            return (fs::current_path() / "results").string();
+        }
+
+        std::string MakeScreenshotFilePath(const std::string& dir)
+        {
+            namespace fs = std::filesystem;
+            auto now = std::chrono::system_clock::now();
+            std::time_t t = std::chrono::system_clock::to_time_t(now);
+            std::tm tmv{};
+#if defined(_WIN32)
+            localtime_s(&tmv, &t);
+#else
+            localtime_r(&t, &tmv);
+#endif
+            char ts[32] = {};
+            std::strftime(ts, sizeof(ts), "%Y%m%d_%H%M%S", &tmv);
+
+            std::ostringstream name;
+            name << "shot_" << BackendFileTag(Get().backend) << "_" << ts << ".png";
+            return (fs::path(dir) / name.str()).string();
+        }
+
+        bool PerformScreenshotCapture()
+        {
+            auto& g = Get();
+            g.lastScreenshotOk = false;
+            g.lastScreenshotPath.clear();
+            g.lastScreenshotMessage.clear();
+
+            if (!g.device)
+            {
+                g.lastScreenshotMessage = "no device";
+                LOG_STREAM_ERROR("TitusRHI::APP") << "CaptureScreenshot: no device";
+                return false;
+            }
+
+            std::vector<uint8_t> rgba;
+            uint32_t w = 0, h = 0;
+            if (!g.device->ReadbackBackbuffer(rgba, w, h))
+            {
+                g.lastScreenshotMessage = "readback failed";
+                LOG_STREAM_ERROR("TitusRHI::APP") << "CaptureScreenshot: ReadbackBackbuffer failed";
+                return false;
+            }
+
+            const std::string dir = g.screenshotDir.empty()
+                                        ? ResolveDefaultScreenshotDir()
+                                        : g.screenshotDir;
+            const std::string path = MakeScreenshotFilePath(dir);
+            if (!TitusAsset::SaveImage2DPNG(path, w, h, rgba.data()))
+            {
+                g.lastScreenshotMessage = "write PNG failed";
+                LOG_STREAM_ERROR("TitusRHI::APP") << "CaptureScreenshot: SaveImage2DPNG failed: " << path;
+                return false;
+            }
+
+            g.lastScreenshotOk = true;
+            g.lastScreenshotPath = path;
+            g.lastScreenshotMessage = path;
+            LOG_STREAM_INFO("TitusRHI::APP") << "Screenshot saved: " << path;
+            return true;
+        }
+
+        void OnBeforePresentScreenshot()
+        {
+            auto& g = Get();
+            if (!g.captureThisFrame) return;
+            g.captureThisFrame = false;
+
+            const bool ok = PerformScreenshotCapture();
+            if (g.quitAfterThisCapture)
+            {
+                g.quitAfterThisCapture = false;
+                if (ok)
+                    APP::RequestClose();
+            }
         }
 
         // 默认线程模式：当前各后端均走 Direct（见下方说明）
@@ -284,6 +412,37 @@ namespace TitusRHI
                         LOG_STREAM_ERROR("TitusRHI") << "Unknown --validation value: " << v
                                   << " (expected on|off|true|false|1|0)";
                 }
+                else if (std::strncmp(a, "--screenshot-at=", 16) == 0)
+                {
+                    const char* v = a + 16;
+                    char* end = nullptr;
+                    const double sec = std::strtod(v, &end);
+                    if (end == v || sec < 0.0)
+                    {
+                        LOG_STREAM_ERROR("TitusRHI") << "Invalid --screenshot-at value: " << v;
+                    }
+                    else
+                    {
+                        Get().screenshotAtSec = sec;
+                        LOG_STREAM_INFO("TitusRHI") << "Auto screenshot at " << sec << "s";
+                    }
+                }
+                else if (std::strncmp(a, "--screenshot-dir=", 17) == 0)
+                {
+                    Get().screenshotDir = a + 17;
+                    LOG_STREAM_INFO("TitusRHI") << "Screenshot dir override: " << Get().screenshotDir;
+                }
+                else if (std::strncmp(a, "--quit-after-screenshot=", 24) == 0)
+                {
+                    const char* v = a + 24;
+                    if (std::strcmp(v, "on") == 0 || std::strcmp(v, "true") == 0 || std::strcmp(v, "1") == 0)
+                        Get().screenshotQuitAfter = true;
+                    else if (std::strcmp(v, "off") == 0 || std::strcmp(v, "false") == 0 || std::strcmp(v, "0") == 0)
+                        Get().screenshotQuitAfter = false;
+                    else
+                        LOG_STREAM_ERROR("TitusRHI") << "Unknown --quit-after-screenshot value: " << v
+                                  << " (expected on|off|true|false|1|0)";
+                }
             }
         }
 
@@ -368,6 +527,7 @@ namespace TitusRHI
             // 4) PassScheduler
             g.scheduler = std::make_unique<PassScheduler>();
             g.scheduler->SetDevice(g.device.get());
+            g.scheduler->SetBeforePresentCallback(&OnBeforePresentScreenshot);
             // InitAllPasses 会依次调用已注册 Pass 的 Init(device)；
             // 未注册任何 Pass 时调用也是安全的（仅是空遍历）。
             g.scheduler->InitAllPasses();
@@ -384,6 +544,9 @@ namespace TitusRHI
             {
                 TitusRHI::IMGUI::Init();
             }
+
+            g.appStartTime = std::chrono::steady_clock::now();
+            g.appStartTimeValid = true;
         }
 
         void UpdateApp()
@@ -399,16 +562,53 @@ namespace TitusRHI
             // 输入并刷新主相机；未启用时本调用为 no-op。
             FlyCameraTickIfEnabled();
 
+            // 截图状态机：Hide-UI 延迟一帧 / CLI 定时 / 本帧立即预约
+            bool skipImGui = false;
+            bool wantCapture = false;
+            bool wantQuitAfter = false;
+
+            if (g.pendingHideCapture)
+            {
+                skipImGui = true;
+                wantCapture = true;
+                g.pendingHideCapture = false;
+            }
+
+            if (!g.screenshotDone && g.screenshotAtSec >= 0.0 && g.appStartTimeValid)
+            {
+                const double elapsed = std::chrono::duration<double>(
+                    std::chrono::steady_clock::now() - g.appStartTime).count();
+                if (elapsed >= g.screenshotAtSec)
+                {
+                    wantCapture = true;
+                    wantQuitAfter = g.screenshotQuitAfter;
+                    g.screenshotDone = true;
+                }
+            }
+
             // 在 DrawFrame 之前完成 imgui NewFrame + 业务回调 +
             // ImGui::Render。生成的 draw data 在 DrawFrame 内部由 device 通过
             // RenderImGuiOverlay hook 录到 backbuffer / cmdbuf 上。
-            if (g.enableGUI && TitusRHI::IMGUI::IsInitialized())
+            // Hide-UI 截图帧：跳过 NewFrame，并禁用 Overlay 绘制以免沿用上帧 draw data。
+            TitusRHI::IMGUI::SetOverlayDrawEnabled(!skipImGui);
+            if (!skipImGui && g.enableGUI && TitusRHI::IMGUI::IsInitialized())
             {
                 ZoneScopedN("IMGUI::NewFrame");
                 TitusRHI::IMGUI::NewFrame();
             }
 
+            if (g.captureImmediate)
+            {
+                wantCapture = true;
+                g.captureImmediate = false;
+            }
+
+            g.captureThisFrame = wantCapture;
+            g.quitAfterThisCapture = wantQuitAfter;
+
             if (g.device && g.scheduler) g.scheduler->DrawFrame();
+            TitusRHI::IMGUI::SetOverlayDrawEnabled(true);
+
             // GL 后端需 SwapBuffers；VK 后端在 device.Present 内部完成、
             // GLFWWindow 在 VK 模式下的 SwapBuffers 为空操作。
             if (g.window) g.window->SwapBuffers();
@@ -467,11 +667,47 @@ namespace TitusRHI
             return true;
         }
 
+        void RequestClose()
+        {
+            auto& g = Get();
+            if (g.window)
+            {
+                if (GLFWwindow* win = static_cast<GLFWwindow*>(g.window->GetNativeHandle()))
+                    glfwSetWindowShouldClose(win, GLFW_TRUE);
+                return;
+            }
+            if (g.device)
+            {
+                if (GLFWwindow* win = static_cast<GLFWwindow*>(g.device->GetWindowNativeHandle()))
+                    glfwSetWindowShouldClose(win, GLFW_TRUE);
+            }
+        }
+
         void WaitIdle()
         {
             auto& g = Get();
             if (g.device) g.device->WaitIdle();
         }
+
+        bool CaptureScreenshot()
+        {
+            // 在 NewFrame / UpdateApp 中调用时预约到本帧 Present 前；
+            // 若已错过本帧钩子则立即读回（GL 在 Swap 前仍可用；VK 可能失败）。
+            auto& g = Get();
+            g.captureImmediate = true;
+            g.captureThisFrame = true;
+            g.quitAfterThisCapture = false;
+            return true;
+        }
+
+        void CaptureScreenshotNextFrameHideUi()
+        {
+            Get().pendingHideCapture = true;
+        }
+
+        bool GetLastScreenshotOk() { return Get().lastScreenshotOk; }
+        const std::string& GetLastScreenshotPath() { return Get().lastScreenshotPath; }
+        const std::string& GetLastScreenshotMessage() { return Get().lastScreenshotMessage; }
 
         void AddPass(const std::shared_ptr<IRenderPass> pass)
         {

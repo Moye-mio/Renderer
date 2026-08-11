@@ -98,7 +98,9 @@ void VkSwapchainWrapper::CreateSwapchain(VkContext& ctx, VkWindow& window)
     ci.imageColorSpace  = fmt.colorSpace;
     ci.imageExtent      = ext;
     ci.imageArrayLayers = 1;
-    ci.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    // TRANSFER_SRC：允许 Present 前把 swapchain image 拷到 staging 做截图读回。
+    ci.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+                        | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
     const auto& idx = ctx.GetQueueFamilyIndices();
     uint32_t queueIdx[] = { idx.graphicsFamily, idx.presentFamily };

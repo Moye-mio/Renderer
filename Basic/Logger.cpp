@@ -169,6 +169,8 @@ namespace TitusBasic
         char ts[32] = {};
         std::strftime(ts, sizeof(ts), "%Y-%m-%d_%H-%M-%S", &tmv);
 
+        m_appName = name;
+
         std::string logDir = ResolveLogDir();
         fs::path filePath = fs::path(logDir) / (std::string(ts) + "_" + name + ".log");
         m_logFilePath = filePath.string();

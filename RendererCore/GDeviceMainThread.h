@@ -69,6 +69,17 @@ namespace TitusRHI
         void UpdateTexture(TextureHandle texture,
                            const TextureUploadDesc& upload) override;
 
+        // 读回：等 Worker 空闲后转发到 RealDevice（VK 须在 Present 前调用，
+        // Threaded 模式下由调用方保证时序；此处 WaitIdle 后同步读）。
+        bool ReadbackBackbuffer(std::vector<uint8_t>& outRgba,
+                                uint32_t& outWidth,
+                                uint32_t& outHeight) override;
+
+        bool IsWindowClosed() const override;
+        void* GetWindowNativeHandle() const override;
+        void SetImGuiOverlayCallback(ImGuiOverlayCallback cb, void* userData) override;
+        void RenderImGuiOverlay() override;
+
         // —— 资源查询：转发到 RealDevice，避免上层拿到 Client 时看到空表 ——
         const RHIBuffer* FindBuffer(BufferHandle h) const override;
         const RHITexture* FindTexture(TextureHandle h) const override;

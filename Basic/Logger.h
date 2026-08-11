@@ -47,6 +47,8 @@ namespace TitusBasic
         void SetFileEnabled(bool enabled)    { m_fileEnabled.store(enabled, std::memory_order_relaxed); }
 
         const std::string& GetLogFilePath() const { return m_logFilePath; }
+        // Init 时传入（或由 exe 名推导）的应用名；未 Init 时为空。
+        const std::string& GetAppName() const { return m_appName; }
 
         // printf 风格
         void Logf(LogLevel level, const char* tag, const char* fmt, ...);
@@ -82,6 +84,7 @@ namespace TitusBasic
         bool         m_initialized = false;
         std::ofstream m_file;
         std::string  m_logFilePath;
+        std::string  m_appName;
     };
 
     // 流式日志辅助对象：在析构时把累积的内容一次性提交给 Logger

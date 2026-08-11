@@ -164,6 +164,7 @@
     </ItemGroup>
     <ItemGroup>
         <ClInclude Include="GLTranslate.h"/>
+        <ClInclude Include="GLError.h"/>
         <ClInclude Include="GLDevice.h"/>
         <ClInclude Include="GLCommandList.h"/>
     </ItemGroup>

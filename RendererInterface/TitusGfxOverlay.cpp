@@ -192,6 +192,28 @@ namespace TitusRHI
                     }
                 }
 
+                ImGui::Separator();
+                ImGui::Text("Screenshot");
+                {
+                    static bool hideImGuiForCapture = false;
+                    ImGui::Checkbox("Hide ImGui for capture", &hideImGuiForCapture);
+                    if (ImGui::Button("Capture Screenshot"))
+                    {
+                        if (hideImGuiForCapture)
+                            APP::CaptureScreenshotNextFrameHideUi();
+                        else
+                            APP::CaptureScreenshot();
+                    }
+                    const std::string& msg = APP::GetLastScreenshotMessage();
+                    if (!msg.empty())
+                    {
+                        if (APP::GetLastScreenshotOk())
+                            ImGui::TextWrapped("Saved: %s", msg.c_str());
+                        else
+                            ImGui::TextWrapped("Failed: %s", msg.c_str());
+                    }
+                }
+
                 ImGui::End();
             }
 

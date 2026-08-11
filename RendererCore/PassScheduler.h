@@ -5,6 +5,7 @@
 // DrawFrame 流程对两个后端完全相同：
 //   BeginFrame → AcquireCommandList → 遍历 Pass.Update/Record → Submit → Present
 // ============================================================================
+#include <functional>
 #include <vector>
 #include <memory>
 
@@ -37,6 +38,10 @@ namespace TitusRHI
         // 调度一帧渲染：BeginFrame → 录制所有 Pass → Submit → Present
         void DrawFrame();
 
+        // 在 RenderImGuiOverlay 之后、Present 之前调用（截图读回挂点：
+        // VK 必须在 Present 前读 swapchain image）。
+        void SetBeforePresentCallback(std::function<void()> cb) { m_beforePresent = std::move(cb); }
+
         size_t GetPassCount() const { return m_passes.size(); }
 
     private:
@@ -45,5 +50,6 @@ namespace TitusRHI
         IGDevice*                                m_device = nullptr;
         std::vector<std::shared_ptr<IRenderPass>>  m_passes;
         uint32_t                                   m_frameCounter = 0;
+        std::function<void()>                      m_beforePresent;
     };
 }

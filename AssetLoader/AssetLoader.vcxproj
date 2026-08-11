@@ -91,6 +91,7 @@
     <ItemGroup>
         <ClCompile Include="AssetLoader.cpp"/>
         <ClCompile Include="ImageLoader.cpp"/>
+        <ClCompile Include="ImageWriter.cpp"/>
         <ClCompile Include="MeshLoader.cpp"/>
         <ClCompile Include="ModelLoader.cpp"/>
         <ClCompile Include="FileSystem.cpp"/>
@@ -99,6 +100,7 @@
         <ClInclude Include="AssetTypes.h"/>
         <ClInclude Include="AssetLoader.h"/>
         <ClInclude Include="ImageLoader.h"/>
+        <ClInclude Include="ImageWriter.h"/>
         <ClInclude Include="MeshLoader.h"/>
         <ClInclude Include="ModelLoader.h"/>
         <ClInclude Include="FileSystem.h"/>

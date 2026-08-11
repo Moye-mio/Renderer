@@ -36,6 +36,11 @@ namespace TitusRHI
         // 是否已成功初始化（即 enableGUI=true 且后端 init 成功）。
         bool IsInitialized();
 
+        // 为 true 时 Overlay 回调跳过 ImGui_Impl*_RenderDrawData（用于无 UI 截图帧）。
+        // 默认 true。
+        void SetOverlayDrawEnabled(bool enabled);
+        bool IsOverlayDrawEnabled();
+
         // 内部使用：由 RendererInterface 的 APP::InitApp / UpdateApp / ShutdownApp
         // 在统一时机调用。业务代码不应直接调用。
         void Init();

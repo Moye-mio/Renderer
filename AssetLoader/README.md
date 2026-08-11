@@ -19,6 +19,7 @@ AssetLoader/
 ├── AssetTypes.h       // CPU IR：Image/Mesh/Model 数据结构（命名空间 TitusAsset）
 ├── FileSystem.h/.cpp  // 通用 IO 工具：ReadAllBytes / GetExtensionLower 等
 ├── ImageLoader.h/.cpp // PNG/JPG/HDR/DDS 解码（stb_image + gli）
+├── ImageWriter.h/.cpp // RGBA8 → PNG 写出（stb_image_write）
 ├── MeshLoader.h/.cpp  // aiMesh / aiMaterial → MeshAssetData
 ├── ModelLoader.h/.cpp // 顶层入口：磁盘文件 → ModelAssetData
 └── AssetLoader.h/.cpp // 模块统一 include + 版本号符号

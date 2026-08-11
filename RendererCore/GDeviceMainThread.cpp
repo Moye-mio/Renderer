@@ -142,6 +142,40 @@ namespace TitusRHI
         OnWaitIdleImpl();
     }
 
+    bool GDeviceMainThread::ReadbackBackbuffer(std::vector<uint8_t>& outRgba,
+                                               uint32_t& outWidth,
+                                               uint32_t& outHeight)
+    {
+        WaitIdle();
+        std::lock_guard<std::mutex> lk(m_resourceMutex);
+        if (!m_realDevice) return false;
+        return m_realDevice->ReadbackBackbuffer(outRgba, outWidth, outHeight);
+    }
+
+    bool GDeviceMainThread::IsWindowClosed() const
+    {
+        std::lock_guard<std::mutex> lk(m_resourceMutex);
+        return m_realDevice ? m_realDevice->IsWindowClosed() : true;
+    }
+
+    void* GDeviceMainThread::GetWindowNativeHandle() const
+    {
+        std::lock_guard<std::mutex> lk(m_resourceMutex);
+        return m_realDevice ? m_realDevice->GetWindowNativeHandle() : nullptr;
+    }
+
+    void GDeviceMainThread::SetImGuiOverlayCallback(ImGuiOverlayCallback cb, void* userData)
+    {
+        std::lock_guard<std::mutex> lk(m_resourceMutex);
+        if (m_realDevice) m_realDevice->SetImGuiOverlayCallback(cb, userData);
+    }
+
+    void GDeviceMainThread::RenderImGuiOverlay()
+    {
+        std::lock_guard<std::mutex> lk(m_resourceMutex);
+        if (m_realDevice) m_realDevice->RenderImGuiOverlay();
+    }
+
     uint32_t GDeviceMainThread::GetCurrentFrameIndex() const
     {
         std::lock_guard<std::mutex> lk(m_resourceMutex);

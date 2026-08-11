@@ -29,6 +29,10 @@ public:
     VkExtent2D                  GetExtent()        const { return m_extent; }
     VkRenderPass                GetDefaultRenderPass() const { return m_defaultRenderPass; }
     uint32_t                    GetImageCount()    const { return static_cast<uint32_t>(m_images.size()); }
+    VkImage                     GetImage(uint32_t i) const
+    {
+        return (i < m_images.size()) ? m_images[i] : VK_NULL_HANDLE;
+    }
     VkFramebuffer               GetFramebuffer(uint32_t i) const { return m_framebuffers[i]; }
     const std::vector<VkImageView>& GetImageViews() const { return m_imageViews; }
 

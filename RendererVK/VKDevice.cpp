@@ -1918,6 +1918,180 @@ namespace TitusVkGraphics
         VK_CHECK(vkQueueSubmit(m_context->GetGraphicsQueue(), 1, &si, frame.inFlightFence));
     }
 
+    bool VKDevice::ReadbackBackbuffer(std::vector<uint8_t>& outRgba,
+                                      uint32_t& outWidth,
+                                      uint32_t& outHeight)
+    {
+        if (!m_context || !m_swapchain || !m_frameInProgress || m_frames.empty())
+        {
+            LOG_STREAM_ERROR("VKDevice") << "ReadbackBackbuffer: device/swapchain not ready";
+            return false;
+        }
+
+        const VkExtent2D ext = m_swapchain->GetExtent();
+        outWidth = ext.width;
+        outHeight = ext.height;
+        if (outWidth == 0 || outHeight == 0)
+        {
+            LOG_STREAM_ERROR("VKDevice") << "ReadbackBackbuffer: invalid extent";
+            return false;
+        }
+
+        VkImage srcImage = m_swapchain->GetImage(m_currentImageIndex);
+        if (srcImage == VK_NULL_HANDLE)
+        {
+            LOG_STREAM_ERROR("VKDevice") << "ReadbackBackbuffer: invalid swapchain image";
+            return false;
+        }
+
+        // 等待本帧 Submit 完成，再做 one-shot copy（Present 之前调用）。
+        auto& frame = m_frames[m_currentFrameIndex];
+        if (frame.inFlightFence != VK_NULL_HANDLE)
+        {
+            VK_CHECK(vkWaitForFences(m_context->GetDevice(), 1, &frame.inFlightFence, VK_TRUE, UINT64_MAX));
+        }
+
+        const VkDeviceSize bytes = static_cast<VkDeviceSize>(outWidth) * outHeight * 4u;
+
+        VkBufferCreateInfo bci{};
+        bci.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+        bci.size        = bytes;
+        bci.usage       = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        bci.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VkBuffer staging = VK_NULL_HANDLE;
+        VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
+        if (vkCreateBuffer(m_context->GetDevice(), &bci, nullptr, &staging) != VK_SUCCESS)
+        {
+            LOG_STREAM_ERROR("VKDevice") << "ReadbackBackbuffer: create staging buffer failed";
+            return false;
+        }
+
+        VkMemoryRequirements req{};
+        vkGetBufferMemoryRequirements(m_context->GetDevice(), staging, &req);
+        VkMemoryAllocateInfo mai{};
+        mai.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        mai.allocationSize  = req.size;
+        mai.memoryTypeIndex = m_context->FindMemoryType(
+            req.memoryTypeBits,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        if (vkAllocateMemory(m_context->GetDevice(), &mai, nullptr, &stagingMemory) != VK_SUCCESS)
+        {
+            vkDestroyBuffer(m_context->GetDevice(), staging, nullptr);
+            LOG_STREAM_ERROR("VKDevice") << "ReadbackBackbuffer: allocate staging memory failed";
+            return false;
+        }
+        VK_CHECK(vkBindBufferMemory(m_context->GetDevice(), staging, stagingMemory, 0));
+
+        VkCommandBuffer cb = BeginOneTimeCommands();
+        if (cb == VK_NULL_HANDLE)
+        {
+            vkDestroyBuffer(m_context->GetDevice(), staging, nullptr);
+            vkFreeMemory(m_context->GetDevice(), stagingMemory, nullptr);
+            return false;
+        }
+
+        // default / ImGui RP 的 finalLayout 均为 PRESENT_SRC_KHR
+        {
+            VkImageMemoryBarrier b{};
+            b.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            b.oldLayout                       = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            b.newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            b.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+            b.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+            b.image                           = srcImage;
+            b.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            b.subresourceRange.baseMipLevel   = 0;
+            b.subresourceRange.levelCount     = 1;
+            b.subresourceRange.baseArrayLayer = 0;
+            b.subresourceRange.layerCount     = 1;
+            b.srcAccessMask                   = VK_ACCESS_MEMORY_READ_BIT;
+            b.dstAccessMask                   = VK_ACCESS_TRANSFER_READ_BIT;
+            vkCmdPipelineBarrier(cb,
+                                 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 0, 0, nullptr, 0, nullptr, 1, &b);
+        }
+
+        {
+            VkBufferImageCopy region{};
+            region.bufferOffset                    = 0;
+            region.bufferRowLength                 = 0;
+            region.bufferImageHeight               = 0;
+            region.imageSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            region.imageSubresource.mipLevel       = 0;
+            region.imageSubresource.baseArrayLayer = 0;
+            region.imageSubresource.layerCount     = 1;
+            region.imageOffset                     = {0, 0, 0};
+            region.imageExtent                     = {outWidth, outHeight, 1};
+            vkCmdCopyImageToBuffer(cb, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                   staging, 1, &region);
+        }
+
+        {
+            VkImageMemoryBarrier b{};
+            b.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            b.oldLayout                       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            b.newLayout                       = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            b.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+            b.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+            b.image                           = srcImage;
+            b.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            b.subresourceRange.baseMipLevel   = 0;
+            b.subresourceRange.levelCount     = 1;
+            b.subresourceRange.baseArrayLayer = 0;
+            b.subresourceRange.layerCount     = 1;
+            b.srcAccessMask                   = VK_ACCESS_TRANSFER_READ_BIT;
+            b.dstAccessMask                   = 0;
+            vkCmdPipelineBarrier(cb,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                 0, 0, nullptr, 0, nullptr, 1, &b);
+        }
+
+        EndOneTimeCommands(cb);
+
+        void* mapped = nullptr;
+        if (vkMapMemory(m_context->GetDevice(), stagingMemory, 0, bytes, 0, &mapped) != VK_SUCCESS
+            || !mapped)
+        {
+            vkDestroyBuffer(m_context->GetDevice(), staging, nullptr);
+            vkFreeMemory(m_context->GetDevice(), stagingMemory, nullptr);
+            LOG_STREAM_ERROR("VKDevice") << "ReadbackBackbuffer: map staging failed";
+            return false;
+        }
+
+        const auto* src = static_cast<const uint8_t*>(mapped);
+        outRgba.resize(static_cast<size_t>(bytes));
+        const VkFormat fmt = m_swapchain->GetImageFormat();
+        // 常见 swapchain：B8G8R8A8_* → 交换 R/B；其余按 RGBA 直拷。
+        if (fmt == VK_FORMAT_B8G8R8A8_SRGB || fmt == VK_FORMAT_B8G8R8A8_UNORM)
+        {
+            for (VkDeviceSize i = 0; i < bytes; i += 4)
+            {
+                outRgba[static_cast<size_t>(i) + 0] = src[static_cast<size_t>(i) + 2];
+                outRgba[static_cast<size_t>(i) + 1] = src[static_cast<size_t>(i) + 1];
+                outRgba[static_cast<size_t>(i) + 2] = src[static_cast<size_t>(i) + 0];
+                outRgba[static_cast<size_t>(i) + 3] = src[static_cast<size_t>(i) + 3];
+            }
+        }
+        else
+        {
+            std::memcpy(outRgba.data(), src, static_cast<size_t>(bytes));
+            if (fmt != VK_FORMAT_R8G8B8A8_SRGB && fmt != VK_FORMAT_R8G8B8A8_UNORM)
+            {
+                LOG_STREAM_WARN("VKDevice")
+                    << "ReadbackBackbuffer: unhandled swapchain format "
+                    << static_cast<int>(fmt) << ", copied as RGBA bytes";
+            }
+        }
+
+        vkUnmapMemory(m_context->GetDevice(), stagingMemory);
+        vkDestroyBuffer(m_context->GetDevice(), staging, nullptr);
+        vkFreeMemory(m_context->GetDevice(), stagingMemory, nullptr);
+        return true;
+    }
+
     void VKDevice::PresentImpl()
     {
         if (!m_frameInProgress || m_frames.empty()) return;

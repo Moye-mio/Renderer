@@ -98,8 +98,9 @@ namespace TitusRHI
         bool GetEnableValidation();
 
         // 命令行解析：识别 --backend=gl|vk|null、--threading=direct|threaded|nonthreaded、
-        // --validation=on|off（亦接受 true/false/1/0）
-        // 解析后会写入 SetBackend / SetThreadingMode / SetEnableValidation
+        // --validation=on|off（亦接受 true/false/1/0）、
+        // --screenshot-at=<sec>、--screenshot-dir=<path>、--quit-after-screenshot=on|off
+        // 解析后会写入 SetBackend / SetThreadingMode / SetEnableValidation 等
         void ParseCommandLine(int argc, char** argv);
 
         // 应用生命周期
@@ -114,8 +115,22 @@ namespace TitusRHI
         // -- 主循环辅助 --
         // 是否已收到窗口关闭事件（InitApp 之后调用才有意义）。
         bool ShouldClose();
+        // 请求关闭窗口（下一圈 ShouldClose 为 true）。GL/VK 均支持。
+        void RequestClose();
         // 同步等待 GPU 空闲（退出前调用，避免 in-flight 资源被提前销毁）。
         void WaitIdle();
+
+        // -- 截图 --
+        // 立即读回当前帧 backbuffer（含已绘制的 ImGui）并写 PNG。
+        // 实际读回发生在本帧 DrawFrame 的 Present 之前；若在 NewFrame 回调里调用，
+        // 将预约到本帧 Present 前执行。
+        bool CaptureScreenshot();
+        // 预约：下一帧跳过 ImGui 录制后再截图（用于 Overlay「屏蔽 ImGui」）。
+        void CaptureScreenshotNextFrameHideUi();
+        // 最近一次截图状态（供 Overlay 显示）；path 在失败时也可能为空。
+        bool GetLastScreenshotOk();
+        const std::string& GetLastScreenshotPath();
+        const std::string& GetLastScreenshotMessage();
 
         // -- Pass 注册 --
         // 调用者需额外 include "RendererInterface/TitusGfxPass.h" 以获得

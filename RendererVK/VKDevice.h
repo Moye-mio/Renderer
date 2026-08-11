@@ -171,6 +171,11 @@ namespace TitusVkGraphics
         // VK 后端自管 VkWindow，INPUT_MANAGER 通过此接口拿到 GLFWwindow*。
         void* GetWindowNativeHandle() const override;
 
+        // 读回当前已 acquire 的 swapchain image（须在 Present 之前调用）。
+        bool ReadbackBackbuffer(std::vector<uint8_t>& outRgba,
+                                uint32_t& outWidth,
+                                uint32_t& outHeight) override;
+
         // ImGui Overlay 录制 Hook（详见 IGDevice.h）。
         // VK 后端实现：开 swapchain 默认 RenderPass（loadOp=Load）+
         // 调用注入的 callback（其中会执行 ImGui_ImplVulkan_RenderDrawData

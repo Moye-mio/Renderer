@@ -126,6 +126,11 @@ namespace TitusGraphics
         uint32_t GetDefaultWidth() const { return m_defaultWidth; }
         uint32_t GetDefaultHeight() const { return m_defaultHeight; }
 
+        // 读回默认 FBO（须在本帧绘制完成之后、SwapBuffers 之前调用）
+        bool ReadbackBackbuffer(std::vector<uint8_t>& outRgba,
+                                uint32_t& outWidth,
+                                uint32_t& outHeight) override;
+
     protected:
         // ====================================================================
         // GThreadableDevice / GDevice 钩子

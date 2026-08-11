@@ -66,6 +66,10 @@ GraphicSDK/
 # === Renderer 运行时日志输出 ===
 /Logs/
 
+# === 各工程自动/手动截图输出（保留目录占位）===
+**/results/*.png
+!**/results/.gitkeep
+
 # === RenderDoc ===
 Rdcs/
 

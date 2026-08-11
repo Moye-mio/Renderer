@@ -161,6 +161,12 @@ namespace TitusRHI
             m_device->RenderImGuiOverlay();
         }
 
+        if (m_beforePresent)
+        {
+            ZoneScopedN("BeforePresent");
+            m_beforePresent();
+        }
+
         {
             ZoneScopedN("Present");
             m_device->Present();

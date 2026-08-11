@@ -60,6 +60,7 @@ namespace
         TitusRHI::GBackend backend = TitusRHI::GBackend::Unknown;
         GLFWwindow* glfwWindow = nullptr;
         TitusRHI::IMGUI::UserCallback userCb;
+        bool overlayDrawEnabled = true;
 
         // VK 专用：自建的 DescriptorPool（imgui Vulkan backend 需要）。
         VkDevice vkDevice = VK_NULL_HANDLE;
@@ -83,12 +84,14 @@ namespace
     // ------------------------------------------------------------------------
     void OverlayCallbackGL(void* /*userData*/)
     {
+        if (!g().overlayDrawEnabled) return;
         ImDrawData* dd = ImGui::GetDrawData();
         if (dd) ImGui_ImplOpenGL3_RenderDrawData(dd);
     }
 
     void OverlayCallbackVK(void* /*userData*/)
     {
+        if (!g().overlayDrawEnabled) return;
         if (!g().vkDevicePtr) return;
         VkCommandBuffer cb = g().vkDevicePtr->GetCurrentPrimaryCommandBuffer();
         if (cb == VK_NULL_HANDLE) return;
@@ -286,6 +289,9 @@ namespace TitusRHI
             LOG_STREAM_INFO("IMGUI") << "Init succeeded; backend = "
                 << (backend == GBackend::OpenGL ? "OpenGL" : "Vulkan");
         }
+
+        void SetOverlayDrawEnabled(bool enabled) { g().overlayDrawEnabled = enabled; }
+        bool IsOverlayDrawEnabled() { return g().overlayDrawEnabled; }
 
         void NewFrame()
         {

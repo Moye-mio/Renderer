@@ -7,6 +7,7 @@
 // ============================================================================
 #include "GLDevice.h"
 #include "GLCommandList.h"
+#include "GLError.h"
 #include "GLTranslate.h"
 
 #include "RendererCore/IWindow.h"
@@ -709,6 +710,58 @@ namespace TitusGraphics
     {
         // GL 的 Present 由 IWindow 实现执行 swapBuffers；这里不做任何事，
         // 帧索引推进在基类 Present() 中完成。
+    }
+
+    // 当前实现是同步、简单、可靠的截图读回
+    // 若要异步读回（不卡主线程），可改造为 PBO + 延迟一帧 map
+    bool GLDevice::ReadbackBackbuffer(std::vector<uint8_t>& outRgba,
+                                      uint32_t& outWidth,
+                                      uint32_t& outHeight)
+    {
+        outWidth = m_defaultWidth;
+        outHeight = m_defaultHeight;
+        if (outWidth == 0 || outHeight == 0)
+        {
+            LOG_STREAM_ERROR("GLDevice") << "ReadbackBackbuffer: invalid size "
+                << outWidth << "x" << outHeight;
+            return false;
+        }
+
+        // 先排空残留错误，再绑 FBO / 读回，避免 bind 失败被 Clear 掉或旧错误误判。
+        ClearGLErrors();
+
+        glFinish();
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+        const size_t bytes = static_cast<size_t>(outWidth) * static_cast<size_t>(outHeight) * 4u;
+        outRgba.resize(bytes);
+
+        GLint prevPackAlignment = 4;
+        glGetIntegerv(GL_PACK_ALIGNMENT, &prevPackAlignment);
+        glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        glReadPixels(0, 0,
+                     static_cast<GLsizei>(outWidth),
+                     static_cast<GLsizei>(outHeight),
+                     GL_RGBA, GL_UNSIGNED_BYTE, outRgba.data());
+        glPixelStorei(GL_PACK_ALIGNMENT, prevPackAlignment);
+
+        const GLenum err = glGetError();
+        if (err != GL_NO_ERROR)
+        {
+            LOG_STREAM_ERROR("GLDevice") << "ReadbackBackbuffer: glReadPixels error=0x"
+                << std::hex << err << std::dec;
+            return false;
+        }
+
+        // OpenGL 原点在左下；原地交换上下行，使第 0 行为顶部（与 PNG / VK 一致）。
+        const size_t rowBytes = static_cast<size_t>(outWidth) * 4u;
+        for (uint32_t y = 0; y < outHeight / 2u; ++y)
+        {
+            uint8_t* top = outRgba.data() + static_cast<size_t>(y) * rowBytes;
+            uint8_t* bot = outRgba.data() + static_cast<size_t>(outHeight - 1u - y) * rowBytes;
+            std::swap_ranges(top, top + rowBytes, bot);
+        }
+        return true;
     }
 
     // ------------------------------------------------------------------------

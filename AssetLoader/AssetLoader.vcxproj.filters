@@ -18,6 +18,9 @@
         <ClCompile Include="ImageLoader.cpp">
             <Filter>Source Files</Filter>
         </ClCompile>
+        <ClCompile Include="ImageWriter.cpp">
+            <Filter>Source Files</Filter>
+        </ClCompile>
         <ClCompile Include="MeshLoader.cpp">
             <Filter>Source Files</Filter>
         </ClCompile>
@@ -36,6 +39,9 @@
             <Filter>Header Files</Filter>
         </ClInclude>
         <ClInclude Include="ImageLoader.h">
+            <Filter>Header Files</Filter>
+        </ClInclude>
+        <ClInclude Include="ImageWriter.h">
             <Filter>Header Files</Filter>
         </ClInclude>
         <ClInclude Include="MeshLoader.h">

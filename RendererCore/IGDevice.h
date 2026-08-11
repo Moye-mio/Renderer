@@ -5,6 +5,7 @@
 // 业务代码与后续高层封装（Material / Mesh / Camera）只依赖该接口。
 // ============================================================================
 #include <cstdint>
+#include <vector>
 
 #include "GHandle.h"
 #include "GEnums.h"
@@ -96,6 +97,18 @@ namespace TitusRHI
 
         // 呈现：把本帧渲染结果显示到窗口
         virtual void Present() = 0;
+
+        // 读回当前 backbuffer / swapchain 图像为紧密 RGBA8（第 0 行为图像顶部）。
+        // 调用约定：
+        //   - OpenGL：在本帧已绘制到默认 FBO 之后、SwapBuffers 之前调用；
+        //   - Vulkan：必须在 Present 之前调用（Present 后 image 归 presentation engine）。
+        // 不支持的后端（Null 等）返回 false。
+        virtual bool ReadbackBackbuffer(std::vector<uint8_t>& /*outRgba*/,
+                                        uint32_t& /*outWidth*/,
+                                        uint32_t& /*outHeight*/)
+        {
+            return false;
+        }
 
         // 当前帧索引（[0, framesInFlight)）；业务侧可用其挑选 per-frame UBO 等
         virtual uint32_t GetCurrentFrameIndex() const = 0;
