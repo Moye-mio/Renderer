@@ -37,8 +37,8 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 - **描述符驱动**：资源/管线经 `*Desc`（POD + 自定义枚举）创建，抽象层禁止出现 `VkXxx` / `GLenum`。
 - **统一帧循环**：两后端共用同一套 Pass 调度路径。
 - **架构护栏**（构建期脚本）：
-  - `tools/check_no_backend_headers`：业务目录禁止 include 后端/内部头。
-  - `tools/check_deps_direction`：强制模块依赖单向。
+  - `Tools/check_no_backend_headers`：业务目录禁止 include 后端/内部头。
+  - `Tools/check_deps_direction`：强制模块依赖单向。
 
 更细的设计说明见 [`Docs/Architecture/00_Overview.md`](./Docs/Architecture/00_Overview.md)
 与各模块目录下的 `README.md`。
@@ -60,7 +60,7 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 | `000_Deferred_Shading/` | 延迟着色示例（Sponza + 多点光） |
 | `001_Reflective_shadow_map/` | RSM 间接光示例 |
 | `Docs/` | 设计文档与 TODO |
-| `tools/` | 架构护栏与着色器辅助脚本 |
+| `Tools/` | 架构护栏与着色器辅助脚本 |
 | `Third-Party/` | 第三方库（imgui、glm、gli、stb、Assimp、GLFW/GLEW、Tracy 等） |
 | `Model/` `Fonts/` | 运行时资源 |
 

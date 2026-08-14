@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/check_no_backend_headers.py
+"""Tools/check_no_backend_headers.py
 静态扫描：在指定目录的 *.h/*.cpp 中查找是否包含
   <vulkan/...>, <GL/...>, <glad/...>, <GLFW/glfw3.h>
 命中即以非零状态退出，可被 CI 直接调用。

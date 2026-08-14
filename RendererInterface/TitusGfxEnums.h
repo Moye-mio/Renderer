@@ -10,7 +10,7 @@
 //     "RendererInterface/..." 与下方 "RendererCore/..." 前缀；
 //   - 库工程同样在 AdditionalIncludeDirectories 中包含 $(SolutionDir)，
 //     跨模块统一使用 "模块/头文件.h"，不再依赖 "../" 相对路径；
-//   - CI 静态扫描脚本（tools/check_no_backend_headers.bat）只扫描业务模块
+//   - CI 静态扫描脚本（Tools/check_no_backend_headers.bat）只扫描业务模块
 //     自身源码中的 #include 字面文本，不做预处理展开，因此不会误报
 //     "Renderer*/..." 后端头的暴露。
 //

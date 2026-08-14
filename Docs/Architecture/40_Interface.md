@@ -8,7 +8,7 @@
 
 ## 0. 门面层如何"隐藏后端"
 
-- 业务侧的 CI 静态扫描（`tools/check_no_backend_headers.bat`）只检查业务源码的 `#include` 字面文本；本层内部通过 `../RendererCore/...` 相对路径"上行转发"底层头，不构成对业务的泄露。
+- 业务侧的 CI 静态扫描（`Tools/check_no_backend_headers.bat`）只检查业务源码的 `#include` 字面文本；本层内部通过 `../RendererCore/...` 相对路径"上行转发"底层头，不构成对业务的泄露。
 - 只有 `GDeviceFactory.cpp` 一个文件被允许**同时** include `RendererGL/GLDevice.h` 与 `RendererVK/VKDevice.h`，是唯一后端分发点（见 `00_Overview.md §6` 的依赖方向约束）。
 
 ---

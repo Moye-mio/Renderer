@@ -114,13 +114,13 @@
     </ItemGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
         <PreBuildEvent>
-            <Command>call "$(SolutionDir)tools\check_deps_direction.bat"</Command>
+            <Command>call "$(SolutionDir)Tools\check_deps_direction.bat"</Command>
             <Message>[AssetLoader] Static dependency direction check</Message>
         </PreBuildEvent>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
         <PreBuildEvent>
-            <Command>call "$(SolutionDir)tools\check_deps_direction.bat"</Command>
+            <Command>call "$(SolutionDir)Tools\check_deps_direction.bat"</Command>
             <Message>[AssetLoader] Static dependency direction check</Message>
         </PreBuildEvent>
     </PropertyGroup>

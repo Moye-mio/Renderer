@@ -41,7 +41,7 @@ Examples/Test_000_UnifiedTriangle/
 | `<GLFW/glfw3.h>` / `"glfw3.h"` | GLFW |
 | `Renderer/*` / `RendererGL/*` / `RendererVK/*` / `RendererCore/*` / `Platform/*` | 后端/内部实现 |
 
-PreBuild 阶段会自动调用 [`tools/check_no_backend_headers.bat`](../../tools/check_no_backend_headers.bat)
+PreBuild 阶段会自动调用 [`Tools/check_no_backend_headers.bat`](../../Tools/check_no_backend_headers.bat)
 扫描本目录；一旦命中以上头文件，构建立即失败。（`RendererCore/*` 亦不直接 include——业务统一经 `RendererInterface/TitusGfxPass.h` 聚合入口。）
 
 ## 相关示例

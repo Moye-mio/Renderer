@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tools/compile_shader.py
+"""Tools/compile_shader.py
 跨平台版本（与 compile_shader.bat 等价）：从 .glsl 同时产出
   - <name>.spv          供 Vulkan 后端 vkCreateShaderModule
   - <name>.reflect.json 由 spirv-cross --reflect 生成的反射信息

@@ -1,10 +1,10 @@
 @echo off
 REM ============================================================================
-REM tools/check_no_backend_headers.bat
+REM Tools/check_no_backend_headers.bat
 REM 静态扫描包装器：业务工程（Examples/* 与 001_Reflective_shadow_map）的
 REM 后端解耦边界守护脚本。
 REM
-REM 实际扫描逻辑由 tools/check_no_backend_headers.py 实现（规则更全、
+REM 实际扫描逻辑由 Tools/check_no_backend_headers.py 实现（规则更全、
 REM 错误信息更友好）。本 bat 仅做"找 Python 解释器"的薄包装。
 REM
 REM 用法：

@@ -75,4 +75,4 @@ TitusAsset::SaveImage2DPNG("shot.png", width, height, rgba8);
 
 ## CI 静态扫描
 
-PreBuildEvent 调用 `tools\check_deps_direction.bat`，确保不会反向 include 渲染后端头。
+PreBuildEvent 调用 `Tools\check_deps_direction.bat`，确保不会反向 include 渲染后端头。

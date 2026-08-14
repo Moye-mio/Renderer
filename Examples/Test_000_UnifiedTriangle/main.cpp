@@ -2,7 +2,7 @@
 // 010_UnifiedTriangle - main.cpp
 // 同一份示例工程通过 --backend=gl 或 --backend=vk 选择后端；其余代码不变。
 // **仅** include RendererInterface 头、**仅**链接 RendererInterface.lib。
-// CI 静态扫描脚本 tools/check_no_backend_headers.bat 会校验本目录不含
+// CI 静态扫描脚本 Tools/check_no_backend_headers.bat 会校验本目录不含
 // `<vulkan/...>`、`<GL/...>`、`<glad/...>`、`<glfw3.h>`、
 // `Renderer/*`、`RendererCore/*`、`RendererVK/*`、`Platform/*` 等任何后端字面 include。
 // ============================================================================

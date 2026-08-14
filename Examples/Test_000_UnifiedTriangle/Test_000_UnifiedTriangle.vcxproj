@@ -97,7 +97,7 @@
             <AdditionalDependencies>vulkan-1.lib;glfw3-vc140.lib;opengl32.lib;glew32.lib;assimp-vc140-mt.lib;glslangd.lib;MachineIndependentd.lib;GenericCodeGend.lib;OSDependentd.lib;SPIRVd.lib;glslang-default-resource-limitsd.lib;SPIRV-Toolsd.lib;SPIRV-Tools-optd.lib;kernel32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
         <PreBuildEvent>
-            <Command>call "$(SolutionDir)tools\check_no_backend_headers.bat"
+            <Command>call "$(SolutionDir)Tools\check_no_backend_headers.bat"
 if errorlevel 1 exit /b 1
 call "$(ProjectDir)Shader\CompileShaders.bat"</Command>
             <Message>静态扫描后端头 + 编译 GLSL → SPIR-V</Message>
@@ -130,7 +130,7 @@ xcopy /Y /D "$(OPENGL)\bin\x64\glew32.dll" "$(OutDir)"</Command>
             <AdditionalDependencies>vulkan-1.lib;glfw3-vc140.lib;opengl32.lib;glew32.lib;assimp-vc140-mt.lib;glslang.lib;MachineIndependent.lib;GenericCodeGen.lib;OSDependent.lib;SPIRV.lib;glslang-default-resource-limits.lib;SPIRV-Tools.lib;SPIRV-Tools-opt.lib;kernel32.lib;user32.lib;gdi32.lib;shell32.lib;%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
         <PreBuildEvent>
-            <Command>call "$(SolutionDir)tools\check_no_backend_headers.bat"
+            <Command>call "$(SolutionDir)Tools\check_no_backend_headers.bat"
 if errorlevel 1 exit /b 1
 call "$(ProjectDir)Shader\CompileShaders.bat"</Command>
         </PreBuildEvent>

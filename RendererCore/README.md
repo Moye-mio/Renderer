@@ -41,8 +41,8 @@
 
 仓库根目录提供静态扫描脚本：
 
-- [`tools/check_no_backend_headers.bat`](../tools/check_no_backend_headers.bat) （Windows / CMD）
-- [`tools/check_no_backend_headers.py`](../tools/check_no_backend_headers.py) （跨平台）
+- [`Tools/check_no_backend_headers.bat`](../Tools/check_no_backend_headers.bat) （Windows / CMD）
+- [`Tools/check_no_backend_headers.py`](../Tools/check_no_backend_headers.py) （跨平台）
 
 业务示例（如 `Examples/Test_000_UnifiedTriangle`）已在 PreBuild 阶段调用上述脚本，命中即构建失败。
 

@@ -1,6 +1,6 @@
 @echo off
 REM ============================================================================
-REM tools/compile_shader.bat
+REM Tools/compile_shader.bat
 REM   把一份 .glsl 同时产出：
 REM     1) <name>.spv         —— 给 Vulkan 后端 vkCreateShaderModule 使用
 REM     2) <name>.reflect.json —— 由 spirv-cross --reflect 生成的反射信息

@@ -1,6 +1,6 @@
 @echo off
 REM ============================================================================
-REM tools/check_deps_direction.bat
+REM Tools/check_deps_direction.bat
 REM 校验"依赖方向单向"（需求 9.4 / 10.4）：
 REM   RendererInterface  →  { RendererGL, RendererVK, RendererCore, Platform }
 REM   RendererGL         →  { RendererCore, Platform }
@@ -18,7 +18,7 @@ REM   * AssetLoader/*.h/.cpp   禁止 include "RendererGL/", "RendererCore/", "R
 REM
 REM 命中即以非零状态退出，可用作 RendererInterface 的 PreBuild CI 校验。
 REM
-REM 用法：tools\check_deps_direction.bat
+REM 用法：Tools\check_deps_direction.bat
 REM ============================================================================
 
 setlocal EnableDelayedExpansion

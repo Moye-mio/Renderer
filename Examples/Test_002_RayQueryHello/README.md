@@ -30,7 +30,7 @@
 
 - 源码**仅** include `RendererInterface/TitusGfxPass.h`（门面聚合 **`TitusRHI`**
   后端无关抽象），**不接触任何 `VkXxx` 或 `RendererVK/` 头**，通过
-  `tools/check_no_backend_headers.bat` 静态扫描。
+  `Tools/check_no_backend_headers.bat` 静态扫描。
 - 光追资源全部经 `IGDevice::CreateAccelerationStructure` /
   `RenderCommandList` 抽象接口创建与录制。
 

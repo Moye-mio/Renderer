@@ -26,7 +26,7 @@ RendererInterface ──► { RendererGL, RendererVK, RendererCore, Platform, As
         └── 只有 GDeviceFactory.cpp 同时引用 GLDevice / VKDevice
 ```
 
-CI 脚本 `tools\check_deps_direction.bat` 在本工程 PreBuildEvent 中强制上述方向。
+CI 脚本 `Tools\check_deps_direction.bat` 在本工程 PreBuildEvent 中强制上述方向。
 
 ## 关键文件
 
@@ -41,7 +41,7 @@ CI 脚本 `tools\check_deps_direction.bat` 在本工程 PreBuildEvent 中强制�
 ## CI 静态扫描
 
 - 业务示例（STRICT）禁止：`<vulkan/...>`、`<GL/...>`、`<glad/...>`、`<glfw3.h>`，以及字面 include `RendererGL/`、`RendererCore/`、`RendererVK/`、`Platform/`。
-  脚本：[`tools/check_no_backend_headers.bat`](../tools/check_no_backend_headers.bat)。
-- 依赖方向：[`tools/check_deps_direction.bat`](../tools/check_deps_direction.bat)。
+  脚本：[`Tools/check_no_backend_headers.bat`](../Tools/check_no_backend_headers.bat)。
+- 依赖方向：[`Tools/check_deps_direction.bat`](../Tools/check_deps_direction.bat)。
 
 更细说明见 [`Docs/Architecture/40_Interface.md`](../Docs/Architecture/40_Interface.md)。

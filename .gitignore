@@ -73,7 +73,7 @@ Thumbs.db
 !Third-Party/OpenGL/**/
 !Third-Party/OpenGL/**/*.lib
 !Third-Party/OpenGL/**/*.dll
-tools/_dist/
+Tools/_dist/
 
 # === 大型第三方场景（不入库，本地自行获取）===
 Model/Bistro/

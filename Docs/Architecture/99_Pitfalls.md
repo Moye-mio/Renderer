@@ -57,8 +57,8 @@
 
 由 CI 脚本在构建期强制（见 `00_Overview.md §6`）：
 
-- `RendererCore/*` 与业务侧禁止 include `<vulkan/...>`、`<GL/...>`、`<glad/...>`、`<GLFW/glfw3.h>`（脚本 `tools/check_no_backend_headers.py/.bat`，Examples PreBuild 命中即失败）。
-- 依赖方向单向（脚本 `tools/check_deps_direction.bat`，Interface PreBuildEvent）：
+- `RendererCore/*` 与业务侧禁止 include `<vulkan/...>`、`<GL/...>`、`<glad/...>`、`<GLFW/glfw3.h>`（脚本 `Tools/check_no_backend_headers.py/.bat`，Examples PreBuild 命中即失败）。
+- 依赖方向单向（脚本 `Tools/check_deps_direction.bat`，Interface PreBuildEvent）：
   - `RendererCore/*` 禁 include `RendererGL/`、`RendererVK/`、`RendererInterface/`
   - `RendererGL/*` 禁 include `RendererVK/`、`RendererInterface/`
   - `RendererVK/*` 禁 include `RendererGL/`、`RendererInterface/`
