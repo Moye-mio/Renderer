@@ -1,0 +1,5 @@
+OpenGL Image (GLI) 0.8.2.0
+
+Licensed under the Happy Bunny License (Modified MIT) or the MIT License,
+same dual-license as GLM. Copyright (c) G-Truc Creation.
+See https://github.com/g-truc/gli and the comments in include/gli.hpp.

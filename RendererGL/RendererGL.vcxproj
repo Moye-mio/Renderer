@@ -110,7 +110,7 @@
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
             <LanguageStandard>stdcpplatest</LanguageStandard>
-            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Third-Party\imgui_master;$(SolutionDir)Third-Party\iconfontheaders;$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(OPENGL)\include;$(GLM);$(SOIL)\include;$(STB_IMAGE)\include;$(ASSIMP)\include;$(BOOST);$(GLI)\include;%(AdditionalIncludeDirectories);$(_ZVcpkgCurrentInstalledDir)include;</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Third-Party\imgui_master;$(SolutionDir)Third-Party\iconfontheaders;$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(OPENGL)\include;$(GLM);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <DisableSpecificWarnings>4477;4267;4251;4305;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
         </ClCompile>
         <Link>
@@ -148,6 +148,9 @@
             <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;NDEBUG;_LIB;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+            <LanguageStandard>stdcpplatest</LanguageStandard>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Third-Party\imgui_master;$(SolutionDir)Third-Party\iconfontheaders;$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(OPENGL)\include;$(GLM);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <DisableSpecificWarnings>4477;4267;4251;4305;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
         </ClCompile>
         <Link>
             <SubSystem>Windows</SubSystem>

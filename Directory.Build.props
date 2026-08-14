@@ -4,12 +4,21 @@
   Tracy：Debug 默认开启；关闭用 /p:TitusTracyEnable=false 或改下方默认值。
   Release 默认关闭；开启用 /p:TitusTracyEnable=true。
   开启时同时定义 TRACY_ON_DEMAND（未连接 Profiler 不采集）。
+
+  第三方库均在 Third-Party/（glm / gli / stb / Assimp / GLFW / GLEW 等）。
+  GLM / OPENGL / ASSIMP / … 覆盖同名环境变量，一律为仓库内相对路径。
 -->
 <Project>
   <PropertyGroup>
     <TitusTracyRoot>$(MSBuildThisFileDirectory)Third-Party\tracy\public</TitusTracyRoot>
     <TitusTracyEnable Condition="'$(TitusTracyEnable)' == '' and '$(Configuration)' == 'Debug'">true</TitusTracyEnable>
     <TitusTracyEnable Condition="'$(TitusTracyEnable)' == ''">false</TitusTracyEnable>
+
+    <GLM>$(MSBuildThisFileDirectory)Third-Party\glm</GLM>
+    <GLI>$(MSBuildThisFileDirectory)Third-Party\gli</GLI>
+    <STB_IMAGE>$(MSBuildThisFileDirectory)Third-Party\stb</STB_IMAGE>
+    <ASSIMP>$(MSBuildThisFileDirectory)Third-Party\Assimp</ASSIMP>
+    <OPENGL>$(MSBuildThisFileDirectory)Third-Party\OpenGL</OPENGL>
   </PropertyGroup>
 
   <!-- TracyClient.cpp 始终需要 public 头路径（无 TRACY_ENABLE 时几乎为空实现） -->

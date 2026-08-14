@@ -27,7 +27,7 @@ Makefile
 .libs/
 
 # === 常见 IDE & 编辑器配置 ===
-# Visual Studio
+# Visual Studio 构建输出目录（任意层级名为 x64/x86 的目录）
 .vs/
 *.user
 *.userosscache
@@ -43,6 +43,9 @@ x86/
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
+
+# CodeBuddy
+.codebuddy/
 
 # CLion / JetBrains
 .idea/
@@ -60,8 +63,20 @@ Thumbs.db
 *.log
 *.tmp
 
-# === SDK ===
-GraphicSDK/
+# === 第三方预编译库 ===
+# Assimp / GLFW / GLEW 的 .lib/.dll 以及 lib/x64、bin/x64 需覆盖上方忽略规则。
+!Third-Party/Assimp/
+!Third-Party/Assimp/**/
+!Third-Party/Assimp/**/*.lib
+!Third-Party/Assimp/**/*.dll
+!Third-Party/OpenGL/
+!Third-Party/OpenGL/**/
+!Third-Party/OpenGL/**/*.lib
+!Third-Party/OpenGL/**/*.dll
+tools/_dist/
+
+# === 大型第三方场景（不入库，本地自行获取）===
+Model/Bistro/
 
 # === Renderer 运行时日志输出 ===
 /Logs/

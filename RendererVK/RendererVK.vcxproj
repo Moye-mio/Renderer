@@ -59,7 +59,7 @@
             <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;RENDERER_ENABLE_RAY_TRACING;_DEBUG;_LIB;_SCL_SECURE_NO_WARNINGS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <LanguageStandard>stdcpplatest</LanguageStandard>
-            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(VULKAN_SDK)\Include;$(OPENGL)\include;$(GLM);$(BOOST);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(VULKAN_SDK)\Include;$(OPENGL)\include;$(GLM);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <DisableSpecificWarnings>4477;4267;4251;4305;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
         </ClCompile>
         <Link>
@@ -78,7 +78,7 @@
             <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;RENDERER_ENABLE_RAY_TRACING;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <LanguageStandard>stdcpplatest</LanguageStandard>
-            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(VULKAN_SDK)\Include;$(OPENGL)\include;$(GLM);$(BOOST);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(VULKAN_SDK)\Include;$(OPENGL)\include;$(GLM);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <DisableSpecificWarnings>4477;4267;4251;4305;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
         </ClCompile>
         <Link>

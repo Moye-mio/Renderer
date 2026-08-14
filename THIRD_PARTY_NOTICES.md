@@ -6,9 +6,8 @@
 
 分为两类：
 
-- **随仓库分发**（位于 `Third-Party/`，会随本仓库一并公开）。
-- **外部依赖**（位于 `GraphicSDK/`，已被 `.gitignore` 排除、不随仓库分发，需使用者自行获取；
-  在此声明是因为本软件在编译/链接时会使用它们）。
+- **随仓库分发**（`Third-Party/`）。
+- **本机外部依赖**（Vulkan SDK，由 LunarG 安装器提供，不随本仓库分发）。
 
 ---
 
@@ -29,32 +28,39 @@
 - 版权：Copyright (c) 2002-2006 Marcus Geelnard；Copyright (c) 2006-2019 Camilla Löwy 等
 - 项目主页：https://www.glfw.org/
 
+### GLM — `Third-Party/glm/`
+- 许可证：MIT License / The Happy Bunny License
+- 版本：0.9.8.3
+- 项目主页：https://github.com/g-truc/glm
+
+### GLI — `Third-Party/gli/`
+- 许可证：MIT License / The Happy Bunny License
+- 版本：0.8.2.0
+- 项目主页：https://github.com/g-truc/gli
+
+### stb (stb_image / stb_image_write) — `Third-Party/stb/`
+- 许可证：MIT License / Public Domain（双授权，由使用者择一）
+- 版权：Sean Barrett
+- 项目主页：https://github.com/nothings/stb
+
+### Assimp — `Third-Party/Assimp/`
+- 许可证：BSD 3-Clause License
+- 项目主页：https://github.com/assimp/assimp
+
+### GLFW — `Third-Party/OpenGL/`
+- 许可证：zlib/libpng License
+- 项目主页：https://www.glfw.org/
+
+### GLEW — `Third-Party/OpenGL/`
+- 许可证：Modified BSD License
+- 项目主页：https://glew.sourceforge.net/
+
 ---
 
-## 二、外部依赖（`GraphicSDK/`，不随仓库分发）
+## 二、本机外部依赖（不随仓库分发）
 
-> 下列组件不包含在本仓库中。使用者需自行下载并放置到 `GraphicSDK/` 下对应目录后方可构建。
-> 各组件许可证以其官方发布为准，此处仅为概述与归属。
-
-| 组件 | 目录 | 许可证（概述） | 主页 |
-|---|---|---|---|
-| Eigen | `GraphicSDK/Eigen/` | MPL-2.0（核心）；部分模块为 LGPL/BSD/MINPACK 等，详见其 `COPYING.*` | https://eigen.tuxfamily.org/ |
-| OpenCV | `GraphicSDK/opencv/` | Apache-2.0（本体）；捆绑第三方含 FFmpeg (LGPL-2.1)、libpng、libjpeg-turbo、OpenEXR、protobuf、ittnotify(BSD/GPL 双许可) 等，详见其 `LICENSE` 与 `etc/licenses/` | https://opencv.org/ |
-| GLM | `GraphicSDK/glm/` | MIT License / The Happy Bunny License | https://github.com/g-truc/glm |
-| GLI | `GraphicSDK/gli/` | MIT License | https://github.com/g-truc/gli |
-| stb (stb_image 等) | `GraphicSDK/stb_image/` | MIT License / Public Domain（双授权，由使用者择一） | https://github.com/nothings/stb |
-| Assimp | `GraphicSDK/assimp/` | BSD 3-Clause License | https://github.com/assimp/assimp |
-| GLFW | `GraphicSDK/glfw/` | zlib/libpng License | https://www.glfw.org/ |
-| glad | `GraphicSDK/glad/` | MIT License（生成的加载器）；所载 OpenGL/Khronos 规范为 Apache-2.0 | https://github.com/Dav1dde/glad |
-| Boost | `GraphicSDK/boost/` | Boost Software License 1.0 | https://www.boost.org/ |
-| Dear ImGui | `GraphicSDK/imgui/` | MIT License | https://github.com/ocornut/imgui |
-| OpenXR SDK | `GraphicSDK/openxr/` | Apache-2.0 | https://github.com/KhronosGroup/OpenXR-SDK |
-| Vulkan Headers / SDK | `GraphicSDK/vulkan/` | Apache-2.0（Vulkan-Headers）；Vulkan SDK 各组件见 LunarG 授权 | https://www.lunarg.com/vulkan-sdk/ |
-
-> 关于 GPL/LGPL 组件的提示：OpenCV 在部分构建配置下会捆绑受 LGPL-2.1 约束的 FFmpeg，
-> 以及以 BSD/GPL 双许可发布的 ittnotify。如需以静态链接或再分发形式使用这些组件，请先核对
-> 相应许可证的义务（例如 LGPL 对再链接、GPL 对传染性的要求）。若仅使用 OpenCV 的动态库
-> 且不再分发，通常无额外义务，但仍以官方许可证为准。
+> Vulkan 头文件与库由本机 [Vulkan SDK](https://www.lunarg.com/vulkan-sdk/) 提供（Apache-2.0 等，见 SDK 授权）。
+> 安装后环境变量 `VULKAN_SDK` 由安装器写入。
 
 ---
 

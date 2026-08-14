@@ -141,20 +141,18 @@
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
             <LanguageStandard>stdcpplatest</LanguageStandard>
-            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)AssetLoader;$(SolutionDir)Third-Party\imgui_master;$(EIGEN);$(BOOST);$(ASSIMP)\include;$(STB_IMAGE)\include;$(GLM);$(OPENGL)\include;$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories);$(_ZVcpkgCurrentInstalledDir)include</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)AssetLoader;$(SolutionDir)Third-Party\imgui_master;$(ASSIMP)\include;$(STB_IMAGE)\include;$(GLM);$(OPENGL)\include;$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <DisableSpecificWarnings>4477;4267;4251;4305;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
         </ClCompile>
         <Link>
             <SubSystem>Console</SubSystem>
             <GenerateDebugInformation>true</GenerateDebugInformation>
-            <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(_ZVcpkgCurrentInstalledDir)$(_ZVcpkgConfigSubdir)lib;$(_ZVcpkgCurrentInstalledDir)$(_ZVcpkgConfigSubdir)lib\manual-link;$(PARTIO)\Release;$(BOOST)\x64;$(ASSIMP)\lib\x64;$(OPENGL)\lib\x64;$(VULKAN_SDK)\Lib;$(SolutionDir)x64\Debug;</AdditionalLibraryDirectories>
-            <AdditionalDependencies>%(AdditionalDependencies);$(_ZVcpkgCurrentInstalledDir)$(_ZVcpkgConfigSubdir)lib\*.lib;opengl32.lib;glfw3-vc140.lib;assimp-vc140-mt.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;glew32d.lib;vulkan-1.lib;glslangd.lib;MachineIndependentd.lib;GenericCodeGend.lib;OSDependentd.lib;SPIRVd.lib;glslang-default-resource-limitsd.lib;SPIRV-Toolsd.lib;SPIRV-Tools-optd.lib</AdditionalDependencies>
+            <AdditionalLibraryDirectories>$(ASSIMP)\lib\x64;$(OPENGL)\lib\x64;$(VULKAN_SDK)\Lib;$(SolutionDir)x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+            <AdditionalDependencies>opengl32.lib;glfw3-vc140.lib;assimp-vc140-mt.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;glew32d.lib;vulkan-1.lib;glslangd.lib;MachineIndependentd.lib;GenericCodeGend.lib;OSDependentd.lib;SPIRVd.lib;glslang-default-resource-limitsd.lib;SPIRV-Toolsd.lib;SPIRV-Tools-optd.lib;%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
         <PostBuildEvent>
             <Command>xcopy /Y /D "$(OPENGL)\bin\x64\glew32d.dll" "$(OutDir)"
                 xcopy /Y /D "$(OPENGL)\bin\x64\glfw3-vc140.dll" "$(OutDir)"
-                xcopy /Y /D "$(OPENGL)\bin\x64\freeglut.dll" "$(OutDir)"
-                xcopy /Y /D "$(OPENGL)\bin\x64\freeglutd.dll" "$(OutDir)"
                 xcopy /Y /D "$(ASSIMP)\bin\x64\assimp-vc140-mt.dll" "$(OutDir)"
             </Command>
             <Message>复制运行时所需的 DLL 文件到输出目录...</Message>
@@ -200,7 +198,6 @@
         <PostBuildEvent>
             <Command>xcopy /Y /D "$(OPENGL)\bin\x64\glew32.dll" "$(OutDir)"
                 xcopy /Y /D "$(OPENGL)\bin\x64\glfw3-vc140.dll" "$(OutDir)"
-                xcopy /Y /D "$(OPENGL)\bin\x64\freeglut.dll" "$(OutDir)"
                 xcopy /Y /D "$(ASSIMP)\bin\x64\assimp-vc140-mt.dll" "$(OutDir)"
             </Command>
             <Message>复制运行时所需的 DLL 文件到输出目录...</Message>

@@ -2,7 +2,7 @@
 
 一个 **RHI（Render Hardware Interface）风格的跨后端渲染器**：业务代码面向一套后端无关的
 图形抽象编写，可在 **OpenGL**、**Vulkan**（以及 **Null/headless**）后端上以同一份代码运行。
-项目定位为渲染架构学习与实验平台。
+项目定位为渲染架构学习与实验平台，可用 [Tracy](https://github.com/wolfpld/tracy) 做 CPU 帧路径与 Pass 调度的性能评估。
 
 > 对外 API 命名空间为 **`TitusRHI`**（头文件前缀为 `TitusGfx*`，例如 `TitusGfx.h`）。
 > 核心抽象参考了业界跨后端渲染器（UE RHI / bgfx 等）的通用设计：后端无关设备接口 +
@@ -61,8 +61,7 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 | `001_Reflective_shadow_map/` | RSM 间接光示例 |
 | `Docs/` | 设计文档与 TODO |
 | `tools/` | 架构护栏与着色器辅助脚本 |
-| `Third-Party/` | 随仓库分发的第三方库（imgui、图标字体等） |
-| `GraphicSDK/` | 外部依赖（**不随仓库分发**，需自行准备，见下） |
+| `Third-Party/` | 第三方库（imgui、glm、gli、stb、Assimp、GLFW/GLEW、Tracy 等） |
 | `Model/` `Fonts/` | 运行时资源 |
 
 > 磁盘上可能还有 `002_*` 等旧 OpenGL 实验目录，**未纳入** `TitusGLRenderer.sln`，请以解决方案中的工程为准。
@@ -89,47 +88,79 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 - Windows + Visual Studio（打开根目录 `TitusGLRenderer.sln`）。
 - 使用 Vulkan 后端时需安装 [Vulkan SDK](https://vulkan.lunarg.com/)，并确保 `VULKAN_SDK` 已设置。
 
-### 依赖准备（重要）
+### 依赖准备
 
-`GraphicSDK/` 已被 `.gitignore` 排除，**不包含在本仓库中**。克隆后请先下载并解压：
+克隆时请带上 **Tracy 子模块**（性能分析）。其余第三方库（glm / gli / stb / Assimp / GLFW / GLEW）均在 `Third-Party/`，随仓库分发。路径由根目录 `Directory.Build.props` 解析，**不必**再设 `ASSIMP` / `OPENGL` / `GLM` 等环境变量。
 
-> **下载 GraphicSDK**：[https://pan.baidu.com/s/1XjYGrGhCO_KSqL7pCUzBrA](https://pan.baidu.com/s/1XjYGrGhCO_KSqL7pCUzBrA)　密码：`1234`，然后将其解压即可（解压后应得到仓库根目录下的 `GraphicSDK/`）。
+```powershell
+git clone --recurse-submodules https://github.com/Moye-mio/TRenderer.git
+```
 
-解压后建议以**管理员权限**运行一次 `GraphicSDK/Graphic.bat`，将依赖路径写入机器级环境变量（`ASSIMP` / `OPENGL` / `GLM` / …），然后重新打开 Visual Studio。
+已有克隆、尚未拉子模块时：
 
-当前 GraphicSDK 包内常见布局（以解压结果为准）：
+```powershell
+git submodule update --init --recursive
+```
 
-| 内容 | 说明 |
+| 位置 | 内容 |
 |---|---|
-| `Assimp/` `Eigen/` `glm/` `gli/` `opencv/` `stb_image/` | 常用第三方库 |
-| `OpenGL/` | 含 GLFW / glad 等 OpenGL 相关依赖 |
-| `boost_1_69/` `CImg/` `SOIL/` | 其它辅助依赖 |
-| `Graphic.bat` | 一键设置环境变量 |
+| `Third-Party/tracy/` | Tracy Profiler 客户端（git submodule） |
+| `Third-Party/glm/` | GLM 0.9.8.3（header-only） |
+| `Third-Party/gli/` | GLI 0.8.2（DDS/KTX） |
+| `Third-Party/stb/include/` | stb_image / stb_image_write |
+| `Third-Party/Assimp/` | Assimp 头文件 + `lib/x64` + `bin/x64` |
+| `Third-Party/OpenGL/` | GLFW / GLEW（`include`、`lib/x64`、`bin/x64`） |
 
-> Vulkan 头文件与库由本机 Vulkan SDK 提供，不依赖 GraphicSDK 内的独立 `vulkan/` 目录。
+> Vulkan 头文件与库由本机 Vulkan SDK 提供，不在本仓库中。
 
 ### 运行
 
-示例支持命令行选择后端、线程模式与校验层：
+经 `APP::ParseCommandLine` 的公共参数（`on|off` 亦接受 `true|false|1|0`）：
 
 ```
 --backend=gl|vk|null
 --threading=direct|threaded|nonthreaded
 --validation=on|off
+--screenshot-at=<seconds>
+--screenshot-dir=<path>
+--quit-after-screenshot=on|off
 ```
 
 说明：
 
 - 当前 **GL / VK 默认线程模式均为 `Direct`**；可用 `--threading=threaded` 做回归验证。
 - `--validation` 主要影响 Vulkan（Debug 默认 on，Release 默认 off）。
+- `--screenshot-at`：进程启动后经过指定墙钟秒数自动截一张 PNG（含 ImGui Overlay）。未指定则不自动截。
+- `--screenshot-dir`：输出目录；默认 `$(SolutionDir)<应用名>/results/`。文件名为 `shot_<gl|vk>_<YYYYMMDD_HHMMSS>.png`。
+- `--quit-after-screenshot`：自动截图成功后是否退出，默认 `on`。手动在 ImGui「Renderer Info」里点 **Capture Screenshot** 不退出。
 
 示例：
 
 ```
 Test_000_UnifiedTriangle.exe --backend=vk
 000_Deferred_Shading.exe --backend=gl
-001_Reflective_shadow_map.exe --backend=vk
+001_Reflective_shadow_map.exe --backend=vk --screenshot-at=2 --screenshot-dir=results
 ```
+
+---
+
+## 性能分析（Tracy）
+
+用 [Tracy](https://github.com/wolfpld/tracy) 评估 CPU 侧帧循环、Pass 调度与设备提交耗时。业务代码只通过 `Basic/TracySupport.h` 插桩，不要直接 include Tracy 头。
+
+- **Debug 默认开启**，**Release 默认关闭**（测接近无插桩的帧率请用 Release，或 `/p:TitusTracyEnable=false` 后全量重编）。
+- 开启时带 `TRACY_ON_DEMAND`：Tracy Profiler **未连接**时不往队列写事件。
+- 运行示例后打开 Tracy Profiler，**Connect** 到进程即可看时间线（`FrameMark`、Pass Zone、VK 等待等）。
+- ImGui「Renderer Info」里有 **Tracy Capture** 开关：已连接时仍可暂停采集，便于对比开关采集的帧率。
+
+命令行覆盖：
+
+```text
+msbuild ... /p:TitusTracyEnable=false   # Debug 下关掉 Tracy
+msbuild ... /p:TitusTracyEnable=true    # Release 下打开 Tracy
+```
+
+更完整的开关语义、插桩地图与陷阱见 [`Docs/Architecture/50_Tracy.md`](./Docs/Architecture/50_Tracy.md)。
 
 ---
 

@@ -63,12 +63,12 @@ TitusAsset::SaveImage2DPNG("shot.png", width, height, rgba8);
 
 ## 三方依赖
 
-继承自 GraphicSDK 环境变量：
+路径由仓库根 `Directory.Build.props` 解析（相对路径，不依赖环境变量）：
 
-- `$(STB_IMAGE)`：stb_image / stb_image_write
-- `$(ASSIMP)`：Assimp
-- `$(GLI)`：gli
-- `$(GLM)`：glm
+- `$(GLM)`：`Third-Party/glm`（header-only）
+- `$(GLI)`：`Third-Party/gli`（header-only）
+- `$(STB_IMAGE)`：`Third-Party/stb`（header-only）
+- `$(ASSIMP)`：`Third-Party/Assimp`
 
 `STB_IMAGE_IMPLEMENTATION` / `STB_IMAGE_WRITE_IMPLEMENTATION` 由 AssetLoader 自身在
 对应 `.cpp` 中唯一定义，不再依赖渲染后端工程。

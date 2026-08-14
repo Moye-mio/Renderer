@@ -29,7 +29,7 @@ namespace TitusMath
             return out;
         }
 
-        // 布局契约：与当前 GraphicSDK glm 保持二进制兼容，供顶点/UBO 平滑迁移。
+        // 布局契约：与 Third-Party/glm 保持二进制兼容，供顶点/UBO 平滑迁移。
         static_assert(sizeof(Vec2) == sizeof(glm::vec2), "TitusMath::Vec2 size must match glm::vec2");
         static_assert(sizeof(Vec3) == sizeof(glm::vec3), "TitusMath::Vec3 size must match glm::vec3");
         static_assert(sizeof(Vec4) == sizeof(glm::vec4), "TitusMath::Vec4 size must match glm::vec4");
