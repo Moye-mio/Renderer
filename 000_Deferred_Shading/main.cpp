@@ -13,6 +13,7 @@
 // Vulkan Validation：`--validation=on|off`（Debug 默认 on，Release 默认 off）。
 // ============================================================================
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <memory>
 #include <string>
@@ -39,19 +40,22 @@
 #endif
 
 // ----------------------------------------------------------------------------
-// 基于模型 AABB 自适应生成 1000 个点光源：在包围盒内按 10x10x10 网格铺开，
+// 基于模型 AABB 自适应生成 count 个点光源：在包围盒内按近似立方网格铺开，
 // 半径取网格单元对角线的一部分，5 种色相循环，避免挤在一条线上过曝。
+// count=1000 时退化为原来的 10x10x10。
 // ----------------------------------------------------------------------------
 static std::vector<PointLightDesc>
-MakeLights(const TitusMath::Vec3& bbMin, const TitusMath::Vec3& bbMax)
+MakeLights(const TitusMath::Vec3& bbMin, const TitusMath::Vec3& bbMax, int count)
 {
-    const TitusMath::Vec3 size = bbMax - bbMin;
-    constexpr int kGridX = 10;
-    constexpr int kGridY = 10;
-    constexpr int kGridZ = 10;
-    static_assert(kGridX * kGridY * kGridZ == SharedShadingParams::MAX_LIGHTS,
-                  "light grid must match MAX_LIGHTS");
+    count = std::clamp(count, 10, SharedShadingParams::MAX_LIGHTS);
 
+    // 近似立方体素：gz ≈ ∛n，再把剩余二维拆成 gy × gx，保证 gx*gy*gz >= count。
+    const int gridZ = std::max(1, static_cast<int>(std::round(std::cbrt(static_cast<double>(count)))));
+    const int remain = (count + gridZ - 1) / gridZ;
+    const int gridY = std::max(1, static_cast<int>(std::round(std::sqrt(static_cast<double>(remain)))));
+    const int gridX = std::max(1, (count + gridY * gridZ - 1) / (gridY * gridZ));
+
+    const TitusMath::Vec3 size = bbMax - bbMin;
     const TitusMath::Vec3 colors[] = {
         {1.0f, 0.25f, 0.20f}, // 暖红
         {1.0f, 0.75f, 0.30f}, // 橙黄
@@ -65,19 +69,19 @@ MakeLights(const TitusMath::Vec3& bbMin, const TitusMath::Vec3& bbMax)
     const TitusMath::Vec3 innerMin = bbMin + size * pad;
     const TitusMath::Vec3 innerSize = size * (1.0f - 2.0f * pad);
     const TitusMath::Vec3 cell(
-        innerSize.x / static_cast<float>(kGridX),
-        innerSize.y / static_cast<float>(kGridY),
-        innerSize.z / static_cast<float>(kGridZ));
+        innerSize.x / static_cast<float>(gridX),
+        innerSize.y / static_cast<float>(gridY),
+        innerSize.z / static_cast<float>(gridZ));
     const float radius = TitusMath::length(cell) * 1.25f;
 
     std::vector<PointLightDesc> lights;
-    lights.reserve(SharedShadingParams::MAX_LIGHTS);
+    lights.reserve(static_cast<size_t>(count));
     int i = 0;
-    for (int iz = 0; iz < kGridZ; ++iz)
+    for (int iz = 0; iz < gridZ && i < count; ++iz)
     {
-        for (int iy = 0; iy < kGridY; ++iy)
+        for (int iy = 0; iy < gridY && i < count; ++iy)
         {
-            for (int ix = 0; ix < kGridX; ++ix, ++i)
+            for (int ix = 0; ix < gridX && i < count; ++ix, ++i)
             {
                 PointLightDesc l{};
                 l.worldPos = TitusMath::Vec3(
@@ -179,7 +183,7 @@ int main(int argc, char** argv)
 
     // 6) TechniqueContext + 三个 Pass：全部 AddPass（Init 一次），调度列表按 mode 互斥。
     TechniqueContext techniqueCtx;
-    techniqueCtx.shared.lights = MakeLights(bbMin, bbMax);
+    techniqueCtx.shared.lights = MakeLights(bbMin, bbMax, SharedShadingParams::MAX_LIGHTS);
 
     auto gbufferPass = std::make_shared<SponzaGBufferPass>();
     auto lightingPass = std::make_shared<DeferredLightingPass>();
@@ -205,7 +209,7 @@ int main(int argc, char** argv)
     APP::AddPass(forwardPass);
     applySchedule(techniqueCtx.mode);
 
-    OVERLAY::AddPanel("Shading Technique", [&techniqueCtx, &applySchedule]()
+    OVERLAY::AddPanel("Shading Technique", [&techniqueCtx, &applySchedule, bbMin, bbMax]()
     {
         int m = static_cast<int>(techniqueCtx.mode);
         bool changed = ImGui::RadioButton("Deferred", &m, static_cast<int>(ShadingTechnique::Deferred));
@@ -217,7 +221,9 @@ int main(int argc, char** argv)
             applySchedule(techniqueCtx.mode);
         }
 
-        ImGui::Text("Lights: %d", static_cast<int>(techniqueCtx.shared.lights.size()));
+        int lightCount = static_cast<int>(techniqueCtx.shared.lights.size());
+        if (ImGui::SliderInt("Lights", &lightCount, 10, SharedShadingParams::MAX_LIGHTS))
+            techniqueCtx.shared.lights = MakeLights(bbMin, bbMax, lightCount);
 
         if (techniqueCtx.mode == ShadingTechnique::Deferred)
         {
