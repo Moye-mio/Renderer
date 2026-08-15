@@ -30,9 +30,10 @@ struct PointLightDesc
 
 struct SharedShadingParams
 {
-    static constexpr int MAX_LIGHTS = 5;
+    static constexpr int MAX_LIGHTS = 1000;
 
-    // 与 DeferredLighting_FS / Forward_FS 的 std140 u_LightBlock 严格对齐（176B）。
+    // 与 DeferredLighting_FS / Forward_FS 的 std140 u_LightBlock 严格对齐。
+    // PointLight = 32B；数组 1000 个 = 32000B；其后 ivec4 = 16B；总计 32016B。
     struct GpuPointLight
     {
         TitusMath::Vec4 positionVSAndRadius{0.0f}; // xyz: 视空间位置, w: 半径
@@ -44,7 +45,7 @@ struct SharedShadingParams
         TitusMath::IVec4 count{0}; // x = 有效光源数
     };
     static_assert(sizeof(GpuPointLight) == 32, "GpuPointLight std140 size");
-    static_assert(sizeof(LightBlockData) == 176, "LightBlockData std140 size");
+    static_assert(sizeof(LightBlockData) == 32016, "LightBlockData std140 size");
 
     std::vector<PointLightDesc> lights;
 

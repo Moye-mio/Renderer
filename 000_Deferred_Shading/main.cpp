@@ -39,48 +39,57 @@
 #endif
 
 // ----------------------------------------------------------------------------
-// 基于模型 AABB 自适应生成 5 个点光源：沿包围盒最长的水平轴均匀铺开，放在离地
-// 板约 1/3 高度处，半径取包围盒对角线的一部分，配不同色相方便直观区分多光源。
+// 基于模型 AABB 自适应生成 1000 个点光源：在包围盒内按 10x10x10 网格铺开，
+// 半径取网格单元对角线的一部分，5 种色相循环，避免挤在一条线上过曝。
 // ----------------------------------------------------------------------------
 static std::vector<PointLightDesc>
 MakeLights(const TitusMath::Vec3& bbMin, const TitusMath::Vec3& bbMax)
 {
-    const TitusMath::Vec3 center = (bbMin + bbMax) * 0.5f;
     const TitusMath::Vec3 size = bbMax - bbMin;
-    const float diag = TitusMath::length(size);
+    constexpr int kGridX = 10;
+    constexpr int kGridY = 10;
+    constexpr int kGridZ = 10;
+    static_assert(kGridX * kGridY * kGridZ == SharedShadingParams::MAX_LIGHTS,
+                  "light grid must match MAX_LIGHTS");
 
-    // 选取水平面内较长的轴作为铺开方向（X 或 Z）
-    const bool spreadAlongX = size.x >= size.z;
-    const float axisMin = spreadAlongX ? bbMin.x : bbMin.z;
-    const float axisMax = spreadAlongX ? bbMax.x : bbMax.z;
-    const float y = bbMin.y + size.y * 0.35f; // 离地板约 1/3 高度
-
-    // 5 种色相（RGB），强度略有差异，营造彩色多光源效果
-    const TitusMath::Vec3 colors[SharedShadingParams::MAX_LIGHTS] = {
+    const TitusMath::Vec3 colors[] = {
         {1.0f, 0.25f, 0.20f}, // 暖红
         {1.0f, 0.75f, 0.30f}, // 橙黄
         {0.35f, 1.0f, 0.45f}, // 绿
         {0.30f, 0.60f, 1.0f}, // 蓝
         {0.85f, 0.40f, 1.0f}, // 紫
     };
+    constexpr int kColorCount = static_cast<int>(sizeof(colors) / sizeof(colors[0]));
+
+    const float pad = 0.08f;
+    const TitusMath::Vec3 innerMin = bbMin + size * pad;
+    const TitusMath::Vec3 innerSize = size * (1.0f - 2.0f * pad);
+    const TitusMath::Vec3 cell(
+        innerSize.x / static_cast<float>(kGridX),
+        innerSize.y / static_cast<float>(kGridY),
+        innerSize.z / static_cast<float>(kGridZ));
+    const float radius = TitusMath::length(cell) * 1.25f;
 
     std::vector<PointLightDesc> lights;
     lights.reserve(SharedShadingParams::MAX_LIGHTS);
-    for (int i = 0; i < SharedShadingParams::MAX_LIGHTS; ++i)
+    int i = 0;
+    for (int iz = 0; iz < kGridZ; ++iz)
     {
-        const float t = (static_cast<float>(i) + 0.5f) / static_cast<float>(SharedShadingParams::MAX_LIGHTS);
-        const float axisPos = axisMin + (axisMax - axisMin) * t;
-
-        PointLightDesc l{};
-        if (spreadAlongX)
-            l.worldPos = TitusMath::Vec3(axisPos, y, center.z);
-        else
-            l.worldPos = TitusMath::Vec3(center.x, y, axisPos);
-
-        l.radius = diag * 0.45f;
-        l.color = colors[i];
-        l.intensity = 4.0f;
-        lights.push_back(l);
+        for (int iy = 0; iy < kGridY; ++iy)
+        {
+            for (int ix = 0; ix < kGridX; ++ix, ++i)
+            {
+                PointLightDesc l{};
+                l.worldPos = TitusMath::Vec3(
+                    innerMin.x + (static_cast<float>(ix) + 0.5f) * cell.x,
+                    innerMin.y + (static_cast<float>(iy) + 0.5f) * cell.y,
+                    innerMin.z + (static_cast<float>(iz) + 0.5f) * cell.z);
+                l.radius = radius;
+                l.color = colors[i % kColorCount];
+                l.intensity = 2.5f;
+                lights.push_back(l);
+            }
+        }
     }
     return lights;
 }

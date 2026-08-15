@@ -1,7 +1,7 @@
 #version 430 core
 
 // 延迟光照：从 G-Buffer 采样 Albedo / Normal(view) / Position(view)，
-// 对 5 个点光源做 Blinn-Phong 累加（全部在视空间进行，相机位于原点）。
+// 对最多 1000 个点光源做 Blinn-Phong 累加（全部在视空间进行，相机位于原点）。
 layout(location = 0) in  vec2 v2f_TexCoords;
 layout(location = 0) out vec4 Color_;
 
@@ -11,7 +11,7 @@ layout(location = 0) out vec4 Color_;
 #define LAYOUT_BIND(s, b) layout(binding = b)
 #endif
 
-#define MAX_LIGHTS 5
+#define MAX_LIGHTS 1000
 
 struct PointLight
 {
@@ -19,7 +19,7 @@ struct PointLight
 	vec4 colorAndIntensity;   // rgb: 颜色,       w: 强度
 };
 
-// std140：PointLight = 2*vec4 = 32B；数组 5 个 = 160B；其后 ivec4 = 16B；总计 176B。
+// std140：PointLight = 2*vec4 = 32B；数组 1000 个 = 32000B；其后 ivec4 = 16B；总计 32016B。
 LAYOUT_BIND(0, 0) layout(std140) uniform u_LightBlock
 {
 	PointLight u_Lights[MAX_LIGHTS];

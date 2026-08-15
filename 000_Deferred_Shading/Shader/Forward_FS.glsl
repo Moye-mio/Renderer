@@ -13,7 +13,7 @@ layout(location = 0) out vec4 Color_;
 #define LAYOUT_BIND(s, b) layout(binding = b)
 #endif
 
-#define MAX_LIGHTS 5
+#define MAX_LIGHTS 1000
 
 struct PointLight
 {
@@ -21,7 +21,7 @@ struct PointLight
 	vec4 colorAndIntensity;   // rgb: 颜色,       w: 强度
 };
 
-// std140：与 SharedShadingParams::LightBlockData 对齐（176B）。
+// std140：与 SharedShadingParams::LightBlockData 对齐（32016B）。
 LAYOUT_BIND(0, 2) layout(std140) uniform u_LightBlock
 {
 	PointLight u_Lights[MAX_LIGHTS];

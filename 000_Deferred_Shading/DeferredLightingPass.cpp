@@ -1,7 +1,7 @@
 // ============================================================================
 // 000_Deferred_Shading - DeferredLightingPass.cpp
 //
-// 全屏光照 Pass：读取 G-Buffer -> 对 5 个点光源做视空间 Blinn-Phong -> 输出到
+// 全屏光照 Pass：读取 G-Buffer -> 对最多 1000 个点光源做视空间 Blinn-Phong -> 输出到
 // 默认 backbuffer。所有资源经 IGDevice 创建，命令经 RenderCommandList 录制。
 // ============================================================================
 #include "DeferredLightingPass.h"
