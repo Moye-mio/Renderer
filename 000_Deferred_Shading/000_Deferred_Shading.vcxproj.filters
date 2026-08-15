@@ -27,6 +27,9 @@
     <ClCompile Include="DeferredLightingPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ForwardShadingPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sponza.h">
@@ -36,6 +39,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DeferredLightingPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ForwardShadingPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TechniqueContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -50,6 +59,12 @@
       <Filter>Shader Files</Filter>
     </Content>
     <Content Include="Shader\DeferredLighting_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\Forward_VS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\Forward_FS.glsl">
       <Filter>Shader Files</Filter>
     </Content>
   </ItemGroup>

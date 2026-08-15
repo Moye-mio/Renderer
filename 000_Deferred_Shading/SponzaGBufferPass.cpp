@@ -9,6 +9,7 @@
 // ============================================================================
 #include "SponzaGBufferPass.h"
 #include "Sponza.h"
+#include "TechniqueContext.h"
 
 #include <cstdint>
 #include <string>
@@ -215,6 +216,9 @@ void SponzaGBufferPass::Record(TitusRHI::IGDevice& device,
                                uint32_t /*imageIndex*/)
 {
     using namespace TitusRHI;
+
+    if (!m_ctx || m_ctx->mode != ShadingTechnique::Deferred)
+        return;
 
     // BeginRenderPass：3 个颜色附件 Clear 为 0（背景干净），深度 Clear。
     RenderPassBeginInfo rp{};

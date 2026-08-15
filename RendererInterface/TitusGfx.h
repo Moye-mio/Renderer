@@ -23,6 +23,7 @@
 #include <string>
 #include <any>
 #include <type_traits>
+#include <vector>
 
 #include "Basic/TitusMath.h"
 
@@ -135,9 +136,15 @@ namespace TitusRHI
         // -- Pass 注册 --
         // 调用者需额外 include "RendererInterface/TitusGfxPass.h" 以获得
         // TitusRHI::IRenderPass 的完整声明（实际上在 RendererCore 中定义）。
-        // AddPass 后接管生命周期：InitAllPasses / DestroyAllPasses 由门面在
-        // 适当时机隐式调用（InitApp 后 + ShutdownApp 前）。
+        // AddPass：登记生命周期（Init 一次）并加入本帧调度列表。
+        // ShutdownApp 会 Destroy 所有曾 AddPass 过的 Pass，即使之后被
+        // SetScheduledPasses 从调度列表拿掉。
         void AddPass(std::shared_ptr<IRenderPass> pass);
+
+        // 替换 PassScheduler 本帧遍历的列表，不 Init / Destroy。
+        // 用于按算法互斥调度（例如 Deferred 只挂 GBuffer+Lighting）。
+        // 传入的 Pass 应已 AddPass（否则未 Init 就 Record）。
+        void SetScheduledPasses(const std::vector<std::shared_ptr<IRenderPass>>& passes);
 
         // -- GpuModel 上传 / 销毁（资产分层）--
         // 输入是 AssetLoader 解码后的 CPU IR（const TitusAsset::ModelAssetData&）；

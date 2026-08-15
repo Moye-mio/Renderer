@@ -11,6 +11,7 @@
 #include "RendererInterface/TitusGfxPass.h"
 
 class Sponza;
+struct TechniqueContext;
 
 class SponzaGBufferPass : public TitusRHI::IRenderPass
 {
@@ -19,6 +20,7 @@ public:
     ~SponzaGBufferPass() override = default;
 
     void SetSponza(Sponza* sponza) { m_sponza = sponza; }
+    void SetContext(TechniqueContext* ctx) { m_ctx = ctx; }
 
     void Init(TitusRHI::IGDevice& device) override;
     void Destroy(TitusRHI::IGDevice& device) override;
@@ -29,6 +31,7 @@ public:
 
 private:
     Sponza* m_sponza = nullptr;
+    TechniqueContext* m_ctx = nullptr;
 
     // G-Buffer 颜色 + 深度附件
     TitusRHI::TextureHandle m_albedoTex;

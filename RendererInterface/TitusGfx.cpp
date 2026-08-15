@@ -80,6 +80,10 @@ namespace TitusRHI
             std::unique_ptr<GDevice> device;
             std::unique_ptr<PassScheduler> scheduler;
             bool passesInitialized = false;
+            // 生命周期登记：AddPass 写入；Shutdown 时 Destroy。
+            // 与 scheduler 的本帧调度列表分离，以便 SetScheduledPasses 卸调度
+            // 而不丢 Init 过的 GPU 资源。
+            std::vector<std::shared_ptr<IRenderPass>> registeredPasses;
 
             // -- 资产上传器（获取 device 后创建） --
             std::unique_ptr<AssetGpuUploader> uploader;
@@ -628,9 +632,14 @@ namespace TitusRHI
             // 销毁所有仍在注册表中的 GpuModel（业务未显式 Destroy 的都在这里兑现）。
             // 顺序上要求在 device.Shutdown 之前、在所有 Pass 的 Destroy 之后（Pass 可能
             // 还在持有 GpuModelHandle）。
-            if (g.scheduler && g.passesInitialized)
+            if (g.device && g.passesInitialized)
             {
-                g.scheduler->DestroyAllPasses();
+                for (auto& p : g.registeredPasses)
+                {
+                    if (p) p->Destroy(*g.device);
+                }
+                g.registeredPasses.clear();
+                if (g.scheduler) g.scheduler->RemoveAllPasses();
                 g.passesInitialized = false;
             }
             if (g.device)
@@ -713,19 +722,46 @@ namespace TitusRHI
         {
             auto& g = Get();
             if (!pass) return;
-            if (g.scheduler)
-            {
-                g.scheduler->AddPass(pass);
-                if (g.passesInitialized && g.device)
-                {
-                    // 运行期追加：立即 Init 该单个 Pass
-                    pass->Init(*g.device);
-                }
-            }
-            else
+            if (!g.scheduler)
             {
                 // InitApp 之前调用：要求调用者在 InitApp 后再 AddPass。
                 LOG_STREAM_WARN("TitusRHI::APP") << "AddPass called before InitApp; ignored";
+                return;
+            }
+
+            bool alreadyRegistered = false;
+            for (const auto& p : g.registeredPasses)
+            {
+                if (p == pass)
+                {
+                    alreadyRegistered = true;
+                    break;
+                }
+            }
+            if (!alreadyRegistered)
+                g.registeredPasses.push_back(pass);
+
+            g.scheduler->AddPass(pass);
+            if (!alreadyRegistered && g.passesInitialized && g.device)
+            {
+                // 运行期首次登记：立即 Init。重复 AddPass 只再挂进调度列表。
+                pass->Init(*g.device);
+            }
+        }
+
+        void SetScheduledPasses(const std::vector<std::shared_ptr<IRenderPass>>& passes)
+        {
+            auto& g = Get();
+            if (!g.scheduler)
+            {
+                LOG_STREAM_WARN("TitusRHI::APP") << "SetScheduledPasses called before InitApp; ignored";
+                return;
+            }
+            g.scheduler->RemoveAllPasses();
+            for (const auto& p : passes)
+            {
+                if (!p) continue;
+                g.scheduler->AddPass(p);
             }
         }
 

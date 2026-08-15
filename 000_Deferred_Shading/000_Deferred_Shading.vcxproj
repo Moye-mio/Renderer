@@ -22,12 +22,15 @@
         <ClCompile Include="Sponza.cpp"/>
         <ClCompile Include="SponzaGBufferPass.cpp"/>
         <ClCompile Include="DeferredLightingPass.cpp"/>
+        <ClCompile Include="ForwardShadingPass.cpp"/>
         <ClCompile Include="main.cpp"/>
     </ItemGroup>
     <ItemGroup>
         <ClInclude Include="Sponza.h"/>
         <ClInclude Include="SponzaGBufferPass.h"/>
         <ClInclude Include="DeferredLightingPass.h"/>
+        <ClInclude Include="ForwardShadingPass.h"/>
+        <ClInclude Include="TechniqueContext.h"/>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Basic\Basic.vcxproj">
@@ -47,6 +50,8 @@
         <Content Include="Shader\Sponza_FS.glsl"/>
         <Content Include="Shader\DeferredLighting_VS.glsl"/>
         <Content Include="Shader\DeferredLighting_FS.glsl"/>
+        <Content Include="Shader\Forward_VS.glsl"/>
+        <Content Include="Shader\Forward_FS.glsl"/>
     </ItemGroup>
     <PropertyGroup Label="Globals">
         <VCProjectVersion>15.0</VCProjectVersion>

@@ -30,12 +30,38 @@ LAYOUT_BIND(0, 1) uniform sampler2D u_AlbedoTexture;
 LAYOUT_BIND(0, 2) uniform sampler2D u_NormalTexture;
 LAYOUT_BIND(0, 3) uniform sampler2D u_PositionTexture;
 
+#ifdef VULKAN
+layout(push_constant) uniform PC {
+	layout(offset = 0) int u_DebugView;
+} pc;
+#define u_DebugView pc.u_DebugView
+#else
+uniform int u_DebugView;
+#endif
+
 void main()
 {
 	ivec2 px = ivec2(gl_FragCoord.xy);
 	vec3 albedo    = texelFetch(u_AlbedoTexture,   px, 0).rgb;
 	vec3 N         = texelFetch(u_NormalTexture,   px, 0).xyz;
 	vec3 fragPosVS = texelFetch(u_PositionTexture, px, 0).xyz;
+
+	// DeferredParams::DebugView：1=Albedo 2=Normal 3=Position（0=Final 走下面光照）
+	if (u_DebugView == 1)
+	{
+		Color_ = vec4(albedo, 1.0);
+		return;
+	}
+	if (u_DebugView == 2)
+	{
+		Color_ = vec4(N * 0.5 + 0.5, 1.0);
+		return;
+	}
+	if (u_DebugView == 3)
+	{
+		Color_ = vec4(fragPosVS * 0.1 + 0.5, 1.0);
+		return;
+	}
 
 	// 背景（无几何）：G-Buffer 清空为 0，法线长度约为 0 -> 输出深色背景。
 	if (dot(N, N) < 0.01)

@@ -1,10 +1,11 @@
 // ============================================================================
 // 000_Deferred_Shading - main.cpp
 //
-// 延迟渲染（Deferred Shading）示例：
-//   1. SponzaGBufferPass：把 Sponza 渲染进 G-Buffer（Albedo/Normal/Position/Depth）；
-//   2. DeferredLightingPass：全屏 Pass 采样 G-Buffer，对 5 个点光源做 Blinn-Phong，
-//      结果直接输出到默认 backbuffer。
+// 延迟 / 前向着色对比示例：
+//   - Deferred：SponzaGBufferPass -> DeferredLightingPass（G-Buffer + 全屏光照）
+//   - Forward：ForwardShadingPass（几何片元直接 Blinn-Phong）
+//   ImGui「Shading Technique」面板切换；SetScheduledPasses 让调度器只挂当前算法的 Pass。
+//   两边共用 TechniqueContext::shared 的灯与 BRDF。
 //
 // 架构与 001 一致（后端无关 RHI）：仅通过 RendererInterface 暴露的 `TitusRHI::*`
 // API 启动应用、注册 Pass；模型加载走 AssetLoader 解码出 CPU 端 IR，再交给 gfx
@@ -30,6 +31,8 @@
 #include "Sponza.h"
 #include "SponzaGBufferPass.h"
 #include "DeferredLightingPass.h"
+#include "ForwardShadingPass.h"
+#include "TechniqueContext.h"
 
 #ifndef SOLUTION_DIR
 #define SOLUTION_DIR ""
@@ -39,7 +42,7 @@
 // 基于模型 AABB 自适应生成 5 个点光源：沿包围盒最长的水平轴均匀铺开，放在离地
 // 板约 1/3 高度处，半径取包围盒对角线的一部分，配不同色相方便直观区分多光源。
 // ----------------------------------------------------------------------------
-static std::vector<DeferredLightingPass::PointLightDesc>
+static std::vector<PointLightDesc>
 MakeLights(const TitusMath::Vec3& bbMin, const TitusMath::Vec3& bbMax)
 {
     const TitusMath::Vec3 center = (bbMin + bbMax) * 0.5f;
@@ -53,7 +56,7 @@ MakeLights(const TitusMath::Vec3& bbMin, const TitusMath::Vec3& bbMax)
     const float y = bbMin.y + size.y * 0.35f; // 离地板约 1/3 高度
 
     // 5 种色相（RGB），强度略有差异，营造彩色多光源效果
-    const TitusMath::Vec3 colors[DeferredLightingPass::MAX_LIGHTS] = {
+    const TitusMath::Vec3 colors[SharedShadingParams::MAX_LIGHTS] = {
         {1.0f, 0.25f, 0.20f}, // 暖红
         {1.0f, 0.75f, 0.30f}, // 橙黄
         {0.35f, 1.0f, 0.45f}, // 绿
@@ -61,14 +64,14 @@ MakeLights(const TitusMath::Vec3& bbMin, const TitusMath::Vec3& bbMax)
         {0.85f, 0.40f, 1.0f}, // 紫
     };
 
-    std::vector<DeferredLightingPass::PointLightDesc> lights;
-    lights.reserve(DeferredLightingPass::MAX_LIGHTS);
-    for (int i = 0; i < DeferredLightingPass::MAX_LIGHTS; ++i)
+    std::vector<PointLightDesc> lights;
+    lights.reserve(SharedShadingParams::MAX_LIGHTS);
+    for (int i = 0; i < SharedShadingParams::MAX_LIGHTS; ++i)
     {
-        const float t = (static_cast<float>(i) + 0.5f) / static_cast<float>(DeferredLightingPass::MAX_LIGHTS);
+        const float t = (static_cast<float>(i) + 0.5f) / static_cast<float>(SharedShadingParams::MAX_LIGHTS);
         const float axisPos = axisMin + (axisMax - axisMin) * t;
 
-        DeferredLightingPass::PointLightDesc l{};
+        PointLightDesc l{};
         if (spreadAlongX)
             l.worldPos = TitusMath::Vec3(axisPos, y, center.z);
         else
@@ -104,7 +107,7 @@ int main(int argc, char** argv)
     // 2) 窗口 / 组件配置
     WINDOW_KEYWORD::SetWindowSize(1920, 1152);
     WINDOW_KEYWORD::SetIsCursorDisable(false);
-    WINDOW_KEYWORD::SetWindowTitle("000_Deferred_Shading");
+    WINDOW_KEYWORD::SetWindowTitle("000_Deferred_Shading (Technique Compare)");
     COMPONENT_CONFIG::SetIsEnableGUI(true);
 
     // 3) 初始化（窗口 + 设备 + PassScheduler）
@@ -165,15 +168,58 @@ int main(int argc, char** argv)
     TitusMath::Mat4 sponzaModelMatrix{1.0f};
     Sponza sponza(sponzaHandle, sponzaModelMatrix);
 
-    // 6) 构造并注册 2 个 Pass（GBuffer -> DeferredLighting）
+    // 6) TechniqueContext + 三个 Pass：全部 AddPass（Init 一次），调度列表按 mode 互斥。
+    TechniqueContext techniqueCtx;
+    techniqueCtx.shared.lights = MakeLights(bbMin, bbMax);
+
     auto gbufferPass = std::make_shared<SponzaGBufferPass>();
     auto lightingPass = std::make_shared<DeferredLightingPass>();
+    auto forwardPass = std::make_shared<ForwardShadingPass>();
 
     gbufferPass->SetSponza(&sponza);
-    lightingPass->SetLights(MakeLights(bbMin, bbMax));
+    gbufferPass->SetContext(&techniqueCtx);
+    lightingPass->SetContext(&techniqueCtx);
+    forwardPass->SetSponza(&sponza);
+    forwardPass->SetContext(&techniqueCtx);
 
+    auto applySchedule = [&](ShadingTechnique mode)
+    {
+        if (mode == ShadingTechnique::Deferred)
+            APP::SetScheduledPasses({gbufferPass, lightingPass});
+        else
+            APP::SetScheduledPasses({forwardPass});
+    };
+
+    // 先登记并 Init 全部，再把调度列表收成当前 mode（默认 Deferred）。
     APP::AddPass(gbufferPass);
     APP::AddPass(lightingPass);
+    APP::AddPass(forwardPass);
+    applySchedule(techniqueCtx.mode);
+
+    OVERLAY::AddPanel("Shading Technique", [&techniqueCtx, &applySchedule]()
+    {
+        int m = static_cast<int>(techniqueCtx.mode);
+        bool changed = ImGui::RadioButton("Deferred", &m, static_cast<int>(ShadingTechnique::Deferred));
+        ImGui::SameLine();
+        changed = ImGui::RadioButton("Forward", &m, static_cast<int>(ShadingTechnique::Forward)) || changed;
+        if (changed)
+        {
+            techniqueCtx.mode = static_cast<ShadingTechnique>(m);
+            applySchedule(techniqueCtx.mode);
+        }
+
+        ImGui::Text("Lights: %d", static_cast<int>(techniqueCtx.shared.lights.size()));
+
+        if (techniqueCtx.mode == ShadingTechnique::Deferred)
+        {
+            ImGui::Separator();
+            ImGui::TextUnformatted("Deferred");
+            int dv = static_cast<int>(techniqueCtx.deferred.debugView);
+            const char* items[] = { "Final", "Albedo", "Normal", "Position" };
+            ImGui::Combo("Debug view", &dv, items, IM_ARRAYSIZE(items));
+            techniqueCtx.deferred.debugView = static_cast<DeferredParams::DebugView>(dv);
+        }
+    });
 
     // 7) 主循环
     while (!APP::ShouldClose())

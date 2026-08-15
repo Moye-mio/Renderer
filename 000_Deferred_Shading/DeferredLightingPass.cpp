@@ -5,8 +5,8 @@
 // 默认 backbuffer。所有资源经 IGDevice 创建，命令经 RenderCommandList 录制。
 // ============================================================================
 #include "DeferredLightingPass.h"
+#include "TechniqueContext.h"
 
-#include <algorithm>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -42,7 +42,7 @@ void DeferredLightingPass::Init(TitusRHI::IGDevice& device)
     // 2) 光源 UBO（binding=0），大小与 std140 布局对齐
     {
         BufferDesc bd{};
-        bd.size = sizeof(LightBlockData);
+        bd.size = sizeof(SharedShadingParams::LightBlockData);
         bd.usage = BufferUsage::UniformBuffer | BufferUsage::TransferDst;
         bd.memory = MemoryUsage::CpuToGpu;
         bd.debugName = "DeferredLightingPass.LightUBO";
@@ -106,6 +106,13 @@ void DeferredLightingPass::Init(TitusRHI::IGDevice& device)
         addSampler("u_NormalTexture", 2);
         addSampler("u_PositionTexture", 3);
 
+        PushConstantRange pcDebug{};
+        pcDebug.stages = ShaderStage::Fragment;
+        pcDebug.offset = 0;
+        pcDebug.size = sizeof(int32_t);
+        pcDebug.glName = "u_DebugView";
+        pd.pushConstantRanges.push_back(pcDebug);
+
         pd.debugName = "DeferredLightingPass.Pipeline";
         m_pipeline = device.CreatePipeline(pd);
     }
@@ -136,6 +143,8 @@ void DeferredLightingPass::Record(TitusRHI::IGDevice& device,
 {
     using namespace TitusRHI;
 
+    if (!m_ctx || m_ctx->mode != ShadingTechnique::Deferred)
+        return;
     if (!m_pipeline.IsValid()) return;
 
     // 取共享 G-Buffer 纹理（GBufferPass 在其 Init 中已注册）
@@ -148,16 +157,8 @@ void DeferredLightingPass::Record(TitusRHI::IGDevice& device,
     if (m_lightUbo.IsValid())
     {
         ZoneScopedN("Lighting::UpdateLights");
-        LightBlockData data{};
-        const TitusMath::Mat4 view = CAMERA::GetMainCameraViewMatrix();
-        const int n = static_cast<int>(std::min(m_lights.size(), static_cast<size_t>(MAX_LIGHTS)));
-        for (int i = 0; i < n; ++i)
-        {
-            const TitusMath::Vec4 posVS = view * TitusMath::Vec4(m_lights[i].worldPos, 1.0f);
-            data.lights[i].positionVSAndRadius = TitusMath::Vec4(TitusMath::Vec3(posVS), m_lights[i].radius);
-            data.lights[i].colorAndIntensity = TitusMath::Vec4(m_lights[i].color, m_lights[i].intensity);
-        }
-        data.count = TitusMath::IVec4(n, 0, 0, 0);
+        SharedShadingParams::LightBlockData data{};
+        m_ctx->shared.FillLightBlock(data, CAMERA::GetMainCameraViewMatrix());
         device.UpdateBuffer(m_lightUbo, &data, sizeof(data), 0);
     }
 
@@ -206,7 +207,7 @@ void DeferredLightingPass::Record(TitusRHI::IGDevice& device,
             ubo.type = ResourceBindingType::UniformBuffer;
             ubo.buffer = m_lightUbo;
             ubo.bufferOffset = 0;
-            ubo.bufferRange = sizeof(LightBlockData);
+            ubo.bufferRange = sizeof(SharedShadingParams::LightBlockData);
             rs.bindings.push_back(ubo);
 
             auto pushTex = [&](TextureHandle h, uint32_t binding)
@@ -224,6 +225,9 @@ void DeferredLightingPass::Record(TitusRHI::IGDevice& device,
 
             cmd.BindResourceSet(0, rs);
         }
+
+        const int32_t debugView = static_cast<int32_t>(m_ctx->deferred.debugView);
+        cmd.PushConstants(ShaderStage::Fragment, 0, sizeof(int32_t), &debugView);
 
         cmd.Draw(3); // 全屏三角形
 
