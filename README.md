@@ -59,7 +59,7 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 | `Examples/` | 跨后端最小示例（见下） |
 | `000_Deferred_Shading/` | 延迟着色示例（Sponza + 多点光） |
 | `001_Reflective_shadow_map/` | RSM 间接光示例 |
-| `Docs/` | 设计文档与 TODO |
+| `Docs/` | 设计文档、待办（`Todo/`）与事故复盘（`Bug/`） |
 | `Tools/` | 架构护栏与着色器辅助脚本 |
 | `Third-Party/` | 第三方库（imgui、glm、gli、stb、Assimp、GLFW/GLEW、Tracy 等） |
 | `Model/` `Fonts/` | 运行时资源 |

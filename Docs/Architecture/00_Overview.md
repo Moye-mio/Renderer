@@ -184,9 +184,9 @@ classDiagram
 |---|---|---|
 | `RendererCore/` 与业务侧禁止 include 后端 SDK 头 | `Tools/check_no_backend_headers.py/.bat` | Examples PreBuild，命中即构建失败 |
 | 依赖方向单向 | `Tools/check_deps_direction.bat` | `RendererInterface` PreBuildEvent |
-| 宏一致性（血泪教训） | 见 `bug.md` | — |
+| 宏一致性（血泪教训） | 见 [`2026-07-16_vk_odr_crash.md`](../Bug/2026-07-16_vk_odr_crash.md) | — |
 
-> **`bug.md` 的 ODR 陷阱**：`VKDevice` 里受 `RENDERER_ENABLE_RAY_TRACING` 控制的成员会改变 `sizeof`/成员偏移；若该宏在 `RendererInterface`（执行 `new VKDevice` 处）与 `RendererVK`（编译构造函数处）不一致，就会"按小尺寸分配、按大布局构造"→ 堆破坏 → 0xC0000005。**教训：任何用宏控制类布局的头文件，该宏必须在所有引用它的编译单元中一致**（建议抽到共享 `.props`）。这一条会在第 4 篇《设计陷阱》里详述。
+> **ODR 陷阱**（[`2026-07-16_vk_odr_crash.md`](../Bug/2026-07-16_vk_odr_crash.md)）：`VKDevice` 里受 `RENDERER_ENABLE_RAY_TRACING` 控制的成员会改变 `sizeof`/成员偏移；若该宏在 `RendererInterface`（执行 `new VKDevice` 处）与 `RendererVK`（编译构造函数处）不一致，就会"按小尺寸分配、按大布局构造"→ 堆破坏 → 0xC0000005。**教训：任何用宏控制类布局的头文件，该宏必须在所有引用它的编译单元中一致**（建议抽到共享 `.props`）。这一条会在第 4 篇《设计陷阱》里详述。
 
 ---
 

@@ -56,7 +56,7 @@
 - 内嵌 `struct RayTracingFunctions`（`VkContext.h:67`）：9 个 RT/AS/BDA/SBT 扩展函数指针。
 - 私有 `CheckRayTracingSupport/CheckRayTracingPipelineSupport/LoadRayTracingFunctions`（`:101-108`）；成员 `m_supportsRayTracing/m_accelStructProps/m_rtFunctions` 等（`:128-155`）。
 
-> ⚠️ 这些**受宏控制的成员改变了类布局**——正是 `bug.md` 记录的 ODR/堆破坏根因链的上游（`VKDevice` 也含此类宏成员）。详见 `99_Pitfalls.md`。
+> ⚠️ 这些**受宏控制的成员改变了类布局**——正是 [`2026-07-16_vk_odr_crash.md`](../Bug/2026-07-16_vk_odr_crash.md) 记录的 ODR/堆破坏根因链的上游（`VKDevice` 也含此类宏成员）。详见 `99_Pitfalls.md`。
 
 ---
 

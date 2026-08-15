@@ -1,5 +1,7 @@
 # Bug 记录
 
+> 事故原文。提炼后的设计约束见 [`99_Pitfalls.md`](../Architecture/99_Pitfalls.md) 第 1 条。
+
 ## Bug：VK 后端启动 001 项目崩溃（0xC0000005 访问违规）
 
 - 日期：2026-07-16
