@@ -30,6 +30,9 @@
     <ClCompile Include="ForwardShadingPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ForwardPlusPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sponza.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ForwardShadingPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ForwardPlusPass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TechniqueContext.h">
@@ -65,6 +71,21 @@
       <Filter>Shader Files</Filter>
     </Content>
     <Content Include="Shader\Forward_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\ForwardPlusDepth_VS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\ForwardPlusDepth_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\ForwardPlusCull_CS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\ForwardPlus_VS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\ForwardPlus_FS.glsl">
       <Filter>Shader Files</Filter>
     </Content>
   </ItemGroup>

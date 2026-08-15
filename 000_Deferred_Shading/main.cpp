@@ -1,11 +1,12 @@
 // ============================================================================
 // 000_Deferred_Shading - main.cpp
 //
-// 延迟 / 前向着色对比示例：
+// 延迟 / 前向 / Forward+ 着色对比示例：
 //   - Deferred：SponzaGBufferPass -> DeferredLightingPass（G-Buffer + 全屏光照）
 //   - Forward：ForwardShadingPass（几何片元直接 Blinn-Phong）
+//   - Forward+：ForwardPlusPass（Depth 预通道 → Compute 分块剔灯 → 按 tile 灯表着色）
 //   ImGui「Shading Technique」面板切换；SetScheduledPasses 让调度器只挂当前算法的 Pass。
-//   两边共用 TechniqueContext::shared 的灯与 BRDF。
+//   三套算法共用 TechniqueContext::shared 的灯与 BRDF。
 //
 // 架构与 001 一致（后端无关 RHI）：仅通过 RendererInterface 暴露的 `TitusRHI::*`
 // API 启动应用、注册 Pass；模型加载走 AssetLoader 解码出 CPU 端 IR，再交给 gfx
@@ -33,6 +34,7 @@
 #include "SponzaGBufferPass.h"
 #include "DeferredLightingPass.h"
 #include "ForwardShadingPass.h"
+#include "ForwardPlusPass.h"
 #include "TechniqueContext.h"
 
 #ifndef SOLUTION_DIR
@@ -181,24 +183,29 @@ int main(int argc, char** argv)
     TitusMath::Mat4 sponzaModelMatrix{1.0f};
     Sponza sponza(sponzaHandle, sponzaModelMatrix);
 
-    // 6) TechniqueContext + 三个 Pass：全部 AddPass（Init 一次），调度列表按 mode 互斥。
+    // 6) TechniqueContext + 全部 Pass：AddPass（Init 一次），调度列表按 mode 互斥。
     TechniqueContext techniqueCtx;
     techniqueCtx.shared.lights = MakeLights(bbMin, bbMax, SharedShadingParams::MAX_LIGHTS);
 
     auto gbufferPass = std::make_shared<SponzaGBufferPass>();
     auto lightingPass = std::make_shared<DeferredLightingPass>();
     auto forwardPass = std::make_shared<ForwardShadingPass>();
+    auto forwardPlusPass = std::make_shared<ForwardPlusPass>();
 
     gbufferPass->SetSponza(&sponza);
     gbufferPass->SetContext(&techniqueCtx);
     lightingPass->SetContext(&techniqueCtx);
     forwardPass->SetSponza(&sponza);
     forwardPass->SetContext(&techniqueCtx);
+    forwardPlusPass->SetSponza(&sponza);
+    forwardPlusPass->SetContext(&techniqueCtx);
 
     auto applySchedule = [&](ShadingTechnique mode)
     {
         if (mode == ShadingTechnique::Deferred)
             APP::SetScheduledPasses({gbufferPass, lightingPass});
+        else if (mode == ShadingTechnique::ForwardPlus)
+            APP::SetScheduledPasses({forwardPlusPass});
         else
             APP::SetScheduledPasses({forwardPass});
     };
@@ -207,6 +214,7 @@ int main(int argc, char** argv)
     APP::AddPass(gbufferPass);
     APP::AddPass(lightingPass);
     APP::AddPass(forwardPass);
+    APP::AddPass(forwardPlusPass);
     applySchedule(techniqueCtx.mode);
 
     OVERLAY::AddPanel("Shading Technique", [&techniqueCtx, &applySchedule, bbMin, bbMax]()
@@ -215,6 +223,8 @@ int main(int argc, char** argv)
         bool changed = ImGui::RadioButton("Deferred", &m, static_cast<int>(ShadingTechnique::Deferred));
         ImGui::SameLine();
         changed = ImGui::RadioButton("Forward", &m, static_cast<int>(ShadingTechnique::Forward)) || changed;
+        ImGui::SameLine();
+        changed = ImGui::RadioButton("Forward+", &m, static_cast<int>(ShadingTechnique::ForwardPlus)) || changed;
         if (changed)
         {
             techniqueCtx.mode = static_cast<ShadingTechnique>(m);
@@ -233,6 +243,15 @@ int main(int argc, char** argv)
             const char* items[] = { "Final", "Albedo", "Normal", "Position" };
             ImGui::Combo("Debug view", &dv, items, IM_ARRAYSIZE(items));
             techniqueCtx.deferred.debugView = static_cast<DeferredParams::DebugView>(dv);
+        }
+        else if (techniqueCtx.mode == ShadingTechnique::ForwardPlus)
+        {
+            ImGui::Separator();
+            ImGui::TextUnformatted("Forward+");
+            int dv = static_cast<int>(techniqueCtx.forwardPlus.debugView);
+            const char* items[] = { "Final", "Tile heatmap" };
+            ImGui::Combo("Debug view", &dv, items, IM_ARRAYSIZE(items));
+            techniqueCtx.forwardPlus.debugView = static_cast<ForwardPlusParams::DebugView>(dv);
         }
     });
 

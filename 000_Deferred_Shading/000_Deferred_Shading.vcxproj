@@ -23,6 +23,7 @@
         <ClCompile Include="SponzaGBufferPass.cpp"/>
         <ClCompile Include="DeferredLightingPass.cpp"/>
         <ClCompile Include="ForwardShadingPass.cpp"/>
+        <ClCompile Include="ForwardPlusPass.cpp"/>
         <ClCompile Include="main.cpp"/>
     </ItemGroup>
     <ItemGroup>
@@ -30,6 +31,7 @@
         <ClInclude Include="SponzaGBufferPass.h"/>
         <ClInclude Include="DeferredLightingPass.h"/>
         <ClInclude Include="ForwardShadingPass.h"/>
+        <ClInclude Include="ForwardPlusPass.h"/>
         <ClInclude Include="TechniqueContext.h"/>
     </ItemGroup>
     <ItemGroup>
@@ -52,6 +54,11 @@
         <Content Include="Shader\DeferredLighting_FS.glsl"/>
         <Content Include="Shader\Forward_VS.glsl"/>
         <Content Include="Shader\Forward_FS.glsl"/>
+        <Content Include="Shader\ForwardPlusDepth_VS.glsl"/>
+        <Content Include="Shader\ForwardPlusDepth_FS.glsl"/>
+        <Content Include="Shader\ForwardPlusCull_CS.glsl"/>
+        <Content Include="Shader\ForwardPlus_VS.glsl"/>
+        <Content Include="Shader\ForwardPlus_FS.glsl"/>
     </ItemGroup>
     <PropertyGroup Label="Globals">
         <VCProjectVersion>15.0</VCProjectVersion>

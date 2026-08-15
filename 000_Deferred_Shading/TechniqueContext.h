@@ -3,10 +3,11 @@
 // 000_Deferred_Shading - TechniqueContext
 //
 // 对比实验的 CPU 侧共享状态（不持 GPU 资源）：
-//   mode     —— ImGui 切换的当前算法
-//   shared   —— 两边必须一致的输入（灯 / BRDF 常数 / LightBlock UBO 布局）
-//   deferred —— 仅 Deferred 认识（G-Buffer debug 视图）
-//   forward  —— 仅 Forward 认识（V1 空占位）
+//   mode        —— ImGui 切换的当前算法
+//   shared      —— 各算法必须一致的输入（灯 / BRDF 常数 / LightBlock UBO 布局）
+//   deferred    —— 仅 Deferred 认识（G-Buffer debug 视图）
+//   forward     —— 仅 Forward 认识（V1 空占位）
+//   forwardPlus —— 仅 Forward+ 认识（tile 尺寸 / 每 tile 灯上限 / debug 视图）
 // ============================================================================
 #include <algorithm>
 #include <vector>
@@ -15,11 +16,12 @@
 
 enum class ShadingTechnique
 {
-    Deferred = 0,
-    Forward  = 1,
+    Deferred    = 0,
+    Forward     = 1,
+    ForwardPlus = 2,
 };
 
-// 业务侧点光源（世界空间）。两套算法都从 SharedShadingParams::lights 读取。
+// 业务侧点光源（世界空间）。各算法都从 SharedShadingParams::lights 读取。
 struct PointLightDesc
 {
     TitusMath::Vec3 worldPos{0.0f};
@@ -49,7 +51,7 @@ struct SharedShadingParams
 
     std::vector<PointLightDesc> lights;
 
-    // 与两边 fragment shader 硬编码值对齐；V1 不进 UBO，改常数时两边 shader 一起改。
+    // 与各算法 fragment shader 硬编码值对齐；V1 不进 UBO，改常数时各 shader 一起改。
     float ambient   = 0.08f;
     float shininess = 32.0f;
 
@@ -84,10 +86,28 @@ struct ForwardParams
 {
 };
 
+// Forward+：16×16 tile + Compute 视锥/深度范围剔灯。
+// TILE_SIZE / MAX_LIGHTS_PER_TILE / TILE_STRIDE 必须与
+// ForwardPlusCull_CS.glsl / ForwardPlus_FS.glsl 的 #define 对齐。
+struct ForwardPlusParams
+{
+    static constexpr int TILE_SIZE = 16;
+    static constexpr int MAX_LIGHTS_PER_TILE = 256;
+    static constexpr int TILE_STRIDE = 1 + MAX_LIGHTS_PER_TILE; // count + indices
+
+    enum class DebugView
+    {
+        Final       = 0,
+        TileHeatmap = 1,
+    };
+    DebugView debugView = DebugView::Final;
+};
+
 struct TechniqueContext
 {
     ShadingTechnique    mode = ShadingTechnique::Deferred;
     SharedShadingParams shared;
     DeferredParams      deferred;
     ForwardParams       forward;
+    ForwardPlusParams   forwardPlus;
 };
