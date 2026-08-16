@@ -30,6 +30,9 @@ layout(location = 0) out vec2 v2f_TexCoords;
 layout(location = 1) out vec3 v2f_Normal;
 layout(location = 2) out vec3 v2f_FragPosInViewSpace;
 
+// 与 ForwardPlusDepth_VS 复用同一份深度，两边的 gl_Position 必须逐位一致。
+invariant gl_Position;
+
 void main()
 {
 	vec4 FragPosInViewSpace = u_ViewMatrix * u_ModelMatrix * vec4(_Position, 1.0f);

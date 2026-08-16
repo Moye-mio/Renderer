@@ -51,6 +51,10 @@ struct SharedShadingParams
 
     std::vector<PointLightDesc> lights;
 
+    // 灯半径 = 光源网格单元对角线 × radiusScale。它决定了"任意一点被多少盏灯覆盖"，
+    // 也就决定了 Clustered Forward 相对 Deferred 的收益上限，所以做成可调。
+    float radiusScale = 1.25f;
+
     // 与各算法 fragment shader 硬编码值对齐；V1 不进 UBO，改常数时各 shader 一起改。
     float ambient   = 0.08f;
     float shininess = 32.0f;
@@ -87,14 +91,17 @@ struct ForwardParams
 };
 
 // Clustered Forward：16×16 tile × 16 指数 Z slice，Compute 按 cluster AABB 剔灯。
+// cluster 的 Z 范围会被深度预通道归约出的每 tile 实际视距收紧（见
+// ForwardPlusTileDepth_CS.glsl），空 slice 整片跳过。
 // TILE_SIZE / Z_SLICES / MAX_LIGHTS_PER_CLUSTER / CLUSTER_STRIDE 必须与
 // ForwardPlusCull_CS.glsl / ForwardPlus_FS.glsl 的 #define 对齐。
 struct ForwardPlusParams
 {
     static constexpr int TILE_SIZE = 16;
     static constexpr int Z_SLICES = 16;
-    // 当前铺灯半径约 2m，中远 slice 里一个 cluster 常碰到 100+ 盏。
-    // 32 会截断且相邻格子留下的 index 不同 → 屏幕上 16×16 色块。
+    // 铺灯半径约 1.6m 时，收紧后的 cluster 仍会碰到 100+ 盏（灯球体积远大于
+    // cluster，这是密集点光的固有下限）。截断会让相邻格子留下的 index 不同 →
+    // 屏幕上出现 16×16 色块，所以留够余量；用 Cluster heatmap 视图确认是否顶格。
     static constexpr int MAX_LIGHTS_PER_CLUSTER = 256;
     static constexpr int CLUSTER_STRIDE = 1 + MAX_LIGHTS_PER_CLUSTER; // count + indices
 

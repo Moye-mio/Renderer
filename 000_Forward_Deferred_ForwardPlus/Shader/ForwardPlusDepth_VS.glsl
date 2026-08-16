@@ -28,6 +28,9 @@ uniform mat4 u_ModelMatrix;
 
 layout(location = 0) out vec3 v2f_FragPosInViewSpace;
 
+// 着色通道用 LessOrEqual 复用本通道写下的深度，两边的 gl_Position 必须逐位一致。
+invariant gl_Position;
+
 void main()
 {
 	vec4 FragPosInViewSpace = u_ViewMatrix * u_ModelMatrix * vec4(_Position, 1.0f);

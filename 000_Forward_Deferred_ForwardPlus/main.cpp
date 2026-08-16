@@ -43,11 +43,12 @@
 
 // ----------------------------------------------------------------------------
 // 基于模型 AABB 自适应生成 count 个点光源：在包围盒内按近似立方网格铺开，
-// 半径取网格单元对角线的一部分，5 种色相循环，避免挤在一条线上过曝。
+// 半径取网格单元对角线的 radiusScale 倍，5 种色相循环，避免挤在一条线上过曝。
 // count=1000 时退化为原来的 10x10x10。
 // ----------------------------------------------------------------------------
 static std::vector<PointLightDesc>
-MakeLights(const TitusMath::Vec3& bbMin, const TitusMath::Vec3& bbMax, int count)
+MakeLights(const TitusMath::Vec3& bbMin, const TitusMath::Vec3& bbMax, int count,
+           float radiusScale)
 {
     count = std::clamp(count, 10, SharedShadingParams::MAX_LIGHTS);
 
@@ -74,7 +75,7 @@ MakeLights(const TitusMath::Vec3& bbMin, const TitusMath::Vec3& bbMax, int count
         innerSize.x / static_cast<float>(gridX),
         innerSize.y / static_cast<float>(gridY),
         innerSize.z / static_cast<float>(gridZ));
-    const float radius = TitusMath::length(cell) * 1.25f;
+    const float radius = TitusMath::length(cell) * std::max(radiusScale, 0.01f);
 
     std::vector<PointLightDesc> lights;
     lights.reserve(static_cast<size_t>(count));
@@ -185,7 +186,8 @@ int main(int argc, char** argv)
 
     // 6) TechniqueContext + 全部 Pass：AddPass（Init 一次），调度列表按 mode 互斥。
     TechniqueContext techniqueCtx;
-    techniqueCtx.shared.lights = MakeLights(bbMin, bbMax, SharedShadingParams::MAX_LIGHTS);
+    techniqueCtx.shared.lights = MakeLights(bbMin, bbMax, SharedShadingParams::MAX_LIGHTS,
+                                            techniqueCtx.shared.radiusScale);
 
     auto gbufferPass = std::make_shared<SponzaGBufferPass>();
     auto lightingPass = std::make_shared<DeferredLightingPass>();
@@ -232,8 +234,14 @@ int main(int argc, char** argv)
         }
 
         int lightCount = static_cast<int>(techniqueCtx.shared.lights.size());
-        if (ImGui::SliderInt("Lights", &lightCount, 10, SharedShadingParams::MAX_LIGHTS))
-            techniqueCtx.shared.lights = MakeLights(bbMin, bbMax, lightCount);
+        bool lightsDirty = ImGui::SliderInt("Lights", &lightCount, 10, SharedShadingParams::MAX_LIGHTS);
+        // 半径决定任意一点被多少盏灯覆盖，也就决定 Clustered Forward 能赢多少：
+        // 半径越小，每个 cluster 剩下的灯越少，Forward+ 相对 Deferred 的优势越大。
+        lightsDirty = ImGui::SliderFloat("Light radius scale", &techniqueCtx.shared.radiusScale,
+                                         0.1f, 3.0f) || lightsDirty;
+        if (lightsDirty)
+            techniqueCtx.shared.lights = MakeLights(bbMin, bbMax, lightCount,
+                                                    techniqueCtx.shared.radiusScale);
 
         if (techniqueCtx.mode == ShadingTechnique::Deferred)
         {

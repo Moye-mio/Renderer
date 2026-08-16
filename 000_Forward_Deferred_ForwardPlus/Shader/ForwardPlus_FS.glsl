@@ -1,6 +1,8 @@
 #version 430 core
 
 // Clustered Forward 着色 FS：按 tile + 指数 Z slice 查本 cluster 灯表。
+// 本 Pass 复用深度预通道的 D32（LessOrEqual + 不写深度），overdraw 恒为 1，
+// 所以这里的每像素灯循环只会跑一遍。灯表由 ForwardPlusCull_CS 保证 index 合法。
 // BRDF 与 Forward / Deferred 对齐。切片公式必须与 ForwardPlusCull_CS.glsl 对齐：
 //   t  = log((-viewZ) / near) / log(far / near)
 //   tz = clamp(int(t * Z_SLICES), 0, Z_SLICES-1)
@@ -101,8 +103,6 @@ void main()
 	for (uint n = 0u; n < count; ++n)
 	{
 		uint i = u_TileData[base + 1u + n];
-		if (i >= uint(MAX_LIGHTS))
-			continue;
 
 		vec3  Lpos      = u_Lights[i].positionVSAndRadius.xyz;
 		float radius    = u_Lights[i].positionVSAndRadius.w;
