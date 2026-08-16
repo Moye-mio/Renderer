@@ -1,15 +1,19 @@
 #version 430 core
 
-// Forward+ 分块剔灯：每个 workgroup 对应一个 16×16 tile。
-//   1) 从预通道 R32F 读视空间 Z，归约出 tile 近/远平面
-//   2) 用 invProj 把 tile 四角反投影成视空间 AABB
-//   3) 点光包围球 vs AABB，写入每 tile 的灯索引表（SSBO）
-// TILE_* 必须与 ForwardPlusParams / ForwardPlus_FS.glsl 对齐。
+// Clustered Forward 分块剔灯：每个 workgroup 对应一个 16×16 XY tile，
+// 内部循环 Z_SLICES 个预定义指数深度 slice。
+//   1) 用 invProj 把 tile 四角反投影
+//   2) 每个 slice 用 z(s)..z(s+1) 建视空间 AABB
+//   3) 点光包围球 vs AABB，按灯 index 稳定写入每 cluster 灯表（SSBO）
+// 不读预通道深度。切片公式必须与 ForwardPlus_FS.glsl 的 ClusterSlice 对齐：
+//   z(s) = -near * (far/near)^(s / Z_SLICES)
+// TILE_* / Z_SLICES / CLUSTER_* 必须与 ForwardPlusParams / ForwardPlus_FS.glsl 对齐。
 
 #define TILE_SIZE 16
 #define MAX_LIGHTS 1000
-#define MAX_LIGHTS_PER_TILE 256
-#define TILE_STRIDE (1 + MAX_LIGHTS_PER_TILE)
+#define Z_SLICES 16
+#define MAX_LIGHTS_PER_CLUSTER 256
+#define CLUSTER_STRIDE (1 + MAX_LIGHTS_PER_CLUSTER)
 
 layout(local_size_x = TILE_SIZE, local_size_y = TILE_SIZE) in;
 
@@ -36,20 +40,17 @@ LAYOUT_BIND(0, 1) layout(std430) buffer u_TileLightList
 	uint u_TileData[];
 };
 
-LAYOUT_BIND(0, 2) uniform sampler2D u_DepthVS;
-
-LAYOUT_BIND(0, 3) layout(std140) uniform u_CullParams
+LAYOUT_BIND(0, 2) layout(std140) uniform u_CullParams
 {
 	mat4  u_InvProj;
 	ivec4 u_ScreenAndTiles; // x=width, y=height, z=tilesX, w=tilesY
+	vec4  u_ClusterZ;       // x=near, y=far, z=zSlices, w=log(far/near)
 };
 
-shared float s_FarZ[TILE_SIZE * TILE_SIZE];
-shared float s_NearZ[TILE_SIZE * TILE_SIZE];
 shared vec3  s_AabbMin;
 shared vec3  s_AabbMax;
-shared uint  s_Count;
-shared uint  s_Indices[MAX_LIGHTS_PER_TILE];
+shared uint  s_Hit[MAX_LIGHTS];
+shared uint  s_Indices[MAX_LIGHTS_PER_CLUSTER];
 
 vec3 Unproject(vec2 ndcXY, float depth01)
 {
@@ -65,6 +66,16 @@ vec3 ViewPosAtZ(vec2 ndcXY, float viewZ)
 	float denom = p1.z - p0.z;
 	float t = abs(denom) > 1e-6 ? (viewZ - p0.z) / denom : 0.0;
 	return mix(p0, p1, t);
+}
+
+// 与 ForwardPlus_FS.glsl ClusterSlice 同一套指数划分（视空间看向 -Z）。
+float SliceViewZ(int s)
+{
+	float nearZ = max(u_ClusterZ.x, 1e-4);
+	float logR  = max(u_ClusterZ.w, 1e-6);
+	float slices = max(u_ClusterZ.z, 1.0);
+	float t = float(s) / slices;
+	return -nearZ * exp(t * logR);
 }
 
 bool SphereAabb(vec3 c, float r, vec3 bmin, vec3 bmax)
@@ -87,93 +98,69 @@ void main()
 		return;
 
 	const uint lid = gl_LocalInvocationIndex;
-	const ivec2 px = ivec2(gl_GlobalInvocationID.xy);
+	const int lightCount = min(u_LightCount.x, MAX_LIGHTS);
+	const int zSlices = clamp(int(u_ClusterZ.z + 0.5), 1, Z_SLICES);
 
-	float z = 0.0;
-	if (px.x < screenW && px.y < screenH)
-		z = texelFetch(u_DepthVS, px, 0).r;
+	const vec2 invScreen = vec2(1.0 / float(max(screenW, 1)), 1.0 / float(max(screenH, 1)));
+	const float x0 = float(tileX * uint(TILE_SIZE));
+	const float y0 = float(tileY * uint(TILE_SIZE));
+	const float x1 = min(x0 + float(TILE_SIZE), float(screenW));
+	const float y1 = min(y0 + float(TILE_SIZE), float(screenH));
 
-	// 视空间：相机看向 -Z，有效几何 z < 0。Clear=0 视为空像素。
-	const bool valid = z < -1e-4;
-	s_FarZ[lid]  = valid ? z :  1e20; // min → 最远（更负）
-	s_NearZ[lid] = valid ? z : -1e20; // max → 最近（更接近 0）
+	vec2 ndc[4];
+	ndc[0] = vec2(x0, y0) * invScreen * 2.0 - 1.0;
+	ndc[1] = vec2(x1, y0) * invScreen * 2.0 - 1.0;
+	ndc[2] = vec2(x0, y1) * invScreen * 2.0 - 1.0;
+	ndc[3] = vec2(x1, y1) * invScreen * 2.0 - 1.0;
 
-	if (lid == 0u)
-		s_Count = 0u;
-	barrier();
+	const uint tileIndex = tileY * uint(tilesX) + tileX;
 
-	for (uint stride = (TILE_SIZE * TILE_SIZE) >> 1; stride > 0u; stride >>= 1)
+	for (int s = 0; s < zSlices; ++s)
 	{
-		if (lid < stride)
+		if (lid == 0u)
 		{
-			s_FarZ[lid]  = min(s_FarZ[lid],  s_FarZ[lid + stride]);
-			s_NearZ[lid] = max(s_NearZ[lid], s_NearZ[lid + stride]);
-		}
-		barrier();
-	}
-
-	const float farZ  = s_FarZ[0];
-	const float nearZ = s_NearZ[0];
-	const bool hasGeo = farZ < 0.0;
-
-	if (lid == 0u)
-	{
-		vec3 bmin = vec3( 1e20);
-		vec3 bmax = vec3(-1e20);
-		if (hasGeo)
-		{
-			const vec2 invScreen = vec2(1.0 / float(max(screenW, 1)), 1.0 / float(max(screenH, 1)));
-			const float x0 = float(tileX * uint(TILE_SIZE));
-			const float y0 = float(tileY * uint(TILE_SIZE));
-			const float x1 = min(x0 + float(TILE_SIZE), float(screenW));
-			const float y1 = min(y0 + float(TILE_SIZE), float(screenH));
-
-			vec2 ndc[4];
-			ndc[0] = vec2(x0, y0) * invScreen * 2.0 - 1.0;
-			ndc[1] = vec2(x1, y0) * invScreen * 2.0 - 1.0;
-			ndc[2] = vec2(x0, y1) * invScreen * 2.0 - 1.0;
-			ndc[3] = vec2(x1, y1) * invScreen * 2.0 - 1.0;
-
+			const float zN = SliceViewZ(s);
+			const float zF = SliceViewZ(s + 1);
+			vec3 bmin = vec3( 1e20);
+			vec3 bmax = vec3(-1e20);
 			for (int i = 0; i < 4; ++i)
 			{
-				vec3 pN = ViewPosAtZ(ndc[i], nearZ);
-				vec3 pF = ViewPosAtZ(ndc[i], farZ);
+				vec3 pN = ViewPosAtZ(ndc[i], zN);
+				vec3 pF = ViewPosAtZ(ndc[i], zF);
 				bmin = min(bmin, min(pN, pF));
 				bmax = max(bmax, max(pN, pF));
 			}
+			s_AabbMin = bmin;
+			s_AabbMax = bmax;
 		}
-		s_AabbMin = bmin;
-		s_AabbMax = bmax;
-	}
-	barrier();
+		barrier();
 
-	const vec3 bmin = s_AabbMin;
-	const vec3 bmax = s_AabbMax;
+		const vec3 bmin = s_AabbMin;
+		const vec3 bmax = s_AabbMax;
 
-	const int lightCount = min(u_LightCount.x, MAX_LIGHTS);
-	if (hasGeo)
-	{
 		for (int i = int(lid); i < lightCount; i += TILE_SIZE * TILE_SIZE)
 		{
 			vec3  c = u_Lights[i].positionVSAndRadius.xyz;
 			float r = u_Lights[i].positionVSAndRadius.w;
-			if (SphereAabb(c, r, bmin, bmax))
-			{
-				uint slot = atomicAdd(s_Count, 1u);
-				if (slot < uint(MAX_LIGHTS_PER_TILE))
-					s_Indices[slot] = uint(i);
-			}
+			s_Hit[i] = SphereAabb(c, r, bmin, bmax) ? 1u : 0u;
 		}
-	}
-	barrier();
+		barrier();
 
-	if (lid == 0u)
-	{
-		const uint tileIndex = tileY * uint(tilesX) + tileX;
-		const uint base = tileIndex * uint(TILE_STRIDE);
-		const uint count = min(s_Count, uint(MAX_LIGHTS_PER_TILE));
-		u_TileData[base] = count;
-		for (uint i = 0u; i < count; ++i)
-			u_TileData[base + 1u + i] = s_Indices[i];
+		if (lid == 0u)
+		{
+			uint count = 0u;
+			for (int i = 0; i < lightCount && count < uint(MAX_LIGHTS_PER_CLUSTER); ++i)
+			{
+				if (s_Hit[i] != 0u)
+					s_Indices[count++] = uint(i);
+			}
+
+			const uint clusterIndex = tileIndex * uint(zSlices) + uint(s);
+			const uint base = clusterIndex * uint(CLUSTER_STRIDE);
+			u_TileData[base] = count;
+			for (uint i = 0u; i < count; ++i)
+				u_TileData[base + 1u + i] = s_Indices[i];
+		}
+		barrier();
 	}
 }

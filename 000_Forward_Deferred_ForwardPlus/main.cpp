@@ -1,10 +1,10 @@
 // ============================================================================
 // 000_Forward_Deferred_ForwardPlus - main.cpp
 //
-// 延迟 / 前向 / Forward+ 着色对比示例：
+// 延迟 / 前向 / Clustered Forward 着色对比示例：
 //   - Deferred：SponzaGBufferPass -> DeferredLightingPass（G-Buffer + 全屏光照）
 //   - Forward：ForwardShadingPass（几何片元直接 Blinn-Phong）
-//   - Forward+：ForwardPlusPass（Depth 预通道 → Compute 分块剔灯 → 按 tile 灯表着色）
+//   - Clustered Forward：ForwardPlusPass（Depth 预通道 → Compute 按 cluster 剔灯 → 按 tile+slice 着色）
 //   ImGui「Shading Technique」面板切换；SetScheduledPasses 让调度器只挂当前算法的 Pass。
 //   三套算法共用 TechniqueContext::shared 的灯与 BRDF。
 //
@@ -224,7 +224,7 @@ int main(int argc, char** argv)
         ImGui::SameLine();
         changed = ImGui::RadioButton("Forward", &m, static_cast<int>(ShadingTechnique::Forward)) || changed;
         ImGui::SameLine();
-        changed = ImGui::RadioButton("Forward+", &m, static_cast<int>(ShadingTechnique::ForwardPlus)) || changed;
+        changed = ImGui::RadioButton("Clustered Forward", &m, static_cast<int>(ShadingTechnique::ForwardPlus)) || changed;
         if (changed)
         {
             techniqueCtx.mode = static_cast<ShadingTechnique>(m);
@@ -247,9 +247,9 @@ int main(int argc, char** argv)
         else if (techniqueCtx.mode == ShadingTechnique::ForwardPlus)
         {
             ImGui::Separator();
-            ImGui::TextUnformatted("Forward+");
+            ImGui::TextUnformatted("Clustered Forward");
             int dv = static_cast<int>(techniqueCtx.forwardPlus.debugView);
-            const char* items[] = { "Final", "Tile heatmap" };
+            const char* items[] = { "Final", "Cluster heatmap", "Slice index" };
             ImGui::Combo("Debug view", &dv, items, IM_ARRAYSIZE(items));
             techniqueCtx.forwardPlus.debugView = static_cast<ForwardPlusParams::DebugView>(dv);
         }

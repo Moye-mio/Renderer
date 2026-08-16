@@ -7,7 +7,7 @@
 //   shared      —— 各算法必须一致的输入（灯 / BRDF 常数 / LightBlock UBO 布局）
 //   deferred    —— 仅 Deferred 认识（G-Buffer debug 视图）
 //   forward     —— 仅 Forward 认识（V1 空占位）
-//   forwardPlus —— 仅 Forward+ 认识（tile 尺寸 / 每 tile 灯上限 / debug 视图）
+//   forwardPlus —— 仅 Clustered Forward 认识（tile / Z slice / 每 cluster 灯上限 / debug）
 // ============================================================================
 #include <algorithm>
 #include <vector>
@@ -86,19 +86,23 @@ struct ForwardParams
 {
 };
 
-// Forward+：16×16 tile + Compute 视锥/深度范围剔灯。
-// TILE_SIZE / MAX_LIGHTS_PER_TILE / TILE_STRIDE 必须与
+// Clustered Forward：16×16 tile × 16 指数 Z slice，Compute 按 cluster AABB 剔灯。
+// TILE_SIZE / Z_SLICES / MAX_LIGHTS_PER_CLUSTER / CLUSTER_STRIDE 必须与
 // ForwardPlusCull_CS.glsl / ForwardPlus_FS.glsl 的 #define 对齐。
 struct ForwardPlusParams
 {
     static constexpr int TILE_SIZE = 16;
-    static constexpr int MAX_LIGHTS_PER_TILE = 256;
-    static constexpr int TILE_STRIDE = 1 + MAX_LIGHTS_PER_TILE; // count + indices
+    static constexpr int Z_SLICES = 16;
+    // 当前铺灯半径约 2m，中远 slice 里一个 cluster 常碰到 100+ 盏。
+    // 32 会截断且相邻格子留下的 index 不同 → 屏幕上 16×16 色块。
+    static constexpr int MAX_LIGHTS_PER_CLUSTER = 256;
+    static constexpr int CLUSTER_STRIDE = 1 + MAX_LIGHTS_PER_CLUSTER; // count + indices
 
     enum class DebugView
     {
-        Final       = 0,
-        TileHeatmap = 1,
+        Final           = 0,
+        ClusterHeatmap  = 1,
+        SliceIndex      = 2,
     };
     DebugView debugView = DebugView::Final;
 };

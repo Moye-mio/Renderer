@@ -2,10 +2,10 @@
 // ============================================================================
 // 000_Forward_Deferred_ForwardPlus - ForwardPlusPass
 //
-// Forward+（Tiled Forward）：同一 Record 内三阶段
-//   1) Depth  —— 把视空间 Z 写入 R32F（供 Compute 采样；不读 depth 附件）
-//   2) Cull   —— 16×16 tile Compute：视锥 AABB + 深度范围剔点光，写 SSBO
-//   3) Shade  —— 几何片元只遍历本 tile 灯表，BRDF 与 Forward / Deferred 对齐
+// Clustered Forward：同一 Record 内三阶段
+//   1) Depth  —— 仍写 R32F+D32（第一刀 Cull 不读；留给后续 Early-Z）
+//   2) Cull   —— 16×16 tile × 16 指数 Z slice：cluster AABB 剔点光，写 SSBO
+//   3) Shade  —— 几何片元按 tile+slice 查灯表，BRDF 与 Forward / Deferred 对齐
 // mode != ForwardPlus 时 Record 早退。
 // ============================================================================
 #include "RendererInterface/TitusGfxPass.h"

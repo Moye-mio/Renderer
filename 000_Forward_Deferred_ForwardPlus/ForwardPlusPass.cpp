@@ -1,12 +1,14 @@
 // ============================================================================
 // 000_Forward_Deferred_ForwardPlus - ForwardPlusPass.cpp
 //
-// Forward+：Depth(R32F 视空间 Z) → Compute 分块剔灯 → 按 tile 灯表前向着色。
+// Clustered Forward：Depth（保留）→ Compute 按 cluster 剔灯 → 按 tile+slice 前向着色。
 // ============================================================================
 #include "ForwardPlusPass.h"
 #include "Sponza.h"
 #include "TechniqueContext.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -25,8 +27,17 @@ namespace
     {
         TitusMath::Mat4 invProj{1.0f};
         TitusMath::IVec4 screenAndTiles{0}; // x=width, y=height, z=tilesX, w=tilesY
+        TitusMath::Vec4 clusterZ{0.0f};     // x=near, y=far, z=zSlices, w=log(far/near)
     };
-    static_assert(sizeof(CullParamsData) == 80, "CullParamsData std140 size");
+    static_assert(sizeof(CullParamsData) == 96, "CullParamsData std140 size");
+
+    uint64_t ClusterSSBOBytes(uint32_t tilesX, uint32_t tilesY)
+    {
+        return static_cast<uint64_t>(tilesX) * tilesY
+            * static_cast<uint64_t>(ForwardPlusParams::Z_SLICES)
+            * static_cast<uint64_t>(ForwardPlusParams::CLUSTER_STRIDE)
+            * sizeof(uint32_t);
+    }
 
     bool LoadShaderBytes(const std::string& path, std::vector<uint8_t>& out)
     {
@@ -123,10 +134,8 @@ void ForwardPlusPass::Init(TitusRHI::IGDevice& device)
         m_cullParamsUbo = device.CreateBuffer(bd);
     }
     {
-        const uint64_t ssboBytes = static_cast<uint64_t>(m_tilesX) * m_tilesY
-            * ForwardPlusParams::TILE_STRIDE * sizeof(uint32_t);
         BufferDesc bd{};
-        bd.size = ssboBytes;
+        bd.size = ClusterSSBOBytes(m_tilesX, m_tilesY);
         bd.usage = BufferUsage::StorageBuffer;
         bd.memory = MemoryUsage::GpuOnly;
         bd.debugName = "ForwardPlus.SSBO.TileLights";
@@ -244,8 +253,7 @@ void ForwardPlusPass::Init(TitusRHI::IGDevice& device)
                 cpd.computeShader = m_cullCS;
                 addUBO(cpd.resourceBindings, "u_LightBlock", 0, ShaderStage::Compute);
                 addSSBO(cpd.resourceBindings, "u_TileLightList", 1, ShaderStage::Compute);
-                addCIS(cpd.resourceBindings, "u_DepthVS", 2, ShaderStage::Compute);
-                addUBO(cpd.resourceBindings, "u_CullParams", 3, ShaderStage::Compute);
+                addUBO(cpd.resourceBindings, "u_CullParams", 2, ShaderStage::Compute);
                 cpd.debugName = "ForwardPlusPass.CullPipeline";
                 m_cullPipeline = device.CreatePipeline(cpd);
             }
@@ -323,6 +331,7 @@ void ForwardPlusPass::Init(TitusRHI::IGDevice& device)
 
     LOG_STREAM_INFO("ForwardPlusPass")
         << "tiles=" << m_tilesX << "x" << m_tilesY
+        << " slices=" << ForwardPlusParams::Z_SLICES
         << " (" << m_width << "x" << m_height << ")";
 }
 
@@ -399,6 +408,14 @@ void ForwardPlusPass::Record(TitusRHI::IGDevice& device,
                 static_cast<int>(m_height),
                 static_cast<int>(m_tilesX),
                 static_cast<int>(m_tilesY));
+            const auto camCfg = CAMERA::GetBuiltinFlyCameraConfig();
+            const float nearZ = std::max(camCfg.nearPlane, 1e-4f);
+            const float farZ = std::max(camCfg.farPlane, nearZ + 1e-3f);
+            cp.clusterZ = TitusMath::Vec4(
+                nearZ,
+                farZ,
+                static_cast<float>(ForwardPlusParams::Z_SLICES),
+                std::log(farZ / nearZ));
             device.UpdateBuffer(m_cullParamsUbo, &cp, sizeof(cp), 0);
         }
     }
@@ -463,16 +480,6 @@ void ForwardPlusPass::RecordDepth(TitusRHI::IGDevice& /*device*/,
     }
 
     cmd.EndRenderPass();
-
-    // Color RT 写完 → Compute 采样
-    {
-        PipelineBarrierDesc bar{};
-        bar.srcStage = PipelineStage::ColorAttachment;
-        bar.dstStage = PipelineStage::ComputeShader;
-        bar.srcGlobalAccess = AccessFlags::ColorAttachmentWrite;
-        bar.dstGlobalAccess = AccessFlags::ShaderRead;
-        cmd.PipelineBarrier(bar);
-    }
 }
 
 void ForwardPlusPass::RecordCull(TitusRHI::IGDevice& /*device*/,
@@ -499,19 +506,11 @@ void ForwardPlusPass::RecordCull(TitusRHI::IGDevice& /*device*/,
         ssbo.type = ResourceBindingType::StorageBuffer;
         ssbo.buffer = m_tileLightSSBO;
         ssbo.bufferOffset = 0;
-        ssbo.bufferRange = static_cast<uint64_t>(m_tilesX) * m_tilesY
-            * ForwardPlusParams::TILE_STRIDE * sizeof(uint32_t);
+        ssbo.bufferRange = ClusterSSBOBytes(m_tilesX, m_tilesY);
         rs.bindings.push_back(ssbo);
 
-        ResourceBindingValue depth{};
-        depth.binding = 2;
-        depth.type = ResourceBindingType::CombinedImageSampler;
-        depth.texture = m_depthVSTex;
-        depth.sampler = m_depthSampler;
-        rs.bindings.push_back(depth);
-
         ResourceBindingValue cull{};
-        cull.binding = 3;
+        cull.binding = 2;
         cull.type = ResourceBindingType::UniformBuffer;
         cull.buffer = m_cullParamsUbo;
         cull.bufferOffset = 0;
@@ -592,8 +591,7 @@ void ForwardPlusPass::RecordShade(TitusRHI::IGDevice& /*device*/,
         ssbo.type = ResourceBindingType::StorageBuffer;
         ssbo.buffer = m_tileLightSSBO;
         ssbo.bufferOffset = 0;
-        ssbo.bufferRange = static_cast<uint64_t>(m_tilesX) * m_tilesY
-            * ForwardPlusParams::TILE_STRIDE * sizeof(uint32_t);
+        ssbo.bufferRange = ClusterSSBOBytes(m_tilesX, m_tilesY);
         rs.bindings.push_back(ssbo);
 
         ResourceBindingValue cull{};

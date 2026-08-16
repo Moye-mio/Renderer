@@ -1,6 +1,9 @@
 #version 430 core
 
-// Forward+ 着色 FS：只遍历本 tile 的灯表，BRDF 与 Forward / Deferred 对齐。
+// Clustered Forward 着色 FS：按 tile + 指数 Z slice 查本 cluster 灯表。
+// BRDF 与 Forward / Deferred 对齐。切片公式必须与 ForwardPlusCull_CS.glsl 对齐：
+//   t  = log((-viewZ) / near) / log(far / near)
+//   tz = clamp(int(t * Z_SLICES), 0, Z_SLICES-1)
 layout(location = 0) in vec2 v2f_TexCoords;
 layout(location = 1) in vec3 v2f_Normal;
 layout(location = 2) in vec3 v2f_FragPosInViewSpace;
@@ -14,8 +17,9 @@ layout(location = 0) out vec4 Color_;
 
 #define MAX_LIGHTS 1000
 #define TILE_SIZE 16
-#define MAX_LIGHTS_PER_TILE 256
-#define TILE_STRIDE (1 + MAX_LIGHTS_PER_TILE)
+#define Z_SLICES 16
+#define MAX_LIGHTS_PER_CLUSTER 256
+#define CLUSTER_STRIDE (1 + MAX_LIGHTS_PER_CLUSTER)
 
 struct PointLight
 {
@@ -40,6 +44,7 @@ LAYOUT_BIND(0, 4) layout(std140) uniform u_CullParams
 {
 	mat4  u_InvProj;
 	ivec4 u_ScreenAndTiles; // x=width, y=height, z=tilesX, w=tilesY
+	vec4  u_ClusterZ;       // x=near, y=far, z=zSlices, w=log(far/near)
 };
 
 #ifdef VULKAN
@@ -51,6 +56,17 @@ layout(push_constant) uniform PC {
 uniform int u_DebugView;
 #endif
 
+// 与 ForwardPlusCull_CS.glsl SliceViewZ 同一套指数划分（视空间看向 -Z）。
+int ClusterSlice(float viewZ)
+{
+	float nearZ  = max(u_ClusterZ.x, 1e-4);
+	float logR   = max(u_ClusterZ.w, 1e-6);
+	int   slices = clamp(int(u_ClusterZ.z + 0.5), 1, Z_SLICES);
+	float z = max(-viewZ, nearZ);
+	float t = log(z / nearZ) / logR;
+	return clamp(int(t * float(slices)), 0, slices - 1);
+}
+
 void main()
 {
 	vec3 albedo    = texture(u_DiffuseTexture, v2f_TexCoords).rgb;
@@ -59,15 +75,24 @@ void main()
 	vec3 V         = normalize(-fragPosVS);
 
 	const int tilesX = max(u_ScreenAndTiles.z, 1);
+	const int zSlices = clamp(int(u_ClusterZ.z + 0.5), 1, Z_SLICES);
 	const uint tx = uint(gl_FragCoord.x) / uint(TILE_SIZE);
 	const uint ty = uint(gl_FragCoord.y) / uint(TILE_SIZE);
-	const uint base = (ty * uint(tilesX) + tx) * uint(TILE_STRIDE);
-	const uint count = min(u_TileData[base], uint(MAX_LIGHTS_PER_TILE));
+	const uint tz = uint(ClusterSlice(fragPosVS.z));
+	const uint clusterIndex = (ty * uint(tilesX) + tx) * uint(zSlices) + tz;
+	const uint base = clusterIndex * uint(CLUSTER_STRIDE);
+	const uint count = min(u_TileData[base], uint(MAX_LIGHTS_PER_CLUSTER));
 
 	if (u_DebugView == 1)
 	{
-		float t = float(count) / float(MAX_LIGHTS_PER_TILE);
+		float t = float(count) / float(MAX_LIGHTS_PER_CLUSTER);
 		Color_ = vec4(t, 1.0 - t, 0.15, 1.0);
+		return;
+	}
+	if (u_DebugView == 2)
+	{
+		float t = float(tz) / float(max(zSlices - 1, 1));
+		Color_ = vec4(t, 0.2, 1.0 - t, 1.0);
 		return;
 	}
 
