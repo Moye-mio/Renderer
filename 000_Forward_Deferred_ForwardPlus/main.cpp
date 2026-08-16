@@ -1,5 +1,5 @@
 // ============================================================================
-// 000_Deferred_Shading - main.cpp
+// 000_Forward_Deferred_ForwardPlus - main.cpp
 //
 // 延迟 / 前向 / Forward+ 着色对比示例：
 //   - Deferred：SponzaGBufferPass -> DeferredLightingPass（G-Buffer + 全屏光照）
@@ -105,7 +105,7 @@ int main(int argc, char** argv)
     using namespace TitusRHI;
 
     // 0) Logger
-    TitusBasic::Logger::Instance().Init("000_Deferred_Shading");
+    TitusBasic::Logger::Instance().Init("000_Forward_Deferred_ForwardPlus");
 
     // 1) 解析 --backend=gl|vk|null、--validation=on|off，默认 OpenGL
     APP::ParseCommandLine(argc, argv);
@@ -116,13 +116,13 @@ int main(int argc, char** argv)
     const char* backendName =
         (APP::GetBackend() == GBackend::OpenGL) ? "OpenGL" :
         (APP::GetBackend() == GBackend::Vulkan) ? "Vulkan" : "Null";
-    LOG_STREAM_INFO("000_Deferred_Shading") << "backend = " << backendName
+    LOG_STREAM_INFO("000_Forward_Deferred_ForwardPlus") << "backend = " << backendName
         << ", validation = " << (APP::GetEnableValidation() ? "on" : "off");
 
     // 2) 窗口 / 组件配置
     WINDOW_KEYWORD::SetWindowSize(1920, 1152);
     WINDOW_KEYWORD::SetIsCursorDisable(false);
-    WINDOW_KEYWORD::SetWindowTitle("000_Deferred_Shading (Technique Compare)");
+    WINDOW_KEYWORD::SetWindowTitle("000_Forward_Deferred_ForwardPlus (Technique Compare)");
     COMPONENT_CONFIG::SetIsEnableGUI(true);
 
     // 3) 初始化（窗口 + 设备 + PassScheduler）
@@ -149,7 +149,7 @@ int main(int argc, char** argv)
     const std::string sponzaPath = std::string(SOLUTION_DIR) + "Model/sponza/sponza.obj";
     if (!TitusAsset::LoadModel(sponzaPath, modelAsset, modelOpts))
     {
-        LOG_STREAM_ERROR("000_Deferred_Shading") << "failed to load Sponza model: " << sponzaPath;
+        LOG_STREAM_ERROR("000_Forward_Deferred_ForwardPlus") << "failed to load Sponza model: " << sponzaPath;
         APP::ShutdownApp();
         return 1;
     }
@@ -168,14 +168,14 @@ int main(int argc, char** argv)
         bbMin = TitusMath::Vec3(-5.0f, -2.0f, -2.0f);
         bbMax = TitusMath::Vec3(5.0f, 3.0f, 2.0f);
     }
-    LOG_STREAM_INFO("000_Deferred_Shading")
+    LOG_STREAM_INFO("000_Forward_Deferred_ForwardPlus")
         << "Sponza AABB min=(" << bbMin.x << "," << bbMin.y << "," << bbMin.z << ") "
         << "max=(" << bbMax.x << "," << bbMax.y << "," << bbMax.z << ")";
 
     GpuModelHandle sponzaHandle = APP::UploadGpuModel(modelAsset);
     if (!sponzaHandle.IsValid())
     {
-        LOG_STREAM_ERROR("000_Deferred_Shading") << "UploadGpuModel failed.";
+        LOG_STREAM_ERROR("000_Forward_Deferred_ForwardPlus") << "UploadGpuModel failed.";
         APP::ShutdownApp();
         return 1;
     }

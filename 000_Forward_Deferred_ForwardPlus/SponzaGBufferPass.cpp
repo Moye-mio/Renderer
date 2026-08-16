@@ -1,5 +1,5 @@
 // ============================================================================
-// 000_Deferred_Shading - SponzaGBufferPass.cpp
+// 000_Forward_Deferred_ForwardPlus - SponzaGBufferPass.cpp
 //
 // 延迟渲染几何 Pass：
 //   - 创建 3 张 RGBA32F 颜色 RT（Albedo / Normal / Position）+ 1 张 D32 深度；
@@ -84,7 +84,7 @@ void SponzaGBufferPass::Init(TitusRHI::IGDevice& device)
     // ------------------------------------------------------------------
     // 3) Shader / Pipeline
     // ------------------------------------------------------------------
-    const std::string shaderDir = std::string(SOLUTION_DIR) + "000_Deferred_Shading/Shader/";
+    const std::string shaderDir = std::string(SOLUTION_DIR) + "000_Forward_Deferred_ForwardPlus/Shader/";
     const std::string vsPath = shaderDir + "Sponza_VS.glsl";
     const std::string fsPath = shaderDir + "Sponza_FS.glsl";
     std::vector<uint8_t> vsBytes, fsBytes;

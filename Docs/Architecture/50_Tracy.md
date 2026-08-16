@@ -104,7 +104,7 @@ void TitusTracySetCaptureEnabled(bool enabled);
 | Threaded | `GDeviceMainThread.cpp` / `GDeviceWorker.cpp` | 主线程阶段 Zone；Worker `SetThreadName("GDeviceWorker")` |
 | Vulkan | `RendererVK/VKDevice.cpp` | `WaitInFlightFence`、`AcquireNextImage` |
 | VK 描述符 | `RendererVK/VKCommandList.cpp` | 帧末 Plot：`VK DS BindCalls` / `Allocs` / `CacheHits`（**不在** Bind 热路径打 Zone） |
-| 业务示例 | `000_Deferred_Shading/*` | GBuffer / Lighting 关键路径 |
+| 业务示例 | `000_Forward_Deferred_ForwardPlus/*` | GBuffer / Lighting 关键路径 |
 | 通用绘制 | `RendererInterface/TitusGfxPass.h` | `DrawGpuModelWithDiffuse` |
 
 新增插桩时：优先固定字面量 zone 名（便于 Tracy 聚合）；热路径高频调用点慎打 Zone，可考虑 Plot 或采样。

@@ -1,6 +1,6 @@
 #pragma once
 // ============================================================================
-// 000_Deferred_Shading - TechniqueContext
+// 000_Forward_Deferred_ForwardPlus - TechniqueContext
 //
 // 对比实验的 CPU 侧共享状态（不持 GPU 资源）：
 //   mode        —— ImGui 切换的当前算法

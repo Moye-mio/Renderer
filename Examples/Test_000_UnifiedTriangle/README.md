@@ -50,7 +50,7 @@ PreBuild 阶段会自动调用 [`Tools/check_no_backend_headers.bat`](../../Tool
   后端。**已完成**从旧 `IVkRenderPass` 到 `RendererCore::IRenderPass` 的迁移，验证了
   单后端示例迁移到统一基类后 GL/VK 双后端输出一致。
 - `Test_002_RayQueryHello/`：Vulkan 光追最小示例（rayQuery / RT pipeline / 动态 TLAS）。
-- `000_Deferred_Shading` / `001_Reflective_shadow_map`：更完整的多 Pass 示例，同样全部
+- `000_Forward_Deferred_ForwardPlus` / `001_Reflective_shadow_map`：更完整的多 Pass 示例，同样全部
   基于 `::TitusRHI::IRenderPass`，均可 `--backend=gl|vk` 双后端运行。
 
 > 说明：旧的后端专用 Pass 基类（`RendererGL` 全局 `IRenderPass`、`RendererVK` 的

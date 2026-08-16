@@ -134,7 +134,7 @@ APP::InitApp
 
 - [ ] `Test_000_UnifiedTriangle --backend=gl` / `--backend=vk`
 - [ ] `Test_001_VkTriangle`（若仍保留）
-- [ ] `000_Deferred_Shading`、`001_Reflective_shadow_map` 双后端
+- [ ] `000_Forward_Deferred_ForwardPlus`、`001_Reflective_shadow_map` 双后端
 - [ ] 关窗、`ShouldClose`、窗口 resize、FlyCamera / `INPUT_MANAGER`
 - [ ] ImGui 开关（`enableGUI` true/false）
 - [ ] 高 DPI 显示器下 viewport / swapchain extent 一致

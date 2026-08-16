@@ -1,5 +1,5 @@
 // ============================================================================
-// 000_Deferred_Shading - ForwardPlusPass.cpp
+// 000_Forward_Deferred_ForwardPlus - ForwardPlusPass.cpp
 //
 // Forward+：Depth(R32F 视空间 Z) → Compute 分块剔灯 → 按 tile 灯表前向着色。
 // ============================================================================
@@ -51,7 +51,7 @@ void ForwardPlusPass::Init(TitusRHI::IGDevice& device)
     m_tilesX = (m_width + ForwardPlusParams::TILE_SIZE - 1u) / ForwardPlusParams::TILE_SIZE;
     m_tilesY = (m_height + ForwardPlusParams::TILE_SIZE - 1u) / ForwardPlusParams::TILE_SIZE;
 
-    const std::string shaderDir = std::string(SOLUTION_DIR) + "000_Deferred_Shading/Shader/";
+    const std::string shaderDir = std::string(SOLUTION_DIR) + "000_Forward_Deferred_ForwardPlus/Shader/";
 
     // ------------------------------------------------------------------
     // 1) Depth 预通道 RT：R32F 视空间 Z（Sampled）+ D32

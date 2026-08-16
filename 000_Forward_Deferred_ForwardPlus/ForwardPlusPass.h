@@ -1,6 +1,6 @@
 #pragma once
 // ============================================================================
-// 000_Deferred_Shading - ForwardPlusPass
+// 000_Forward_Deferred_ForwardPlus - ForwardPlusPass
 //
 // Forward+（Tiled Forward）：同一 Record 内三阶段
 //   1) Depth  —— 把视空间 Z 写入 R32F（供 Compute 采样；不读 depth 附件）

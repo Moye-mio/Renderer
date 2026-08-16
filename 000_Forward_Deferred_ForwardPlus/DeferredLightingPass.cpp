@@ -1,5 +1,5 @@
 // ============================================================================
-// 000_Deferred_Shading - DeferredLightingPass.cpp
+// 000_Forward_Deferred_ForwardPlus - DeferredLightingPass.cpp
 //
 // 全屏光照 Pass：读取 G-Buffer -> 对最多 1000 个点光源做视空间 Blinn-Phong -> 输出到
 // 默认 backbuffer。所有资源经 IGDevice 创建，命令经 RenderCommandList 录制。
@@ -50,7 +50,7 @@ void DeferredLightingPass::Init(TitusRHI::IGDevice& device)
     }
 
     // 3) Shader / Pipeline（全屏三角形，无顶点输入，输出到 backbuffer）
-    const std::string shaderDir = std::string(SOLUTION_DIR) + "000_Deferred_Shading/Shader/";
+    const std::string shaderDir = std::string(SOLUTION_DIR) + "000_Forward_Deferred_ForwardPlus/Shader/";
     const std::string vsPath = shaderDir + "DeferredLighting_VS.glsl";
     const std::string fsPath = shaderDir + "DeferredLighting_FS.glsl";
     std::vector<uint8_t> vsBytes, fsBytes;

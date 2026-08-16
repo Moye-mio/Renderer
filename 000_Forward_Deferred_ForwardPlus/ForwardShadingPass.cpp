@@ -1,5 +1,5 @@
 // ============================================================================
-// 000_Deferred_Shading - ForwardShadingPass.cpp
+// 000_Forward_Deferred_ForwardPlus - ForwardShadingPass.cpp
 //
 // 前向几何着色：Sponza -> 默认 backbuffer，片元循环 shared 点光。
 // ============================================================================
@@ -28,7 +28,7 @@ void ForwardShadingPass::Init(TitusRHI::IGDevice& device)
 {
     using namespace TitusRHI;
 
-    const std::string shaderDir = std::string(SOLUTION_DIR) + "000_Deferred_Shading/Shader/";
+    const std::string shaderDir = std::string(SOLUTION_DIR) + "000_Forward_Deferred_ForwardPlus/Shader/";
     const std::string vsPath = shaderDir + "Forward_VS.glsl";
     const std::string fsPath = shaderDir + "Forward_FS.glsl";
     std::vector<uint8_t> vsBytes, fsBytes;

@@ -12,10 +12,10 @@
 
 | 文件 | 附件数 | 混合设置 |
 |---|---|---|
-| `000_Deferred_Shading/SponzaGBufferPass.cpp` | 3 | 全部禁用混合 |
+| `000_Forward_Deferred_ForwardPlus/SponzaGBufferPass.cpp` | 3 | 全部禁用混合 |
 | `001_Reflective_shadow_map/SponzaGBufferPass.cpp` | 3 | 全部禁用混合 |
 | `001_Reflective_shadow_map/RSMBufferPass.cpp` | 3 | 全部禁用混合 |
-| `000_Deferred_Shading/DeferredLightingPass.cpp` | 1 | 单 RT |
+| `000_Forward_Deferred_ForwardPlus/DeferredLightingPass.cpp` | 1 | 单 RT |
 | `001_Reflective_shadow_map/ScreenQuadPass.cpp` | 1 | 单 RT |
 
 ## 待办项

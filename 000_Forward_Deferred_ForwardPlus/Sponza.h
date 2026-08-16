@@ -1,6 +1,6 @@
 #pragma once
 // ============================================================================
-// 000_Deferred_Shading - Sponza
+// 000_Forward_Deferred_ForwardPlus - Sponza
 //
 // 业务侧轻量类：仅持有由 RendererInterface::APP::UploadGpuModel 上传得到的
 // `GpuModelHandle` 与 `TitusMath::Mat4 modelMatrix`，不做任何文件 IO、不做任何 GPU

@@ -1,6 +1,6 @@
 #pragma once
 // ============================================================================
-// 000_Deferred_Shading - SponzaGBufferPass
+// 000_Forward_Deferred_ForwardPlus - SponzaGBufferPass
 //
 // 延迟渲染的几何 Pass：派生自 TitusRHI::IRenderPass，把 Sponza 渲染进 4 张
 // RT（Albedo / Normal(view) / Position(view) / Depth），并通过

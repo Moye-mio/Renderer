@@ -1,16 +1,16 @@
 @echo off
 REM ============================================================================
-REM 000_Deferred_Shading/Build/build_debug.bat
+REM 000_Forward_Deferred_ForwardPlus/Build/build_debug.bat
 REM   Debug | x64，并显式开启 Tracy（TitusTracyEnable=true）
 REM
 REM 用法（在任意目录均可）：
-REM   000_Deferred_Shading\Build\build_debug.bat
+REM   000_Forward_Deferred_ForwardPlus\Build\build_debug.bat
 REM ============================================================================
 
 setlocal EnableDelayedExpansion
 
 set "SCRIPT_DIR=%~dp0"
-REM 本脚本在 000_Deferred_Shading/Build/，仓库根在上两级
+REM 本脚本在 000_Forward_Deferred_ForwardPlus/Build/，仓库根在上两级
 set "ROOT=%SCRIPT_DIR%..\.."
 set "SLN=%ROOT%\TitusGLRenderer.sln"
 set "CONFIG=Debug"
@@ -46,11 +46,11 @@ if not defined MSBUILD (
 
 echo [build_debug] MSBuild : %MSBUILD%
 echo [build_debug] Solution: %SLN%
-echo [build_debug] Target  : 000_Deferred_Shading ^| %CONFIG% ^| "%SLN_PLATFORM%" -^> %OUT_PLATFORM% ^| Tracy=ON
+echo [build_debug] Target  : 000_Forward_Deferred_ForwardPlus ^| %CONFIG% ^| "%SLN_PLATFORM%" -^> %OUT_PLATFORM% ^| Tracy=ON
 echo.
 
 "%MSBUILD%" "%SLN%" ^
-    /t:000_Deferred_Shading ^
+    /t:000_Forward_Deferred_ForwardPlus ^
     /p:Configuration=%CONFIG% ^
     /p:Platform="%SLN_PLATFORM%" ^
     /p:TitusTracyEnable=true ^
@@ -63,7 +63,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-set "OUT=%ROOT%\%OUT_PLATFORM%\%CONFIG%\000_Deferred_Shading.exe"
+set "OUT=%ROOT%\%OUT_PLATFORM%\%CONFIG%\000_Forward_Deferred_ForwardPlus.exe"
 echo.
 echo [build_debug] OK
 echo [build_debug] 输出: %OUT%

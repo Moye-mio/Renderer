@@ -81,6 +81,9 @@ Model/Bistro/
 # === Renderer 运行时日志输出 ===
 /Logs/
 
+# === ImGui 本地窗口布局（各工程运行时生成，不入库）===
+imgui.ini
+
 # === 各工程自动/手动截图输出（保留目录占位）===
 **/results/*.png
 !**/results/.gitkeep

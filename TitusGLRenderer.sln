@@ -4,7 +4,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RendererGL", "RendererGL\Re
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Basic", "Basic\Basic.vcxproj", "{A447D845-B216-4EE2-B7FB-B2E98463B5A4}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "000_Deferred_Shading", "000_Deferred_Shading\000_Deferred_Shading.vcxproj", "{A0DE0000-1B40-4E50-9D33-1AC9F00CE010}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "000_Forward_Deferred_ForwardPlus", "000_Forward_Deferred_ForwardPlus\000_Forward_Deferred_ForwardPlus.vcxproj", "{A0DE0000-1B40-4E50-9D33-1AC9F00CE010}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "001_Reflective_shadow_map", "001_Reflective_shadow_map\001_Reflective_shadow_map.vcxproj", "{50476F49-6C8D-4AA8-9632-DE2D5A0FA14E}"
 EndProject
