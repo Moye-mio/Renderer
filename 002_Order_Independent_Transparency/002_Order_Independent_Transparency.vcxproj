@@ -19,35 +19,37 @@
         </ProjectConfiguration>
     </ItemGroup>
     <ItemGroup>
-        <ClInclude Include="CustomGUI.h"/>
-        <ClInclude Include="EdgeDetectionPass.h"/>
-        <ClInclude Include="LightSources.h"/>
-        <ClInclude Include="Sponza.h"/>
-        <ClInclude Include="SponzaGBufferPass.h"/>
+        <ClCompile Include="Scene.cpp"/>
+        <ClCompile Include="ScenePass.cpp"/>
+        <ClCompile Include="main.cpp"/>
     </ItemGroup>
     <ItemGroup>
-        <ClCompile Include="CustomGUI.cpp"/>
-        <ClCompile Include="EdgeDetectionPass.cpp"/>
-        <ClCompile Include="LightSources.cpp"/>
-        <ClCompile Include="main.cpp"/>
-        <ClCompile Include="Sponza.cpp"/>
-        <ClCompile Include="SponzaGBufferPass.cpp"/>
+        <ClInclude Include="Scene.h"/>
+        <ClInclude Include="ScenePass.h"/>
+        <ClInclude Include="TechniqueContext.h"/>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Basic\Basic.vcxproj">
             <Project>{a447d845-b216-4ee2-b7fb-b2e98463b5a4}</Project>
             <Name>Basic</Name>
         </ProjectReference>
-        <ProjectReference Include="..\RendererGL\RendererGL.vcxproj">
-            <Project>{76c4e18e-18aa-4352-a5a4-738fb5321019}</Project>
-            <Name>RendererGL</Name>
+        <ProjectReference Include="..\AssetLoader\AssetLoader.vcxproj">
+            <Name>AssetLoader</Name>
         </ProjectReference>
+        <ProjectReference Include="..\RendererInterface\RendererInterface.vcxproj">
+            <Project>{f2d1a100-1b40-4e50-9d33-1ac9f00ce005}</Project>
+            <Name>RendererInterface</Name>
+        </ProjectReference>
+    </ItemGroup>
+    <ItemGroup>
+        <Content Include="Shader\Scene_VS.glsl"/>
+        <Content Include="Shader\Scene_FS.glsl"/>
     </ItemGroup>
     <PropertyGroup Label="Globals">
         <VCProjectVersion>15.0</VCProjectVersion>
-        <ProjectGuid>{40CD63FD-CCB9-4E61-9558-89F61231F518}</ProjectGuid>
+        <ProjectGuid>{A0DE0002-1B40-4E50-9D33-1AC9F00CE012}</ProjectGuid>
         <Keyword>Win32Proj</Keyword>
-        <RootNamespace>_002_Non_interleaved_Deferred_Shading_of_Interleaved_Sample</RootNamespace>
+        <RootNamespace>_002_Order_Independent_Transparency</RootNamespace>
         <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
     </PropertyGroup>
     <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
@@ -119,7 +121,6 @@
             <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;WIN32;_DEBUG;_CONSOLE;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
-            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)RendererGL;$(ASSIMP)\include;$(STB_IMAGE)\include;$(GLM);$(OPENGL)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <LanguageStandard>stdcpplatest</LanguageStandard>
         </ClCompile>
         <Link>
@@ -137,15 +138,22 @@
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
             <LanguageStandard>stdcpplatest</LanguageStandard>
-            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)RendererGL;$(ASSIMP)\include;$(STB_IMAGE)\include;$(GLM);$(OPENGL)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)AssetLoader;$(SolutionDir)Third-Party\imgui_master;$(ASSIMP)\include;$(STB_IMAGE)\include;$(GLM);$(OPENGL)\include;$(VULKAN_SDK)\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <DisableSpecificWarnings>4477;4267;4251;4305;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
         </ClCompile>
         <Link>
             <SubSystem>Console</SubSystem>
             <GenerateDebugInformation>true</GenerateDebugInformation>
-            <AdditionalLibraryDirectories>$(ASSIMP)\lib\x64;$(OPENGL)\lib\x64;$(SolutionDir)x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-            <AdditionalDependencies>opengl32.lib;glfw3-vc140.lib;assimp-vc140-mt.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;glew32d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+            <AdditionalLibraryDirectories>$(ASSIMP)\lib\x64;$(OPENGL)\lib\x64;$(VULKAN_SDK)\Lib;$(SolutionDir)x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+            <AdditionalDependencies>opengl32.lib;glfw3-vc140.lib;assimp-vc140-mt.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;glew32d.lib;vulkan-1.lib;glslangd.lib;MachineIndependentd.lib;GenericCodeGend.lib;OSDependentd.lib;SPIRVd.lib;glslang-default-resource-limitsd.lib;SPIRV-Toolsd.lib;SPIRV-Tools-optd.lib;%(AdditionalDependencies)</AdditionalDependencies>
         </Link>
+        <PostBuildEvent>
+            <Command>xcopy /Y /D "$(OPENGL)\bin\x64\glew32d.dll" "$(OutDir)"
+                xcopy /Y /D "$(OPENGL)\bin\x64\glfw3-vc140.dll" "$(OutDir)"
+                xcopy /Y /D "$(ASSIMP)\bin\x64\assimp-vc140-mt.dll" "$(OutDir)"
+            </Command>
+            <Message>复制运行时所需的 DLL 文件到输出目录...</Message>
+        </PostBuildEvent>
     </ItemDefinitionGroup>
     <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
         <ClCompile>
@@ -155,7 +163,7 @@
             <FunctionLevelLinking>true</FunctionLevelLinking>
             <IntrinsicFunctions>true</IntrinsicFunctions>
             <SDLCheck>true</SDLCheck>
-            <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;WIN32;_DEBUG;_CONSOLE;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;WIN32;NDEBUG;_CONSOLE;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
         </ClCompile>
@@ -174,7 +182,7 @@
             <FunctionLevelLinking>true</FunctionLevelLinking>
             <IntrinsicFunctions>true</IntrinsicFunctions>
             <SDLCheck>true</SDLCheck>
-            <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;WIN32;_DEBUG;_CONSOLE;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+            <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;NDEBUG;_CONSOLE;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
         </ClCompile>
@@ -184,6 +192,13 @@
             <OptimizeReferences>true</OptimizeReferences>
             <GenerateDebugInformation>true</GenerateDebugInformation>
         </Link>
+        <PostBuildEvent>
+            <Command>xcopy /Y /D "$(OPENGL)\bin\x64\glew32.dll" "$(OutDir)"
+                xcopy /Y /D "$(OPENGL)\bin\x64\glfw3-vc140.dll" "$(OutDir)"
+                xcopy /Y /D "$(ASSIMP)\bin\x64\assimp-vc140-mt.dll" "$(OutDir)"
+            </Command>
+            <Message>复制运行时所需的 DLL 文件到输出目录...</Message>
+        </PostBuildEvent>
     </ItemDefinitionGroup>
     <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
     <ImportGroup Label="ExtensionTargets">
