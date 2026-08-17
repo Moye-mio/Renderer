@@ -1,9 +1,10 @@
 // ============================================================================
 // 002_Order_Independent_Transparency - main.cpp
 //
-// OIT 半透明算法对比示例（V1 只搭场景，算法未写）：
+// OIT 半透明算法对比示例：
 //   不透明 Cornell Box + 三只同朝向并排的半透明 Stanford Dragon（颜色不同）。
-//   ScenePass：先画 Cornell 写深度，再朴素 SrcAlpha 混合画龙——这不是 OIT。
+//   Baseline：ScenePass 朴素 SrcAlpha 混合（不是 OIT）。
+//   Weighted Blended：Accum / Revealage / Blend。
 //
 // 架构与 000 / 001 一致：仅通过 TitusRHI::* 启动；AssetLoader 解码 CPU IR，
 // gfx 上传得到 GpuModelHandle。默认 OpenGL，`--backend=vk` 可切 Vulkan。
@@ -26,6 +27,7 @@
 #include "Scene.h"
 #include "ScenePass.h"
 #include "TechniqueContext.h"
+#include "WeightedBlendedOITPass.h"
 
 #ifndef SOLUTION_DIR
 #define SOLUTION_DIR ""
@@ -82,7 +84,7 @@ int main(int argc, char** argv)
 
     WINDOW_KEYWORD::SetWindowSize(1920, 1152);
     WINDOW_KEYWORD::SetIsCursorDisable(false);
-    WINDOW_KEYWORD::SetWindowTitle("002_Order_Independent_Transparency (Scene Baseline)");
+    WINDOW_KEYWORD::SetWindowTitle("002_Order_Independent_Transparency");
     COMPONENT_CONFIG::SetIsEnableGUI(true);
 
     APP::InitApp();
@@ -151,16 +153,36 @@ int main(int argc, char** argv)
 
         TechniqueContext techniqueCtx;
         auto scenePass = std::make_shared<ScenePass>();
+        auto wboitPass = std::make_shared<WeightedBlendedOITPass>();
         scenePass->SetScene(&scene);
         scenePass->SetContext(&techniqueCtx);
-        APP::AddPass(scenePass);
+        wboitPass->SetScene(&scene);
+        wboitPass->SetContext(&techniqueCtx);
 
-        OVERLAY::AddPanel("OIT Technique", [&techniqueCtx, &scene]()
+        auto applySchedule = [&](OITTechnique mode)
+        {
+            if (mode == OITTechnique::WeightedBlended)
+                APP::SetScheduledPasses({wboitPass});
+            else
+                APP::SetScheduledPasses({scenePass});
+        };
+
+        APP::AddPass(scenePass);
+        APP::AddPass(wboitPass);
+        applySchedule(techniqueCtx.mode);
+
+        OVERLAY::AddPanel("OIT Technique", [&techniqueCtx, &scene, &applySchedule]()
         {
             int m = static_cast<int>(techniqueCtx.mode);
-            ImGui::RadioButton("Baseline (naive alpha, not OIT)", &m,
-                               static_cast<int>(OITTechnique::Baseline));
-            techniqueCtx.mode = static_cast<OITTechnique>(m);
+            bool changed = ImGui::RadioButton("Baseline (naive alpha, not OIT)", &m,
+                                              static_cast<int>(OITTechnique::Baseline));
+            changed = ImGui::RadioButton("Weighted Blended OIT", &m,
+                                         static_cast<int>(OITTechnique::WeightedBlended)) || changed;
+            if (changed)
+            {
+                techniqueCtx.mode = static_cast<OITTechnique>(m);
+                applySchedule(techniqueCtx.mode);
+            }
             ImGui::Separator();
             ImGui::SliderFloat("Opacity", &techniqueCtx.dragonOpacity, 0.05f, 1.0f);
             auto& dragonsUi = scene.MutableDragons();
@@ -178,7 +200,15 @@ int main(int argc, char** argv)
                     dragonsUi[i].albedo = TitusMath::Vec3(albedo[0], albedo[1], albedo[2]);
                 ImGui::PopID();
             }
-            ImGui::TextUnformatted("Weighted Blended / Fourier / Wavelet: not implemented yet.");
+            if (techniqueCtx.mode == OITTechnique::WeightedBlended)
+            {
+                ImGui::Separator();
+                ImGui::TextUnformatted("WBOIT weight (view-space z)");
+                ImGui::SliderFloat("Weighted1", &techniqueCtx.weighted1, 0.1f, 20.0f);
+                ImGui::SliderFloat("Weighted2", &techniqueCtx.weighted2, 1.0f, 80.0f);
+                ImGui::SliderFloat("Weighted1Exp", &techniqueCtx.weighted1Exp, 0.5f, 6.0f);
+                ImGui::SliderFloat("Weighted2Exp", &techniqueCtx.weighted2Exp, 0.5f, 8.0f);
+            }
         });
 
         while (!APP::ShouldClose())

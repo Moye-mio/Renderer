@@ -24,6 +24,9 @@
     <ClCompile Include="ScenePass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="WeightedBlendedOITPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scene.h">
@@ -35,12 +38,30 @@
     <ClInclude Include="TechniqueContext.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SceneDraw.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WeightedBlendedOITPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Shader\Scene_VS.glsl">
       <Filter>Shader Files</Filter>
     </Content>
     <Content Include="Shader\Scene_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\WBOIT_Accum_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\WBOIT_Revealage_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\WBOIT_Blend_VS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\WBOIT_Blend_FS.glsl">
       <Filter>Shader Files</Filter>
     </Content>
   </ItemGroup>

@@ -1,13 +1,14 @@
 // ============================================================================
 // 002_Order_Independent_Transparency - ScenePass.cpp
 //
-// 不透明 Cornell → 朴素 Alpha 半透明 Dragon，画到默认 backbuffer。
+// Baseline：不透明 Cornell → 朴素 Alpha 半透明 Dragon，画到默认 backbuffer。
+// mode != Baseline 时早退，由 WeightedBlendedOITPass 接管。
 // ============================================================================
 #include "ScenePass.h"
 #include "Scene.h"
+#include "SceneDraw.h"
 #include "TechniqueContext.h"
 
-#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -19,96 +20,6 @@
 #ifndef SOLUTION_DIR
 #define SOLUTION_DIR ""
 #endif
-
-namespace
-{
-    struct SceneShadingUBO
-    {
-        TitusMath::Mat4 projection{1.0f};
-        TitusMath::Mat4 view{1.0f};
-        TitusMath::Vec4 lightDirVSAndAmbient{0.0f, 1.0f, 0.0f, 0.22f};
-        TitusMath::Vec4 lightColor{1.0f, 0.96f, 0.88f, 0.0f};
-    };
-    static_assert(sizeof(SceneShadingUBO) == 160, "SceneShadingUBO std140 size");
-
-    void FillPipelineShared(TitusRHI::GraphicsPipelineDesc& pd,
-                            TitusRHI::ShaderHandle vs,
-                            TitusRHI::ShaderHandle fs,
-                            TitusRHI::GpuModelHandle layoutSource)
-    {
-        using namespace TitusRHI;
-        pd.vertexShader = vs;
-        pd.fragmentShader = fs;
-        pd.topology = PrimitiveTopology::TriangleList;
-        pd.rasterizer.cullMode = CullMode::None;
-        pd.rasterizer.frontFace = FrontFace::CounterClockwise;
-        pd.depthStencil.depthTestEnable = true;
-        pd.depthStencil.depthCompareOp = CompareOp::Less;
-        pd.blend.attachments.resize(1);
-        if (layoutSource.IsValid())
-            pd.vertexLayout = GetMeshSharedLayout(layoutSource);
-
-        PushConstantRange pcModel{};
-        pcModel.stages = ShaderStage::Vertex;
-        pcModel.offset = 0;
-        pcModel.size = sizeof(TitusMath::Mat4);
-        pcModel.glName = "u_ModelMatrix";
-        pd.pushConstantRanges.push_back(pcModel);
-
-        PushConstantRange pcAlbedo{};
-        pcAlbedo.stages = ShaderStage::Fragment;
-        pcAlbedo.offset = sizeof(TitusMath::Mat4);
-        pcAlbedo.size = sizeof(TitusMath::Vec4);
-        pcAlbedo.glName = "u_AlbedoOpacity";
-        pd.pushConstantRanges.push_back(pcAlbedo);
-
-        ResourceBinding rb{};
-        rb.name = "u_SceneShading";
-        rb.set = 0;
-        rb.binding = 0;
-        rb.type = ResourceBindingType::UniformBuffer;
-        rb.stages = ShaderStage::Vertex | ShaderStage::Fragment;
-        pd.resourceBindings.push_back(rb);
-    }
-
-    void DrawModelColored(TitusRHI::RenderCommandList& cmd,
-                          TitusRHI::GpuModelHandle handle,
-                          const TitusMath::Mat4& model,
-                          const TitusMath::Vec3* albedos,
-                          size_t albedoCount,
-                          float opacity)
-    {
-        using namespace TitusRHI;
-        const void* p = APP::GetGpuModelInternal(handle);
-        if (!p) return;
-        const GpuModel* gpu = static_cast<const GpuModel*>(p);
-        const auto& mesh = gpu->GetMesh();
-
-        cmd.PushConstants(ShaderStage::Vertex, 0, sizeof(TitusMath::Mat4), &model);
-        for (size_t i = 0; i < mesh.subMeshes.size(); ++i)
-        {
-            const TitusMath::Vec3 albedo = (!albedos || albedoCount == 0)
-                ? TitusMath::Vec3(1.0f)
-                : albedos[i < albedoCount ? i : albedoCount - 1];
-            const TitusMath::Vec4 albedoOpacity(albedo, opacity);
-            cmd.PushConstants(ShaderStage::Fragment, sizeof(TitusMath::Mat4),
-                              sizeof(TitusMath::Vec4), &albedoOpacity);
-
-            const auto& sub = mesh.subMeshes[i];
-            if (sub.vertexBuffer.IsValid())
-                cmd.BindVertexBuffer(0, sub.vertexBuffer, 0);
-            if (sub.indexCount > 0 && sub.indexBuffer.IsValid())
-            {
-                cmd.BindIndexBuffer(sub.indexBuffer, sub.indexType, 0);
-                cmd.DrawIndexed(sub.indexCount, 1, 0, 0, 0);
-            }
-            else
-            {
-                cmd.Draw(sub.vertexCount, 1, 0, 0);
-            }
-        }
-    }
-}
 
 ScenePass::ScenePass()
 {
@@ -152,14 +63,14 @@ bool ScenePass::CreatePipelines(TitusRHI::IGDevice& device)
 
     {
         GraphicsPipelineDesc pd{};
-        FillPipelineShared(pd, m_vs, m_fs, m_scene->GetCornellHandle());
+        FillGeometryPipelineShared(pd, m_vs, m_fs, m_scene->GetCornellHandle());
         pd.depthStencil.depthWriteEnable = true;
         pd.debugName = "ScenePass.Opaque";
         m_opaquePipeline = device.CreatePipeline(pd);
     }
     {
         GraphicsPipelineDesc pd{};
-        FillPipelineShared(pd, m_vs, m_fs, m_scene->GetDragonHandle());
+        FillGeometryPipelineShared(pd, m_vs, m_fs, m_scene->GetDragonHandle());
         pd.depthStencil.depthWriteEnable = false;
         pd.blend.attachments[0].blendEnable = true;
         pd.blend.attachments[0].srcColorBlendFactor = BlendFactor::SrcAlpha;
@@ -206,6 +117,8 @@ void ScenePass::Record(TitusRHI::IGDevice& device,
                        uint32_t /*imageIndex*/)
 {
     using namespace TitusRHI;
+    if (m_ctx && m_ctx->mode != OITTechnique::Baseline)
+        return;
     if (!m_scene || !m_opaquePipeline.IsValid() || !m_transparentPipeline.IsValid())
         return;
 
@@ -213,12 +126,7 @@ void ScenePass::Record(TitusRHI::IGDevice& device,
     {
         ZoneScopedN("ScenePass::UpdateShading");
         SceneShadingUBO data{};
-        data.projection = CAMERA::GetMainCameraProjectionMatrix();
-        data.view = CAMERA::GetMainCameraViewMatrix();
-        const TitusMath::Vec3 lightDirWS = TitusMath::normalize(TitusMath::Vec3(0.18f, 1.0f, 0.35f));
-        const TitusMath::Vec4 lightDirVS = data.view * TitusMath::Vec4(lightDirWS, 0.0f);
-        data.lightDirVSAndAmbient = TitusMath::Vec4(TitusMath::Vec3(lightDirVS), 0.22f);
-        data.lightColor = TitusMath::Vec4(1.0f, 0.96f, 0.88f, 0.0f);
+        FillSceneShadingUBO(data, m_ctx);
         device.UpdateBuffer(m_shadingUbo, &data, sizeof(data), 0);
     }
 

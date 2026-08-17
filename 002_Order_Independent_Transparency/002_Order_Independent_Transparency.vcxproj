@@ -21,12 +21,15 @@
     <ItemGroup>
         <ClCompile Include="Scene.cpp"/>
         <ClCompile Include="ScenePass.cpp"/>
+        <ClCompile Include="WeightedBlendedOITPass.cpp"/>
         <ClCompile Include="main.cpp"/>
     </ItemGroup>
     <ItemGroup>
         <ClInclude Include="Scene.h"/>
         <ClInclude Include="ScenePass.h"/>
+        <ClInclude Include="SceneDraw.h"/>
         <ClInclude Include="TechniqueContext.h"/>
+        <ClInclude Include="WeightedBlendedOITPass.h"/>
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\Basic\Basic.vcxproj">
@@ -44,6 +47,10 @@
     <ItemGroup>
         <Content Include="Shader\Scene_VS.glsl"/>
         <Content Include="Shader\Scene_FS.glsl"/>
+        <Content Include="Shader\WBOIT_Accum_FS.glsl"/>
+        <Content Include="Shader\WBOIT_Revealage_FS.glsl"/>
+        <Content Include="Shader\WBOIT_Blend_VS.glsl"/>
+        <Content Include="Shader\WBOIT_Blend_FS.glsl"/>
     </ItemGroup>
     <PropertyGroup Label="Globals">
         <VCProjectVersion>15.0</VCProjectVersion>
