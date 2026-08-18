@@ -178,11 +178,13 @@ void ScenePass::Record(TitusRHI::IGDevice& device,
 
     cmd.BindPipeline(m_transparentPipeline);
     cmd.BindResourceSet(0, rs);
-    const float dragonOpacity = m_ctx ? m_ctx->dragonOpacity : 0.40f;
-    for (const auto& dragon : m_scene->GetDragons())
+    const float dragonOpacity = m_ctx ? m_ctx->dragonOpacity : 0.55f;
+    const DragonDrawOrder order = m_ctx ? m_ctx->drawOrder : DragonDrawOrder::SceneOrder;
+    const auto& dragons = m_scene->GetDragons();
+    for (uint32_t i : BuildDragonDrawOrder(dragons, order))
     {
-        DrawModelColored(cmd, m_scene->GetDragonHandle(), dragon.modelMatrix,
-                         &dragon.albedo, 1, dragonOpacity);
+        DrawModelColored(cmd, m_scene->GetDragonHandle(), dragons[i].modelMatrix,
+                         &dragons[i].albedo, 1, dragonOpacity);
     }
 
     cmd.EndRenderPass();

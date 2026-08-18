@@ -299,14 +299,19 @@ void WeightedBlendedOITPass::BindShading(TitusRHI::RenderCommandList& cmd) const
     cmd.BindResourceSet(0, rs);
 }
 
+// 顺序对 Accum / Revealage 的结果没有影响（One/One 累加与 Zero/OneMinusSrcAlpha
+// 连乘都可交换），这里照样走排序只是为了让 UI 上的顺序开关对两种算法一致生效，
+// 从而能直接观察到"WBOIT 换顺序画面不变"。
 void WeightedBlendedOITPass::DrawDragons(TitusRHI::RenderCommandList& cmd) const
 {
     if (!m_scene) return;
-    const float opacity = m_ctx ? m_ctx->dragonOpacity : 0.40f;
-    for (const auto& dragon : m_scene->GetDragons())
+    const float opacity = m_ctx ? m_ctx->dragonOpacity : 0.55f;
+    const DragonDrawOrder order = m_ctx ? m_ctx->drawOrder : DragonDrawOrder::SceneOrder;
+    const auto& dragons = m_scene->GetDragons();
+    for (uint32_t i : BuildDragonDrawOrder(dragons, order))
     {
-        DrawModelColored(cmd, m_scene->GetDragonHandle(), dragon.modelMatrix,
-                         &dragon.albedo, 1, opacity);
+        DrawModelColored(cmd, m_scene->GetDragonHandle(), dragons[i].modelMatrix,
+                         &dragons[i].albedo, 1, opacity);
     }
 }
 

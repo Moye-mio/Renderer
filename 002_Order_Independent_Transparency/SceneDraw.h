@@ -4,9 +4,13 @@
 //
 // ScenePass / WeightedBlendedOITPass 共用的几何绘制与着色 UBO。
 // ============================================================================
+#include <algorithm>
 #include <cstddef>
+#include <cstdint>
+#include <vector>
 
 #include "RendererInterface/TitusGfxPass.h"
+#include "Scene.h"
 #include "TechniqueContext.h"
 
 struct SceneShadingUBO
@@ -32,6 +36,31 @@ inline void FillSceneShadingUBO(SceneShadingUBO& data, const TechniqueContext* c
         data.weightedParams = TitusMath::Vec4(
             ctx->weighted1, ctx->weighted2, ctx->weighted1Exp, ctx->weighted2Exp);
     }
+}
+
+// 按 order 生成龙的提交顺序（实例下标）。视空间朝 -Z 看，远处 z 更小（更负），
+// 所以由远到近就是按视空间 z 升序。
+inline std::vector<uint32_t> BuildDragonDrawOrder(const std::vector<DragonInstance>& dragons,
+                                                 DragonDrawOrder order)
+{
+    std::vector<uint32_t> indices(dragons.size());
+    for (size_t i = 0; i < indices.size(); ++i)
+        indices[i] = static_cast<uint32_t>(i);
+    if (order == DragonDrawOrder::SceneOrder || dragons.size() < 2)
+        return indices;
+
+    const TitusMath::Mat4 view = TitusRHI::CAMERA::GetMainCameraViewMatrix();
+    std::vector<float> depth(dragons.size());
+    for (size_t i = 0; i < dragons.size(); ++i)
+        depth[i] = (view * TitusMath::Vec4(dragons[i].worldCenter, 1.0f)).z;
+
+    const bool backToFront = (order == DragonDrawOrder::BackToFront);
+    std::stable_sort(indices.begin(), indices.end(),
+                     [&depth, backToFront](uint32_t a, uint32_t b)
+                     {
+                         return backToFront ? (depth[a] < depth[b]) : (depth[a] > depth[b]);
+                     });
+    return indices;
 }
 
 inline void FillGeometryPipelineShared(TitusRHI::GraphicsPipelineDesc& pd,

@@ -2,9 +2,14 @@
 // 002_Order_Independent_Transparency - main.cpp
 //
 // OIT 半透明算法对比示例：
-//   不透明 Cornell Box + 三只同朝向并排的半透明 Stanford Dragon（颜色不同）。
+//   不透明 Cornell Box + 三只呈风车状互相穿插咬合的半透明 Stanford Dragon。
 //   Baseline：ScenePass 朴素 SrcAlpha 混合（不是 OIT）。
 //   Weighted Blended：Accum / Revealage / Blend。
+//
+// 场景为什么这么摆：排序错误的可见程度是 a_f * a_b * (c_f - c_b)，即取决于两层
+// 的 alpha 乘积与颜色差。三只龙风车状咬合同时拉满了颜色差（青/品红/金互补）与
+// 重叠面积，而互相穿插还让 per-object 排序在原理上就没有正确解 —— 配合 UI 上的
+// 顺序开关，演示链条是：原序（明显错）→ 按视距排序（好转但咬合处仍错）→ WBOIT。
 //
 // 架构与 000 / 001 一致：仅通过 TitusRHI::* 启动；AssetLoader 解码 CPU IR，
 // gfx 上传得到 GpuModelHandle。默认 OpenGL，`--backend=vk` 可切 Vulkan。
@@ -92,10 +97,11 @@ int main(int argc, char** argv)
     {
         CAMERA::FlyCameraConfig cfg{};
         // 盒子内部 y∈[0,1.99]、开口在 z=+0.99；退到 z=3.4 才能让 50° 竖直 FOV
-        // 在开口处覆盖满 1.99 的高度，y 取盒子竖直中心。
-        cfg.position  = TitusMath::Vec3{0.0f, 1.00f, 3.40f};
+        // 在开口处覆盖满 1.99 的高度。风车是在水平面上展开的，纯平视会把三只龙
+        // 压成一条线，要俯视到 25° 以上才看得出"三龙相衔"的环状结构。
+        cfg.position  = TitusMath::Vec3{0.0f, 2.05f, 3.05f};
         cfg.yawDeg    = -90.0f; // 朝 -Z，对着 Cornell 后墙
-        cfg.pitchDeg  = 0.0f;
+        cfg.pitchDeg  = -26.0f;
         cfg.fovDeg    = 50.0f;
         cfg.aspect    = 0.0f;
         cfg.nearPlane = 0.05f;
@@ -139,17 +145,24 @@ int main(int argc, char** argv)
     LogAabb(kLog, "Dragon", dragonMin, dragonMax);
 
     const TitusMath::Mat4 cornellMatrix{1.0f};
-    const auto dragonMatrices = MakeDragonRowTransforms(
-        dragonMin, dragonMax, cornellMin, cornellMax, kDragonInstanceCount, 0.55f);
+    // 矩阵与 worldCenter 统一交给 Scene::ApplyDragonLayout 生成，这里只定颜色。
     std::vector<DragonInstance> dragons;
-    dragons.reserve(dragonMatrices.size());
-    for (int i = 0; i < static_cast<int>(dragonMatrices.size()); ++i)
-        dragons.push_back(DragonInstance{dragonMatrices[static_cast<size_t>(i)], DefaultDragonAlbedo(i)});
+    dragons.reserve(static_cast<size_t>(kDragonInstanceCount));
+    for (int i = 0; i < kDragonInstanceCount; ++i)
+    {
+        DragonInstance inst{};
+        inst.albedo = DefaultDragonAlbedo(i);
+        dragons.push_back(inst);
+    }
     std::vector<TitusMath::Vec3> cornellAlbedo = MakeCornellAlbedo(cornellAsset);
 
     {
         Scene scene(cornellHandle, cornellMatrix, std::move(cornellAlbedo),
                     dragonHandle, std::move(dragons));
+        scene.SetLayoutBounds(dragonMin, dragonMax, cornellMin, cornellMax);
+
+        DragonLayoutParams layoutParams{};
+        scene.ApplyDragonLayout(layoutParams);
 
         TechniqueContext techniqueCtx;
         auto scenePass = std::make_shared<ScenePass>();
@@ -171,10 +184,10 @@ int main(int argc, char** argv)
         APP::AddPass(wboitPass);
         applySchedule(techniqueCtx.mode);
 
-        OVERLAY::AddPanel("OIT Technique", [&techniqueCtx, &scene, &applySchedule]()
+        OVERLAY::AddPanel("OIT Technique", [&techniqueCtx, &scene, &applySchedule, &layoutParams]()
         {
             int m = static_cast<int>(techniqueCtx.mode);
-            bool changed = ImGui::RadioButton("Baseline (naive alpha, not OIT)", &m,
+            bool changed = ImGui::RadioButton("Baseline (naive alpha)", &m,
                                               static_cast<int>(OITTechnique::Baseline));
             changed = ImGui::RadioButton("Weighted Blended OIT", &m,
                                          static_cast<int>(OITTechnique::WeightedBlended)) || changed;
@@ -183,6 +196,43 @@ int main(int argc, char** argv)
                 techniqueCtx.mode = static_cast<OITTechnique>(m);
                 applySchedule(techniqueCtx.mode);
             }
+
+            // 核心对照开关：Baseline 下三档结果各不相同，WBOIT 下三档完全一致。
+            ImGui::Separator();
+            ImGui::TextUnformatted("Draw order");
+            int o = static_cast<int>(techniqueCtx.drawOrder);
+            bool orderChanged = ImGui::RadioButton("Unsorted", &o,
+                                                   static_cast<int>(DragonDrawOrder::SceneOrder));
+            orderChanged = ImGui::RadioButton("Back to front", &o,
+                                              static_cast<int>(DragonDrawOrder::BackToFront)) || orderChanged;
+            orderChanged = ImGui::RadioButton("Front to back", &o,
+                                              static_cast<int>(DragonDrawOrder::FrontToBack)) || orderChanged;
+            if (orderChanged)
+                techniqueCtx.drawOrder = static_cast<DragonDrawOrder>(o);
+
+            ImGui::Separator();
+            ImGui::TextUnformatted("Layout");
+            int l = static_cast<int>(layoutParams.layout);
+            bool layoutChanged = ImGui::RadioButton("Pinwheel", &l,
+                                                    static_cast<int>(DragonLayout::Pinwheel));
+            layoutChanged = ImGui::RadioButton("Row", &l,
+                                               static_cast<int>(DragonLayout::Row)) || layoutChanged;
+            if (layoutChanged)
+                layoutParams.layout = static_cast<DragonLayout>(l);
+            if (layoutParams.layout == DragonLayout::Pinwheel)
+            {
+                layoutChanged = ImGui::SliderFloat("Interlock", &layoutParams.interlock, 0.0f, 1.0f)
+                    || layoutChanged;
+                layoutChanged = ImGui::SliderFloat("Blade", &layoutParams.bladeDeg, 0.0f, 180.0f)
+                    || layoutChanged;
+                layoutChanged = ImGui::SliderFloat("Phase", &layoutParams.phaseDeg, 0.0f, 360.0f)
+                    || layoutChanged;
+            }
+            layoutChanged = ImGui::SliderFloat("Size", &layoutParams.heightFill, 0.15f, 0.95f)
+                || layoutChanged;
+            if (layoutChanged)
+                scene.ApplyDragonLayout(layoutParams);
+
             ImGui::Separator();
             ImGui::SliderFloat("Opacity", &techniqueCtx.dragonOpacity, 0.05f, 1.0f);
             auto& dragonsUi = scene.MutableDragons();
