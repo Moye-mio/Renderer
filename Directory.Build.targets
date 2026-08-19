@@ -11,6 +11,8 @@
 -->
 <Project>
   <PropertyGroup>
+    <TitusVulkanSdkFound Condition="'$(VULKAN_SDK)' != '' and Exists('$(VULKAN_SDK)\Include\vulkan\vulkan.h')">true</TitusVulkanSdkFound>
+
     <TitusTracyMinWindowsSdk>10.0.26100.0</TitusTracyMinWindowsSdk>
     <TitusTracySdkTooOld>false</TitusTracySdkTooOld>
     <TitusTracySdkTooOld Condition="'$(TitusTracyEnable)' == 'true' and '$(TargetPlatformVersion)' != '' and $([MSBuild]::VersionLessThan('$(TargetPlatformVersion)', '$(TitusTracyMinWindowsSdk)'))">true</TitusTracySdkTooOld>
@@ -28,6 +30,19 @@
       <AdditionalDependencies>ws2_32.lib;dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+
+  <!-- SDK 缺失时 $(VULKAN_SDK)\Include 退化成 "\Include"，编译会在 vulkan/vulkan.h
+       处刷一屏 C1083。这里提前给出可执行的提示，且只对真正引用 SDK 的工程报错，
+       纯 GL 工程（Basic / RendererGL / …）在没装 Vulkan SDK 的机器上仍可单独构建。
+       整段只在 SDK 缺失时才执行，正常构建零开销。 -->
+  <Target Name="TitusVulkanSdkCheck" BeforeTargets="ClCompile" Condition="'$(TitusVulkanSdkFound)' != 'true'">
+    <PropertyGroup>
+      <TitusProjectFileText>$([System.IO.File]::ReadAllText('$(MSBuildProjectFullPath)'))</TitusProjectFileText>
+      <TitusProjectNeedsVulkan>$(TitusProjectFileText.Contains('VULKAN_SDK'))</TitusProjectNeedsVulkan>
+    </PropertyGroup>
+    <Error Condition="'$(TitusProjectNeedsVulkan)' == 'true'"
+           Text="未找到 Vulkan SDK：$(MSBuildProjectName) 需要 vulkan/vulkan.h。请安装 Vulkan SDK（https://vulkan.lunarg.com/），确认环境变量 VULKAN_SDK 或 VK_SDK_PATH 指向 SDK 根目录后重启 VS。当前 VULKAN_SDK=[$(VULKAN_SDK)]" />
+  </Target>
 
   <!-- 只在编译 TracyClient.cpp 的工程里提示一次，避免每个工程都刷一条 -->
   <Target Name="TitusTracySdkCheck" BeforeTargets="ClCompile"

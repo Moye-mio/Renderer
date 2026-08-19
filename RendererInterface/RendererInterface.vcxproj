@@ -24,13 +24,13 @@
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
         <ConfigurationType>StaticLibrary</ConfigurationType>
         <UseDebugLibraries>true</UseDebugLibraries>
-        <PlatformToolset>v143</PlatformToolset>
+        <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
         <CharacterSet>Unicode</CharacterSet>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
         <ConfigurationType>StaticLibrary</ConfigurationType>
         <UseDebugLibraries>false</UseDebugLibraries>
-        <PlatformToolset>v143</PlatformToolset>
+        <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
         <WholeProgramOptimization>true</WholeProgramOptimization>
         <CharacterSet>Unicode</CharacterSet>
     </PropertyGroup>
@@ -84,7 +84,7 @@
             <PreprocessorDefinitions>SOLUTION_DIR=R"($(SolutionDir))";GLM_FORCE_DEPTH_ZERO_TO_ONE;NDEBUG;_LIB;RENDERER_ENABLE_VK;RENDERER_ENABLE_GL;RENDERER_ENABLE_RAY_TRACING;GLFW_INCLUDE_NONE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
             <ConformanceMode>true</ConformanceMode>
             <LanguageStandard>stdcpplatest</LanguageStandard>
-            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(SolutionDir)RendererGL;$(SolutionDir)RendererVK;$(SolutionDir)Platform;$(SolutionDir)Third-Party\imgui_master;$(SolutionDir)Third-Party\imgui_master\examples;$(GLM);$(OPENGL)\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+            <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)Basic;$(SolutionDir)RendererCore;$(SolutionDir)RendererGL;$(SolutionDir)RendererVK;$(SolutionDir)Platform;$(SolutionDir)AssetLoader;$(SolutionDir)Third-Party\imgui_master;$(SolutionDir)Third-Party\imgui_master\examples;$(GLM);$(OPENGL)\include;$(VULKAN_SDK)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
             <DisableSpecificWarnings>4477;4267;4251;4305;4244;%(DisableSpecificWarnings)</DisableSpecificWarnings>
         </ClCompile>
         <Link>

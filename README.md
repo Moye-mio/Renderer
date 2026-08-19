@@ -85,9 +85,11 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 
 ### 环境
 
-- Windows + Visual Studio（打开根目录 `TitusGLRenderer.sln`）。
-- 使用 Vulkan 后端时需安装 [Vulkan SDK](https://vulkan.lunarg.com/)，并确保 `VULKAN_SDK` 已设置。
+- Windows + Visual Studio 2019 或更新版本（打开根目录 `TitusGLRenderer.sln`），目标平台仅 **x64**。
+- 工具集不写死版本：各工程用 `$(DefaultPlatformToolset)` 跟随本机 VS（VS2019 → v142、VS2022 → v143、更新版本自动跟随），换机器不会再报 `MSB8020`。需要锁定某个工具集时用 `msbuild /p:PlatformToolset=v142`。
+- 使用 Vulkan 后端时需安装 [Vulkan SDK](https://vulkan.lunarg.com/)，并确保 `VULKAN_SDK`（或旧版安装器写的 `VK_SDK_PATH`）已设置；缺失时构建会直接给出提示，而不是在 `vulkan/vulkan.h` 处刷一屏 `C1083`。不涉及 Vulkan 的工程（`Basic` / `RendererGL` 等）在未装 SDK 的机器上仍可单独构建。
 - 需要 Tracy v0.14（Debug 默认开）时，须安装 **Windows 11 SDK ≥ 10.0.26100.0**；SDK 较旧时构建会自动关闭 Tracy 并给出 warning。
+- 解决方案平台只有 `Any CPU`（映射到各工程的 x64）；`Debug` / `Release` 均可整体构建。各工程保留的 `Win32` 配置已废弃——第三方库只提供 x64，不要选。
 
 ### 依赖准备
 

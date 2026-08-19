@@ -7,12 +7,20 @@
 
   第三方库均在 Third-Party/（glm / gli / stb / Assimp / GLFW / GLEW 等）。
   GLM / OPENGL / ASSIMP / … 覆盖同名环境变量，一律为仓库内相对路径。
+
+  工具集不写死版本：各 vcxproj 用 $(DefaultPlatformToolset)，跟随本机安装的 VS
+  （VS2019→v142 / VS2022→v143 / 更新版本自动跟随），避免换机器报 MSB8020。
+  需要锁定时用 msbuild /p:PlatformToolset=v142（命令行全局属性优先级更高）。
 -->
 <Project>
   <PropertyGroup>
     <TitusTracyRoot>$(MSBuildThisFileDirectory)Third-Party\tracy\public</TitusTracyRoot>
     <TitusTracyEnable Condition="'$(TitusTracyEnable)' == '' and '$(Configuration)' == 'Debug'">true</TitusTracyEnable>
     <TitusTracyEnable Condition="'$(TitusTracyEnable)' == ''">false</TitusTracyEnable>
+
+    <!-- Vulkan SDK 体积过大，不随仓库分发。旧版安装器只写 VK_SDK_PATH，
+         这里归一到 VULKAN_SDK，工程里统一引用它；缺失检查见 Directory.Build.targets。 -->
+    <VULKAN_SDK Condition="'$(VULKAN_SDK)' == '' and '$(VK_SDK_PATH)' != ''">$(VK_SDK_PATH)</VULKAN_SDK>
 
     <GLM>$(MSBuildThisFileDirectory)Third-Party\glm</GLM>
     <GLI>$(MSBuildThisFileDirectory)Third-Party\gli</GLI>
