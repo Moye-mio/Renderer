@@ -27,6 +27,9 @@
     <ClCompile Include="WeightedBlendedOITPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FourierOITPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Scene.h">
@@ -42,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="WeightedBlendedOITPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FourierOITPass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -62,6 +68,15 @@
       <Filter>Shader Files</Filter>
     </Content>
     <Content Include="Shader\WBOIT_Blend_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\Fourier_Coefficient_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\Fourier_Reconstruct_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\Fourier_Merge_FS.glsl">
       <Filter>Shader Files</Filter>
     </Content>
   </ItemGroup>

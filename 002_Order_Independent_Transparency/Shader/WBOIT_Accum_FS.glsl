@@ -19,6 +19,7 @@ LAYOUT_BIND(0, 0) layout(std140) uniform u_SceneShading
 	vec4 u_LightDirVSAndAmbient;
 	vec4 u_LightColor;
 	vec4 u_WeightedParams; // x=w1, y=w2, z=e1, w=e2
+	vec4 u_FourierParams;  // Fourier OIT 深度窗口与阶数；本阶段不用
 };
 
 #ifdef VULKAN

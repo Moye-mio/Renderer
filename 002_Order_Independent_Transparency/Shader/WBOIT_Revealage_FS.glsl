@@ -19,6 +19,7 @@ LAYOUT_BIND(0, 0) layout(std140) uniform u_SceneShading
 	vec4 u_LightDirVSAndAmbient;
 	vec4 u_LightColor;
 	vec4 u_WeightedParams;
+	vec4 u_FourierParams;
 };
 
 #ifdef VULKAN

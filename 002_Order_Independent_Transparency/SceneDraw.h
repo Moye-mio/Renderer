@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #include "RendererInterface/TitusGfxPass.h"
@@ -20,8 +21,9 @@ struct SceneShadingUBO
     TitusMath::Vec4 lightDirVSAndAmbient{0.0f, 1.0f, 0.0f, 0.22f};
     TitusMath::Vec4 lightColor{1.0f, 0.96f, 0.88f, 0.0f};
     TitusMath::Vec4 weightedParams{2.0f, 20.0f, 1.5f, 3.0f}; // x=w1, y=w2, z=e1, w=e2
+    TitusMath::Vec4 fourierParams{0.0f, 1.0f, 3.0f, 0.0f};   // x=zMin, y=1/(zMax-zMin), z=谐波阶数
 };
-static_assert(sizeof(SceneShadingUBO) == 176, "SceneShadingUBO std140 size");
+static_assert(sizeof(SceneShadingUBO) == 192, "SceneShadingUBO std140 size");
 
 inline void FillSceneShadingUBO(SceneShadingUBO& data, const TechniqueContext* ctx)
 {
@@ -61,6 +63,55 @@ inline std::vector<uint32_t> BuildDragonDrawOrder(const std::vector<DragonInstan
                          return backToFront ? (depth[a] < depth[b]) : (depth[a] > depth[b]);
                      });
     return indices;
+}
+
+// 傅里叶基函数只在 t ∈ [0,1] 上正交，必须先把视空间线性深度归一化到这个区间。
+// 直接拿世界单位的线性深度当 t 会让基函数周期退化成 1 个世界单位，深度相差整数
+// 个单位的片元被映射到同一相位而无法区分。这里每帧按半透明几何自身的视空间深度
+// 跨度建窗：把全部龙实例的局部 AABB 变换到视空间取包络，再按 pad 外扩一圈，
+// 保证片元都落在窗口内部而不是 t=0/1 的相位边界上。
+inline void ComputeDragonViewDepthWindow(const Scene& scene,
+                                         float pad,
+                                         float& outMin,
+                                         float& outMax)
+{
+    outMin = 0.0f;
+    outMax = 1.0f;
+
+    const auto& dragons = scene.GetDragons();
+    if (dragons.empty())
+        return;
+
+    const TitusMath::Vec3 lo = scene.GetDragonLocalMin();
+    const TitusMath::Vec3 hi = scene.GetDragonLocalMax();
+    if (!(lo.x < hi.x))
+        return;
+
+    const TitusMath::Mat4 view = TitusRHI::CAMERA::GetMainCameraViewMatrix();
+    float zMin = std::numeric_limits<float>::max();
+    float zMax = -std::numeric_limits<float>::max();
+    for (const auto& dragon : dragons)
+    {
+        const TitusMath::Mat4 modelView = view * dragon.modelMatrix;
+        for (int corner = 0; corner < 8; ++corner)
+        {
+            const TitusMath::Vec4 p{
+                (corner & 1) ? hi.x : lo.x,
+                (corner & 2) ? hi.y : lo.y,
+                (corner & 4) ? hi.z : lo.z,
+                1.0f};
+            // 视空间朝 -Z 看，取负号换成朝前为正的线性深度。
+            const float z = -(modelView * p).z;
+            zMin = std::min(zMin, z);
+            zMax = std::max(zMax, z);
+        }
+    }
+    if (!(zMin < zMax))
+        return;
+
+    const float margin = std::max((zMax - zMin) * std::max(pad, 0.0f), 1e-3f);
+    outMin = zMin - margin;
+    outMax = zMax + margin;
 }
 
 inline void FillGeometryPipelineShared(TitusRHI::GraphicsPipelineDesc& pd,

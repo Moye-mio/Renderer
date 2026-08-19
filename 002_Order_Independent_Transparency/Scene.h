@@ -70,6 +70,10 @@ public:
     const std::vector<DragonInstance>& GetDragons() const { return m_dragons; }
     std::vector<DragonInstance>& MutableDragons() { return m_dragons; }
 
+    // 龙的局部 AABB，Fourier OIT 用它推算半透明几何的视空间深度窗口。
+    const TitusMath::Vec3& GetDragonLocalMin() const { return m_dragonLocalMin; }
+    const TitusMath::Vec3& GetDragonLocalMax() const { return m_dragonLocalMax; }
+
     // 布局计算需要的两组包围盒：龙的局部 AABB 与充当摆放区域的盒子内腔。
     void SetLayoutBounds(const TitusMath::Vec3& dragonLocalMin,
                          const TitusMath::Vec3& dragonLocalMax,

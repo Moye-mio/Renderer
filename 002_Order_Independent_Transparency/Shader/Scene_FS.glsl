@@ -19,6 +19,7 @@ LAYOUT_BIND(0, 0) layout(std140) uniform u_SceneShading
 	vec4 u_LightDirVSAndAmbient;
 	vec4 u_LightColor;
 	vec4 u_WeightedParams; // WBOIT 权重；本阶段不用，但同名 block 各阶段声明必须一致
+	vec4 u_FourierParams;  // Fourier OIT 深度窗口与阶数；同上
 };
 
 #ifdef VULKAN

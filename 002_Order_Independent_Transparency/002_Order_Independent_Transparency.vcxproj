@@ -19,12 +19,14 @@
         </ProjectConfiguration>
     </ItemGroup>
     <ItemGroup>
+        <ClCompile Include="FourierOITPass.cpp"/>
         <ClCompile Include="Scene.cpp"/>
         <ClCompile Include="ScenePass.cpp"/>
         <ClCompile Include="WeightedBlendedOITPass.cpp"/>
         <ClCompile Include="main.cpp"/>
     </ItemGroup>
     <ItemGroup>
+        <ClInclude Include="FourierOITPass.h"/>
         <ClInclude Include="Scene.h"/>
         <ClInclude Include="ScenePass.h"/>
         <ClInclude Include="SceneDraw.h"/>
@@ -51,6 +53,9 @@
         <Content Include="Shader\WBOIT_Revealage_FS.glsl"/>
         <Content Include="Shader\WBOIT_Blend_VS.glsl"/>
         <Content Include="Shader\WBOIT_Blend_FS.glsl"/>
+        <Content Include="Shader\Fourier_Coefficient_FS.glsl"/>
+        <Content Include="Shader\Fourier_Reconstruct_FS.glsl"/>
+        <Content Include="Shader\Fourier_Merge_FS.glsl"/>
     </ItemGroup>
     <PropertyGroup Label="Globals">
         <VCProjectVersion>15.0</VCProjectVersion>

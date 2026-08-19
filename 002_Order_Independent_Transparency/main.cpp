@@ -29,6 +29,7 @@
 #include "AssetLoader/AssetTypes.h"
 #include "AssetLoader/ModelLoader.h"
 
+#include "FourierOITPass.h"
 #include "Scene.h"
 #include "ScenePass.h"
 #include "TechniqueContext.h"
@@ -167,21 +168,27 @@ int main(int argc, char** argv)
         TechniqueContext techniqueCtx;
         auto scenePass = std::make_shared<ScenePass>();
         auto wboitPass = std::make_shared<WeightedBlendedOITPass>();
+        auto fourierPass = std::make_shared<FourierOITPass>();
         scenePass->SetScene(&scene);
         scenePass->SetContext(&techniqueCtx);
         wboitPass->SetScene(&scene);
         wboitPass->SetContext(&techniqueCtx);
+        fourierPass->SetScene(&scene);
+        fourierPass->SetContext(&techniqueCtx);
 
         auto applySchedule = [&](OITTechnique mode)
         {
             if (mode == OITTechnique::WeightedBlended)
                 APP::SetScheduledPasses({wboitPass});
+            else if (mode == OITTechnique::Fourier)
+                APP::SetScheduledPasses({fourierPass});
             else
                 APP::SetScheduledPasses({scenePass});
         };
 
         APP::AddPass(scenePass);
         APP::AddPass(wboitPass);
+        APP::AddPass(fourierPass);
         applySchedule(techniqueCtx.mode);
 
         OVERLAY::AddPanel("OIT Technique", [&techniqueCtx, &scene, &applySchedule, &layoutParams]()
@@ -191,6 +198,8 @@ int main(int argc, char** argv)
                                               static_cast<int>(OITTechnique::Baseline));
             changed = ImGui::RadioButton("Weighted Blended OIT", &m,
                                          static_cast<int>(OITTechnique::WeightedBlended)) || changed;
+            changed = ImGui::RadioButton("Fourier Opacity OIT", &m,
+                                         static_cast<int>(OITTechnique::Fourier)) || changed;
             if (changed)
             {
                 techniqueCtx.mode = static_cast<OITTechnique>(m);
@@ -258,6 +267,13 @@ int main(int argc, char** argv)
                 ImGui::SliderFloat("Weighted2", &techniqueCtx.weighted2, 1.0f, 80.0f);
                 ImGui::SliderFloat("Weighted1Exp", &techniqueCtx.weighted1Exp, 0.5f, 6.0f);
                 ImGui::SliderFloat("Weighted2Exp", &techniqueCtx.weighted2Exp, 0.5f, 8.0f);
+            }
+            if (techniqueCtx.mode == OITTechnique::Fourier)
+            {
+                ImGui::Separator();
+                ImGui::TextUnformatted("Fourier series");
+                ImGui::SliderInt("Harmonics", &techniqueCtx.fourierHarmonics, 0, 3);
+                ImGui::SliderFloat("Depth pad", &techniqueCtx.fourierDepthPad, 0.0f, 1.0f);
             }
         });
 
