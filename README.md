@@ -87,6 +87,7 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 
 - Windows + Visual Studio（打开根目录 `TitusGLRenderer.sln`）。
 - 使用 Vulkan 后端时需安装 [Vulkan SDK](https://vulkan.lunarg.com/)，并确保 `VULKAN_SDK` 已设置。
+- 需要 Tracy v0.14（Debug 默认开）时，须安装 **Windows 11 SDK ≥ 10.0.26100.0**；SDK 较旧时构建会自动关闭 Tracy 并给出 warning。
 
 ### 依赖准备
 

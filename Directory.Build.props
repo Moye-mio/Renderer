@@ -3,7 +3,7 @@
   仓库根 Directory.Build.props：MSBuild / VS 会自动导入。
   Tracy：Debug 默认开启；关闭用 /p:TitusTracyEnable=false 或改下方默认值。
   Release 默认关闭；开启用 /p:TitusTracyEnable=true。
-  开启时同时定义 TRACY_ON_DEMAND（未连接 Profiler 不采集）。
+  开启后的编译/链接选项与 Windows SDK 版本检查见 Directory.Build.targets。
 
   第三方库均在 Third-Party/（glm / gli / stb / Assimp / GLFW / GLEW 等）。
   GLM / OPENGL / ASSIMP / … 覆盖同名环境变量，一律为仓库内相对路径。
@@ -26,17 +26,5 @@
     <ClCompile>
       <AdditionalIncludeDirectories>$(TitusTracyRoot);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
-  </ItemDefinitionGroup>
-
-  <ItemDefinitionGroup Condition="'$(TitusTracyEnable)' == 'true'">
-    <ClCompile>
-      <!-- /ZI 会使 __LINE__ 非常量，Tracy ZoneScoped 报 C2131；改用 /Zi -->
-      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
-      <!-- TRACY_ON_DEMAND：未连接 Profiler 时不采集，避免常驻排队与内存膨胀 -->
-      <PreprocessorDefinitions>TRACY_ENABLE;TRACY_ON_DEMAND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-    </ClCompile>
-    <Link>
-      <AdditionalDependencies>ws2_32.lib;dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
   </ItemDefinitionGroup>
 </Project>

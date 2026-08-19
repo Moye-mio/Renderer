@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  仓库根 Directory.Build.targets：在 Microsoft.Cpp.* 之后求值，
+  这里的 ItemDefinitionGroup 是最后一个，不会被 VS 自带默认值覆盖。
+  Tracy 的开关默认值见 Directory.Build.props（TitusTracyEnable）。
+
+  Tracy 0.14 的 Windows 客户端（TracyETW.cpp / TracyProfiler.cpp）直接使用
+  Win11 SDK 才有的符号：RelationProcessorDie、System*ProviderGuid、
+  SYSTEM_SCHEDULER_KW_*、CONTROLTRACE_ID 等。SDK 过旧时编译必然失败，
+  因此这里自动关闭 Tracy 并给出提示，而不是让编译在第三方代码里炸掉。
+-->
+<Project>
+  <PropertyGroup>
+    <TitusTracyMinWindowsSdk>10.0.26100.0</TitusTracyMinWindowsSdk>
+    <TitusTracySdkTooOld>false</TitusTracySdkTooOld>
+    <TitusTracySdkTooOld Condition="'$(TitusTracyEnable)' == 'true' and '$(TargetPlatformVersion)' != '' and $([MSBuild]::VersionLessThan('$(TargetPlatformVersion)', '$(TitusTracyMinWindowsSdk)'))">true</TitusTracySdkTooOld>
+    <TitusTracyEnable Condition="'$(TitusTracySdkTooOld)' == 'true'">false</TitusTracyEnable>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup Condition="'$(TitusTracyEnable)' == 'true'">
+    <ClCompile>
+      <!-- /ZI 会使 __LINE__ 非常量，Tracy 的 SourceLocationData 报 C2131；必须用 /Zi -->
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <!-- TRACY_ON_DEMAND：未连接 Profiler 时不采集，避免常驻排队与内存膨胀 -->
+      <PreprocessorDefinitions>TRACY_ENABLE;TRACY_ON_DEMAND;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>ws2_32.lib;dbghelp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <!-- 只在编译 TracyClient.cpp 的工程里提示一次，避免每个工程都刷一条 -->
+  <Target Name="TitusTracySdkCheck" BeforeTargets="ClCompile"
+          Condition="'$(TitusTracySdkTooOld)' == 'true' and '@(ClCompile->AnyHaveMetadataValue('Filename', 'TracyClient'))' == 'true'">
+    <Warning Text="Tracy 已自动关闭：Windows SDK $(TargetPlatformVersion) 低于 Tracy 0.14 所需的 $(TitusTracyMinWindowsSdk)。需要性能分析请在 VS 安装程序中安装 Windows 11 SDK $(TitusTracyMinWindowsSdk)。" />
+  </Target>
+</Project>

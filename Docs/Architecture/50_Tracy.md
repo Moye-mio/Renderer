@@ -29,7 +29,7 @@ flowchart LR
 
 ## 2. 构建配置
 
-**文件：** 仓库根 `Directory.Build.props`（MSBuild / VS 自动导入）
+**文件：** 仓库根 `Directory.Build.props`（开关默认值与 include 路径）+ `Directory.Build.targets`（开启后的编译/链接选项与 SDK 检查）
 
 | 项 | 行为 |
 |---|---|
@@ -38,6 +38,10 @@ flowchart LR
 | 开启时调试格式 | `/Zi`（`ProgramDatabase`），避免 Edit and Continue `/ZI` 导致 `ZoneScoped` **C2131** |
 | 链接 | `ws2_32.lib`、`dbghelp.lib` |
 | Include | 所有配置都加入 `Third-Party\tracy\public`（无 `TRACY_ENABLE` 时头文件多为空实现） |
+| SDK 门槛 | `TargetPlatformVersion < 10.0.26100.0` 时自动关闭 Tracy 并 warning |
+
+> 编译/链接选项放在 `Directory.Build.targets` 而非 `.props`：`.props` 在 `Microsoft.Cpp.*` **之前**导入，
+> `DebugInformationFormat` 会被部分 VS 版本的默认值（`/ZI`）覆盖，换机器就会冒出 C2131。
 
 **命令行覆盖：**
 
