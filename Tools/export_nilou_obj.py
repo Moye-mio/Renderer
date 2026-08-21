@@ -1,118 +1,153 @@
 # Convert Nilou FBX -> OBJ for 003_Toon_Shading.
 #
 # This repo's Assimp (assimp-vc140-mt) ACCESS_VIOLATION on the binary FBX.
-# ufbx.load_memory() can read it; we bake T-pose bind-pose meshes to OBJ so
+# ufbx.load_memory() can read it; we bake the bind-pose meshes to OBJ so
 # LoadModel() can go through the existing Assimp OBJ path.
 #
-# Only Body + Face ufbx meshes. Body is split by material into Hair/Body/Dress.
-# Skip Face_Eye / EffectMesh / EyeStar / Brow.
+# Head layout in this FBX: the `Body` mesh holds the skull and hair, while the
+# face is three separate plates that all share Mat_Face -- `Face_Eye` (cheeks,
+# sockets, eyeballs), `Face` (jaw, lips, oral cavity, skinned to ToothBone) and
+# `Brow` (a 6 mm eyebrow decal). They stay separate groups here because M3 must
+# exclude eyes and brows from the outline pass and M4 applies the face SDF only
+# to the skin plate. Dropping any of them leaves a hole that shows the hair
+# behind it.
+#
+# Each plate gets its own OBJ material so Assimp can tell them apart; all three
+# point at the same Face diffuse, and every name still contains "Mat_Face" so
+# NilouMaterials keeps routing them to that texture.
+#
+# The ufbx Python binding faults when several meshes are touched in one
+# process, so each mesh is dumped by a short-lived child process.
+#
 # Requires: pip install ufbx
 
 from __future__ import annotations
 
 import os
+import pickle
+import subprocess
 import sys
-
-import ufbx
+import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FBX = os.path.join(REPO, "Model", "Nilou", "NPC_Avatar_Girl_Sword_Nilou.fbx")
 OBJ = os.path.join(REPO, "Model", "Nilou", "Nilou.obj")
 MTL = os.path.join(REPO, "Model", "Nilou", "Nilou.mtl")
 
-# FBX material name -> OBJ object / group name (NilouMaterials KeepMesh keys).
-MAT_TO_PART = {
-    "Avatar_Girl_Sword_Nilou_Mat_Hair": "Hair",
-    "Avatar_Girl_Sword_Nilou_Mat_Body": "Body",
-    "Avatar_Girl_Sword_Nilou_Mat_Dress": "Dress",
-    "Avatar_Girl_Sword_Nilou_Mat_Face": "Face",
+PREFIX = "Avatar_Girl_Sword_Nilou_"
+HAIR_TEX = PREFIX + "Tex_Hair_Diffuse.png"
+BODY_TEX = PREFIX + "Tex_Body_Diffuse.png"
+FACE_TEX = PREFIX + "Tex_Face_Diffuse.png"
+
+# OBJ group -> (OBJ material name, diffuse png). Written in this order.
+PARTS = [
+    ("Hair",    PREFIX + "Mat_Hair",      HAIR_TEX),
+    ("Body",    PREFIX + "Mat_Body",      BODY_TEX),
+    ("Dress",   PREFIX + "Mat_Dress",     BODY_TEX),
+    ("FaceEye", PREFIX + "Mat_Face_Eye",  FACE_TEX),
+    ("Face",    PREFIX + "Mat_Face",      FACE_TEX),
+    ("Brow",    PREFIX + "Mat_Face_Brow", FACE_TEX),
+]
+
+# Source mesh index -> {FBX material name: OBJ group}.
+# 2 EffectMesh and 3 EyeStar are untextured placeholders and stay out.
+SOURCE_MESHES = {
+    0: {PREFIX + "Mat_Hair": "Hair",
+        PREFIX + "Mat_Body": "Body",
+        PREFIX + "Mat_Dress": "Dress"},
+    1: {PREFIX + "Mat_Face": "Brow"},
+    4: {PREFIX + "Mat_Face": "Face"},
+    5: {PREFIX + "Mat_Face": "FaceEye"},
 }
 
-DIFFUSE_FOR_MAT = {
-    "Avatar_Girl_Sword_Nilou_Mat_Hair": "Avatar_Girl_Sword_Nilou_Tex_Hair_Diffuse.png",
-    "Avatar_Girl_Sword_Nilou_Mat_Body": "Avatar_Girl_Sword_Nilou_Tex_Body_Diffuse.png",
-    "Avatar_Girl_Sword_Nilou_Mat_Dress": "Avatar_Girl_Sword_Nilou_Tex_Body_Diffuse.png",
-    "Avatar_Girl_Sword_Nilou_Mat_Face": "Avatar_Girl_Sword_Nilou_Tex_Face_Diffuse.png",
-}
 
-# Do not iterate scene.meshes: some deformer meshes trip the Python binding.
-SOURCE_MESH_INDICES = (0, 4)  # Body, Face
+def dump_one(idx: int, out_path: str) -> None:
+    import ufbx
 
-
-def extract_mesh(mesh: ufbx.Mesh) -> dict[str, list]:
+    scene = ufbx.load_memory(open(FBX, "rb").read())
+    mesh = scene.meshes[idx]
+    mat_to_part = SOURCE_MESHES[idx]
     mat_names = [str(mesh.materials[i].name) for i in range(len(mesh.materials))]
-    groups: dict[str, list] = {name: [] for name in MAT_TO_PART}
-    nfaces = mesh.num_faces
+    groups: dict[str, list] = {}
+    unmapped: set[str] = set()
     has_fm = bool(mesh.face_material)
-    for fi in range(nfaces):
+
+    for fi in range(mesh.num_faces):
         face = mesh.faces[fi]
         mat_idx = int(mesh.face_material[fi]) if has_fm else 0
         if mat_idx < 0 or mat_idx >= len(mat_names):
             continue
-        mat_name = mat_names[mat_idx]
-        if mat_name not in MAT_TO_PART:
+        part = mat_to_part.get(mat_names[mat_idx])
+        if part is None:
+            unmapped.add(mat_names[mat_idx])
             continue
         if face.num_indices < 3:
             continue
         for t in range(1, face.num_indices - 1):
-            corners = (
-                face.index_begin + 0,
-                face.index_begin + t,
-                face.index_begin + t + 1,
-            )
             tri = []
-            for idx in corners:
-                p = ufbx.get_vertex_vec3(mesh.vertex_position, idx)
-                n = ufbx.get_vertex_vec3(mesh.vertex_normal, idx)
-                uv = ufbx.get_vertex_vec2(mesh.vertex_uv, idx)
+            for corner in (face.index_begin,
+                           face.index_begin + t,
+                           face.index_begin + t + 1):
+                p = ufbx.get_vertex_vec3(mesh.vertex_position, corner)
+                n = ufbx.get_vertex_vec3(mesh.vertex_normal, corner)
+                uv = ufbx.get_vertex_vec2(mesh.vertex_uv, corner)
                 tri.append(((p.x, p.y, p.z), (n.x, n.y, n.z), (uv.x, uv.y)))
-            groups[mat_name].append(tri)
-    return groups
+            groups.setdefault(part, []).append(tri)
+
+    with open(out_path, "wb") as f:
+        pickle.dump({"name": str(mesh.name), "groups": groups,
+                     "unmapped": sorted(unmapped)}, f, protocol=4)
+    # ufbx python objects can fault during interpreter teardown on this file.
+    os._exit(0)
 
 
 def main() -> int:
-    print("loading", FBX, flush=True)
-    data = open(FBX, "rb").read()
-    scene = ufbx.load_memory(data)
-    print("loaded", flush=True)
+    merged: dict[str, list] = {name: [] for name, _, _ in PARTS}
+    unmapped: set[str] = set()
 
-    merged: dict[str, list] = {name: [] for name in MAT_TO_PART}
-    for idx in SOURCE_MESH_INDICES:
-        mesh = scene.meshes[idx]
-        print("extract", idx, mesh.name, "faces", mesh.num_faces, flush=True)
-        part = extract_mesh(mesh)
-        for k, tris in part.items():
-            merged[k].extend(tris)
-            if tris:
-                print("  ", k, len(tris), flush=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        for idx in sorted(SOURCE_MESHES):
+            blob = os.path.join(tmp, "mesh%d.pkl" % idx)
+            rc = subprocess.call(
+                [sys.executable, os.path.abspath(__file__), "--dump", str(idx), blob])
+            if rc != 0 or not os.path.exists(blob):
+                print("dump failed for mesh %d (rc=%d)" % (idx, rc), file=sys.stderr)
+                return 1
+            with open(blob, "rb") as f:
+                part = pickle.load(f)
+            print("mesh[%d] %s" % (idx, part["name"]), flush=True)
+            for group, tris in part["groups"].items():
+                merged[group].extend(tris)
+                print("   -> %-8s %6d tris" % (group, len(tris)), flush=True)
+            unmapped.update(part["unmapped"])
 
-    counts = {MAT_TO_PART[k]: len(v) for k, v in merged.items()}
-    if any(c == 0 for c in counts.values()):
-        print("missing parts:", counts, file=sys.stderr)
+    if unmapped:
+        print("unmapped materials (dropped):", sorted(unmapped), flush=True)
+
+    empty = [name for name, tris in merged.items() if not tris]
+    if empty:
+        print("empty groups:", empty, file=sys.stderr)
         return 1
 
-    bb_min = [1e30, 1e30, 1e30]
-    bb_max = [-1e30, -1e30, -1e30]
+    bb_min = [1e30] * 3
+    bb_max = [-1e30] * 3
 
-    print("writing", MTL, flush=True)
     with open(MTL, "w", encoding="utf-8", newline="\n") as mtl:
         mtl.write("# Nilou materials for 003_Toon_Shading (generated)\n")
-        for mat_name, tex in DIFFUSE_FOR_MAT.items():
+        for _, mat_name, tex in PARTS:
             mtl.write("newmtl %s\n" % mat_name)
             mtl.write("Kd 1 1 1\n")
             mtl.write("map_Kd %s\n\n" % tex)
 
-    print("writing", OBJ, flush=True)
     with open(OBJ, "w", encoding="utf-8", newline="\n") as obj:
-        obj.write("# Nilou T-pose (ufbx bind pose) for 003_Toon_Shading\n")
+        obj.write("# Nilou bind pose (ufbx) for 003_Toon_Shading\n")
         obj.write("mtllib Nilou.mtl\n")
         vert_i = 1
-        for mat_name, part in MAT_TO_PART.items():
-            tris = merged[mat_name]
-            obj.write("o %s\n" % part)
-            obj.write("g %s\n" % part)
+        for group, mat_name, _ in PARTS:
+            obj.write("o %s\n" % group)
+            obj.write("g %s\n" % group)
             obj.write("usemtl %s\n" % mat_name)
-            for tri in tris:
+            for tri in merged[group]:
                 for p, n, uv in tri:
                     for k in range(3):
                         bb_min[k] = min(bb_min[k], p[k])
@@ -128,21 +163,13 @@ def main() -> int:
                 vert_i += 3
 
     print("wrote", OBJ, flush=True)
-    print("wrote", MTL, flush=True)
-    print("triangles", counts, flush=True)
-    print("aabb min", bb_min, flush=True)
-    print("aabb max", bb_max, flush=True)
-    print("height", bb_max[1] - bb_min[1], flush=True)
+    print("groups", {k: len(v) for k, v in merged.items()}, flush=True)
+    print("aabb min", ["%.3f" % x for x in bb_min], flush=True)
+    print("aabb max", ["%.3f" % x for x in bb_max], flush=True)
     return 0
 
 
 if __name__ == "__main__":
-    code = 1
-    try:
-        code = main()
-    except Exception as exc:
-        print("export failed:", exc, file=sys.stderr)
-        raise
-    finally:
-        # ufbx python objects can ACCESS_VIOLATION during GC on this file.
-        os._exit(code)
+    if len(sys.argv) >= 4 and sys.argv[1] == "--dump":
+        dump_one(int(sys.argv[2]), sys.argv[3])
+    sys.exit(main())

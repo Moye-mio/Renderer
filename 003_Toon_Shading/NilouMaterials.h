@@ -13,7 +13,8 @@ namespace NilouMaterials
 {
     bool KeepMesh(const TitusAsset::MeshAssetData& mesh);
 
-    // 丢掉 Face_Eye / EffectMesh 等，按材质名绑 Diffuse，填充 sharedImages。
+    // 按材质名绑 Diffuse，填充 sharedImages。占位网格已由导出脚本剔除，
+    // 眼睛与眉毛片则并入了 Mat_Face 组。
     // 成功条件：至少留下一个网格，且每个留下的网格都有有效 Diffuse。
     bool FilterAndBindDiffuse(TitusAsset::ModelAssetData& model,
                               const std::string& textureDir);

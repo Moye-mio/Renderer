@@ -37,9 +37,6 @@ namespace NilouMaterials
     bool KeepMesh(const TitusAsset::MeshAssetData& mesh)
     {
         const std::string& name = mesh.name;
-        if (Contains(name, "Eye") || Contains(name, "Effect") || Contains(name, "Star"))
-            return false;
-
         const std::string& mat = mesh.material.name;
         if (Contains(mat, "Mat_Body") || Contains(mat, "Mat_Dress")
             || Contains(mat, "Mat_Hair") || Contains(mat, "Mat_Face"))
@@ -119,7 +116,8 @@ namespace NilouMaterials
 
             LOG_STREAM_INFO("NilouMaterials")
                 << "mesh '" << mesh.name << "' mat='" << mesh.material.name
-                << "' diffuse=" << file;
+                << "' diffuse=" << file
+                << " verts=" << mesh.vertices.size();
         }
 
         model.sharedImages.reserve(cache.size());

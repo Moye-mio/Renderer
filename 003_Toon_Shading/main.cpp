@@ -60,7 +60,9 @@ int main(int argc, char** argv)
 
     TitusAsset::ModelLoadOptions modelOpts{};
     modelOpts.loadTextures = false;
-    modelOpts.flipUVs = true;
+    // OBJ vt 与 000/001/002 一样按 OpenGL（v=0 在底）。不要再 FlipUVs：
+    // 默认 true 会把 V 再翻一次，采到图集另一侧，看起来像贴图贴错。
+    modelOpts.flipUVs = false;
     modelOpts.triangulate = true;
     modelOpts.generateNormals = false;   // OBJ 已带 vn
     modelOpts.calcTangentSpace = false;

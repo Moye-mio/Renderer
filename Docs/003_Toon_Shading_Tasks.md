@@ -49,7 +49,11 @@ graph TD
 - [x] **T1.8** Forward 单 Pass + `DrawGpuModelWithDiffuse`；shader 采样 Diffuse + 方向光
 - [x] **T1.9** 验收：GL / VK 都能认出是妮露；朝向 / 比例 / UV 正确（必要时关 `flipUVs`）
 
-**风险**：本仓 Assimp 无法读这套二进制 FBX（已用 ufbx→OBJ 绕过）。若 UV 颠倒，先改 `flipUVs`，不要同时改 `flipVerticallyOnLoad`（两者叠加会互相抵消，见 001 的 UV 翻倍笔记）。
+**风险**：
+
+- 本仓 Assimp 无法读这套二进制 FBX（已用 ufbx→OBJ 绕过）。ufbx 的 Python 绑定在一个进程里连续访问多张网格会 ACCESS_VIOLATION，导出脚本因此每张网格开一个子进程。
+- 加载时必须 `flipUVs=false`：OBJ 的 V 已是 OpenGL 约定，贴图只靠 `flipVerticallyOnLoad`（两者一起翻会采错图集，见 001）。
+- 头部由 `Face` / `Face_Eye` / `Brow` 三张薄片拼成，缺一张就会在脸上留洞并透出头发。
 
 ---
 
