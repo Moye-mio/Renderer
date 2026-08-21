@@ -59,12 +59,12 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 | `Examples/` | 跨后端最小示例（见下） |
 | `000_Forward_Deferred_ForwardPlus/` | Forward / Deferred / Forward+ 着色对比（Sponza + 多点光） |
 | `001_Reflective_shadow_map/` | RSM 间接光示例 |
+| `002_Order_Independent_Transparency/` | OIT（WBOIT / Fourier OIT） |
+| `003_Toon_Shading/` | 卡通渲染 / NPR（妮露 + Cel-Ramp / 描边） |
 | `Docs/` | 设计文档、待办（`Todo/`）与事故复盘（`Bug/`） |
 | `Tools/` | 架构护栏与着色器辅助脚本 |
 | `Third-Party/` | 第三方库（imgui、glm、gli、stb、Assimp、GLFW/GLEW、Tracy 等） |
 | `Model/` `Fonts/` | 运行时资源 |
-
-> 磁盘上可能还有 `002_*` 等旧 OpenGL 实验目录，**未纳入** `TitusGLRenderer.sln`，请以解决方案中的工程为准。
 
 ---
 
@@ -78,6 +78,8 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 | `Examples/Test_001_VkTriangle` | 基于 `IRenderPass` 的三角形（亦可切 GL） | `vk` |
 | `000_Forward_Deferred_ForwardPlus` | Forward / Deferred / Forward+ 三套算法对比；含飞行相机与 ImGui overlay | `gl` |
 | `001_Reflective_shadow_map` | GBuffer → RSM → Compute VPL → ScreenQuad | `gl` |
+| `002_Order_Independent_Transparency` | WBOIT / Fourier OIT 半透明对比 | `gl` |
+| `003_Toon_Shading` | 卡通渲染（M1：妮露 Diffuse 出图） | `gl` |
 
 ---
 

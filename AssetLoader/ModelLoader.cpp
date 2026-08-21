@@ -6,6 +6,7 @@
 #include <Assimp/Importer.hpp>
 #include <Assimp/postprocess.h>
 #include <Assimp/scene.h>
+#include <Assimp/config.h>
 
 #include <cstdio>
 #include "Logger.h"
@@ -22,11 +23,17 @@ namespace TitusAsset
                    const ModelLoadOptions& opts)
     {
         Assimp::Importer importer;
+        importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_ANIMATIONS, opts.fbxReadAnimations);
+        importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_CAMERAS, opts.fbxReadCameras);
+        importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_READ_LIGHTS, opts.fbxReadLights);
+        importer.SetPropertyBool(AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, opts.fbxPreservePivots);
+
         unsigned int flags = 0;
-        if (opts.triangulate)      flags |= aiProcess_Triangulate;
-        if (opts.flipUVs)          flags |= aiProcess_FlipUVs;
-        if (opts.generateNormals)  flags |= aiProcess_GenSmoothNormals;
-        if (opts.calcTangentSpace) flags |= aiProcess_CalcTangentSpace;
+        if (opts.triangulate)          flags |= aiProcess_Triangulate;
+        if (opts.flipUVs)              flags |= aiProcess_FlipUVs;
+        if (opts.generateNormals)      flags |= aiProcess_GenSmoothNormals;
+        if (opts.calcTangentSpace)     flags |= aiProcess_CalcTangentSpace;
+        if (opts.preTransformVertices) flags |= aiProcess_PreTransformVertices;
 
         const aiScene* scene = importer.ReadFile(path, flags);
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)

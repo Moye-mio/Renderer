@@ -60,7 +60,7 @@ CPP_EXTS = {".cpp", ".cc", ".cxx"}
 
 def _is_strict(target_dir):
     norm = target_dir.replace("\\", "/")
-    return ("Examples" in norm) or ("001_Reflective_shadow_map" in norm)
+    return ("Examples" in norm) or ("001_Reflective_shadow_map" in norm) or ("003_Toon_Shading" in norm)
 
 
 def scan(target_dir):
@@ -99,6 +99,7 @@ def main(argv):
         os.path.join(repo, "Examples", "Test_000_UnifiedTriangle"),
         os.path.join(repo, "Examples", "Test_002_RayQueryHello"),
         os.path.join(repo, "001_Reflective_shadow_map"),
+        os.path.join(repo, "003_Toon_Shading"),
     ]
 
     any_fail = False

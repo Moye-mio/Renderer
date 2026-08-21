@@ -16,6 +16,11 @@ namespace TitusAsset
         bool calcTangentSpace     = true;   // aiProcess_CalcTangentSpace
         bool loadTextures         = true;   // 同时把材质贴图像素加载到 sharedImages
         bool flipVerticallyOnLoad = true;   // 透传给 ImageLoader
+        bool preTransformVertices = false;  // aiProcess_PreTransformVertices：烘焙节点变换，仅静态展示
+        bool fbxReadAnimations    = true;   // AI_CONFIG_IMPORT_FBX_READ_ANIMATIONS
+        bool fbxReadCameras       = true;
+        bool fbxReadLights        = true;
+        bool fbxPreservePivots    = true;   // 部分蒙皮 FBX 关掉可避免 Assimp 崩溃
     };
 
     // 从磁盘加载模型；失败返回 false

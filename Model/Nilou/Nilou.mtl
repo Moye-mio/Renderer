@@ -1,0 +1,17 @@
+# Nilou materials for 003_Toon_Shading (generated)
+newmtl Avatar_Girl_Sword_Nilou_Mat_Hair
+Kd 1 1 1
+map_Kd Avatar_Girl_Sword_Nilou_Tex_Hair_Diffuse.png
+
+newmtl Avatar_Girl_Sword_Nilou_Mat_Body
+Kd 1 1 1
+map_Kd Avatar_Girl_Sword_Nilou_Tex_Body_Diffuse.png
+
+newmtl Avatar_Girl_Sword_Nilou_Mat_Dress
+Kd 1 1 1
+map_Kd Avatar_Girl_Sword_Nilou_Tex_Body_Diffuse.png
+
+newmtl Avatar_Girl_Sword_Nilou_Mat_Face
+Kd 1 1 1
+map_Kd Avatar_Girl_Sword_Nilou_Tex_Face_Diffuse.png
+
