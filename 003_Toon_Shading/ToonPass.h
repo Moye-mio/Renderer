@@ -2,9 +2,12 @@
 // ============================================================================
 // 003_Toon_Shading - ToonPass
 //
-// M1：Forward 单 Pass，采样 Diffuse + 方向光，画到默认 backbuffer。
+// M2：Forward 单 Pass。Diffuse + ilm + Shadow Ramp，画到默认 backbuffer。
+// ilm / Ramp 不进 TextureSlot，由本 Pass 自管 TextureHandle。
 // ============================================================================
 #include "RendererInterface/TitusGfxPass.h"
+
+#include <string>
 
 class Scene;
 struct TechniqueContext;
@@ -17,6 +20,7 @@ public:
 
     void SetScene(Scene* scene) { m_scene = scene; }
     void SetContext(TechniqueContext* ctx) { m_ctx = ctx; }
+    void SetTextureDir(const std::string& dir) { m_textureDir = dir; }
 
     void Init(TitusRHI::IGDevice& device) override;
     void Destroy(TitusRHI::IGDevice& device) override;
@@ -28,12 +32,30 @@ public:
 private:
     bool CreateShaders(TitusRHI::IGDevice& device);
     bool CreatePipeline(TitusRHI::IGDevice& device);
+    bool CreateNprTextures(TitusRHI::IGDevice& device);
+    void DestroyNprTextures(TitusRHI::IGDevice& device);
 
     Scene* m_scene = nullptr;
     TechniqueContext* m_ctx = nullptr;
+    std::string m_textureDir;
 
     TitusRHI::ShaderHandle m_vs;
     TitusRHI::ShaderHandle m_fs;
     TitusRHI::PipelineHandle m_pipeline;
     TitusRHI::BufferHandle m_shadingUbo;
+
+    TitusRHI::TextureHandle m_bodyIlm;
+    TitusRHI::TextureHandle m_hairIlm;
+    TitusRHI::TextureHandle m_faceIlm;
+    TitusRHI::TextureHandle m_bodyRamp;
+    TitusRHI::TextureHandle m_hairRamp;
+    TitusRHI::SamplerHandle m_ilmSampler;
+    TitusRHI::SamplerHandle m_rampSampler;
+
+    // TextureDesc.debugName 指向这些字符串，必须活过 CreateTexture。
+    std::string m_bodyIlmName;
+    std::string m_hairIlmName;
+    std::string m_bodyRampName;
+    std::string m_hairRampName;
+    std::string m_faceIlmName;
 };

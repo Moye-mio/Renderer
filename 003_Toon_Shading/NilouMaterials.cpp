@@ -45,6 +45,35 @@ namespace NilouMaterials
         return name == "Body" || name == "Dress" || name == "Hair" || name == "Face";
     }
 
+    Part ClassifyPart(const std::string& name)
+    {
+        if (Contains(name, "Hair"))
+            return Part::Hair;
+        if (Contains(name, "Face"))
+            return Part::Face;
+        if (Contains(name, "Dress"))
+            return Part::Dress;
+        return Part::Body;
+    }
+
+    NprTextureFiles FilesForPart(Part part)
+    {
+        switch (part)
+        {
+        case Part::Hair:
+            return { "Avatar_Girl_Sword_Nilou_Tex_Hair_Lightmap.png",
+                     "Avatar_Girl_Sword_Nilou_Tex_Hair_Shadow_Ramp.png" };
+        case Part::Face:
+            return { nullptr,
+                     "Avatar_Girl_Sword_Nilou_Tex_Body_Shadow_Ramp.png" };
+        case Part::Dress:
+        case Part::Body:
+        default:
+            return { "Avatar_Girl_Sword_Nilou_Tex_Body_Lightmap.png",
+                     "Avatar_Girl_Sword_Nilou_Tex_Body_Shadow_Ramp.png" };
+        }
+    }
+
     bool FilterAndBindDiffuse(TitusAsset::ModelAssetData& model,
                               const std::string& textureDir)
     {

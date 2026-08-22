@@ -1,6 +1,6 @@
 # 003_Toon_Shading 技术方案
 
-> 状态：**M1 已验收（Diffuse 出图）**。本文描述卡通渲染示例的需求、资产语义与架构边界；可勾选任务见 [`003_Toon_Shading_Tasks.md`](003_Toon_Shading_Tasks.md)。
+> 状态：**M2 已实现（Cel-Ramp）**。本文描述卡通渲染示例的需求、资产语义与架构边界；可勾选任务见 [`003_Toon_Shading_Tasks.md`](003_Toon_Shading_Tasks.md)。
 > 相关：[`Todo/TODO_next_examples.md`](Todo/TODO_next_examples.md)（后续示例总路线）、[`Architecture/00_Overview.md`](Architecture/00_Overview.md)（分层与硬约束）。
 
 ---
@@ -126,7 +126,7 @@ NPR 绑定留在 003 业务层：`LoadModel(loadTextures=false)` 之后改 `Mate
 
 - **M0** 本文 + Tasks + 回写总路线
 - **M1** 工程骨架 + Diffuse 出图：能认出是妮露；朝向 / 比例 / UV 正确
-- **M2** Cel-Ramp（Body / Dress / Hair）：明暗分层随主光转动
+- **M2** Cel-Ramp（Body / Dress / Hair）：半 Lambert × ilm.g 采 Ramp，ilm.a 选行；明暗分层随主光转动
 - **M3** 描边 A（扩顶点色）：轮廓不断、裙子不穿体
 - **M4** 脸 SDF + Rim：脸阴影跟头朝向，不是脏 N·L
 - **M5** 描边 B；Matcap / Emission / Hatching 可选
@@ -141,4 +141,5 @@ M1 几何已在 OBJ 里按 bind pose 烘焙，不再开 `aiProcess_PreTransformV
 - NPR 槽位留在 003 查表，不改 Core 枚举：避免污染 PBR 契约。
 - 不解析 Unity YAML：Assimp 不用它；手写表更稳。
 - 第一期着色只采样 Diffuse + 方向光：先验收几何 / UV / 色彩空间。
+- M2 的 ilm / Ramp 由 ToonPass `LoadImage2D` + 自管 `TextureHandle` 绑定，不进 `TextureSlot`。Face 暂用 1×1 ilm stub + Body Ramp，SDF 留给 M4。
 - 描边 C 不做：等 Stencil 完整状态。

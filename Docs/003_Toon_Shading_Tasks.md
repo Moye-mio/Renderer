@@ -12,7 +12,7 @@
 |---|---|---|
 | M0 | 需求 / 任务文档 | 完成 |
 | M1 | 工程骨架 + Diffuse 出图 | 完成 |
-| M2 | Cel-Ramp | 未开始 |
+| M2 | Cel-Ramp | 完成 |
 | M3 | 描边 A（背面外扩） | 未开始 |
 | M4 | 脸 SDF + Rim | 未开始 |
 | M5 | 描边 B / 可选项 | 未开始 |
@@ -59,10 +59,10 @@ graph TD
 
 ## M2 Cel-Ramp
 
-- [ ] **T2.1** 按材质绑 ilm（线性）+ Shadow Ramp（sRGB + Clamp）；Body/Dress 共用 Body Ramp，Hair 用 Hair Ramp
-- [ ] **T2.2** shader：半 Lambert × ilm.g 采样 Ramp；ilm.a 选行
-- [ ] **T2.3** ImGui：主光方向、Ramp 阈值（BrightFac / GreyFac / DarkFac）
-- [ ] **T2.4** 验收：转动主光明暗分层跟着走；头发与身体 Ramp 行不同
+- [x] **T2.1** 按材质绑 ilm（线性）+ Shadow Ramp（sRGB + Clamp）；Body/Dress 共用 Body Ramp，Hair 用 Hair Ramp。Pass 内 `LoadImage2D`，不进 `TextureSlot`
+- [x] **T2.2** shader：半 Lambert × ilm.g 采样 Ramp；ilm.a 选行；`u_RampParams.w` 可退回 M1 Lambert
+- [x] **T2.3** ImGui：主光方向、Ramp 阈值（BrightFac / GreyFac / DarkFac）、日夜行
+- [x] **T2.4** 验收：转动主光明暗分层跟着走；头发与身体 Ramp 行不同。Face 仍走 N·L + Body Ramp（M4 换 SDF）
 
 ---
 

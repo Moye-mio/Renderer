@@ -15,6 +15,7 @@ LAYOUT_BIND(0, 0) layout(std140) uniform u_ToonShading
 	mat4 u_ViewMatrix;
 	vec4 u_LightDirVSAndAmbient;
 	vec4 u_LightColor;
+	vec4 u_RampParams;
 };
 
 #ifdef VULKAN

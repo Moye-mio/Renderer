@@ -2,15 +2,17 @@
 
 卡通渲染 / NPR 对比示例。场景是妮露角色（`Model/Nilou/`），不用 Sponza。
 
-当前里程碑是 **M1：Diffuse 出图**。Cel-Ramp、描边、脸 SDF 见 [`Docs/003_Toon_Shading_Design.md`](../Docs/003_Toon_Shading_Design.md) 与 [`Docs/003_Toon_Shading_Tasks.md`](../Docs/003_Toon_Shading_Tasks.md)。
+当前里程碑是 **M2：Cel-Ramp**。描边、脸 SDF 见 [`Docs/003_Toon_Shading_Design.md`](../Docs/003_Toon_Shading_Design.md) 与 [`Docs/003_Toon_Shading_Tasks.md`](../Docs/003_Toon_Shading_Tasks.md)。
 
 业务侧仅依赖 `RendererInterface`（命名空间 **`TitusRHI`**）。源资产是 FBX + PNG；本仓 Assimp 无法安全读取该二进制 FBX，因此运行时加载 `Model/Nilou/Nilou.obj`（`Tools/export_nilou_obj.py` 用 ufbx 从 FBX 烤出的 T-pose）。NPR 贴图按材质名查表绑定，再 `APP::UploadGpuModel`。**GL / VK 双后端**可运行。
 
-## 渲染流程（M1）
+## 渲染流程（M2）
 
 ```
-ToonPass    (OpaqueShading)    采样 Diffuse + 方向光，画到 backbuffer
+ToonPass    (OpaqueShading)    Diffuse + ilm + Shadow Ramp → backbuffer
 ```
+
+ilm 线性、Ramp sRGB + Clamp。Body/Dress 共用 Body Ramp，Hair 用独立 Ramp。Face 暂用 1×1 ilm + Body Ramp（M4 换 SDF）。ImGui 可切回 M1 Lambert。
 
 ## 构建 / 运行
 
@@ -29,7 +31,7 @@ ToonPass    (OpaqueShading)    采样 Diffuse + 方向光，画到 backbuffer
 003_Toon_Shading.exe --backend=vk --screenshot-at=2 --screenshot-dir=003_Toon_Shading/results
 ```
 
-内置飞行相机：WASD / QE 平移，右键拖拽旋转。ImGui「Toon Shading」可调主光 yaw / pitch 与环境光。
+内置飞行相机：WASD / QE 平移，右键拖拽旋转。ImGui「Toon Shading」可切 Diffuse / Cel-Ramp，调主光、BrightFac / GreyFac / DarkFac 与日夜 Ramp 行。
 
 从 FBX 重新导出 OBJ（改源网格后）：
 
