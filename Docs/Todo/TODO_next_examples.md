@@ -56,8 +56,8 @@
 
 详细需求与任务已拆到：
 
-- 设计：[`Docs/003_Toon_Shading_Design.md`](../003_Toon_Shading_Design.md)
-- 任务：[`Docs/003_Toon_Shading_Tasks.md`](../003_Toon_Shading_Tasks.md)
+- 设计：[`Docs/Requirements/000_Deferred_Shading/003_Toon_Shading_Design.md`](../Requirements/000_Deferred_Shading/003_Toon_Shading_Design.md)
+- 任务：[`Docs/Requirements/000_Deferred_Shading/003_Toon_Shading_Tasks.md`](../Requirements/000_Deferred_Shading/003_Toon_Shading_Tasks.md)
 
 摘要：场景用妮露（`Model/Nilou/`，源 FBX；运行时加载 ufbx 转出的 T-pose OBJ），不用 Sponza。NPR 贴图按材质名查表绑定，不改 Core 的 PBR `TextureSlot`。里程碑 M1 Diffuse 出图 → M2 Cel-Ramp → M3 背面外扩描边 → M4 脸 SDF + Rim → M5 后处理描边 / 可选项。Stencil 描边仍被 RHI 阻塞，不进本期。
 

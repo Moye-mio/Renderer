@@ -1,7 +1,7 @@
 # 003_Toon_Shading 技术方案
 
 > 状态：**M2 已实现（Cel-Ramp）**。本文描述卡通渲染示例的需求、资产语义与架构边界；可勾选任务见 [`003_Toon_Shading_Tasks.md`](003_Toon_Shading_Tasks.md)。
-> 相关：[`Todo/TODO_next_examples.md`](Todo/TODO_next_examples.md)（后续示例总路线）、[`Architecture/00_Overview.md`](Architecture/00_Overview.md)（分层与硬约束）。
+> 相关：[`Todo/TODO_next_examples.md`](../../Todo/TODO_next_examples.md)（后续示例总路线）、[`Architecture/00_Overview.md`](../../Architecture/00_Overview.md)（分层与硬约束）。
 
 ---
 

@@ -2,7 +2,7 @@
 
 卡通渲染 / NPR 对比示例。场景是妮露角色（`Model/Nilou/`），不用 Sponza。
 
-当前里程碑是 **M2：Cel-Ramp**。描边、脸 SDF 见 [`Docs/003_Toon_Shading_Design.md`](../Docs/003_Toon_Shading_Design.md) 与 [`Docs/003_Toon_Shading_Tasks.md`](../Docs/003_Toon_Shading_Tasks.md)。
+当前里程碑是 **M2：Cel-Ramp**。描边、脸 SDF 见 [`Docs/Requirements/000_Deferred_Shading/003_Toon_Shading_Design.md`](../Docs/Requirements/000_Deferred_Shading/003_Toon_Shading_Design.md) 与 [`Docs/Requirements/000_Deferred_Shading/003_Toon_Shading_Tasks.md`](../Docs/Requirements/000_Deferred_Shading/003_Toon_Shading_Tasks.md)。
 
 业务侧仅依赖 `RendererInterface`（命名空间 **`TitusRHI`**）。源资产是 FBX + PNG；本仓 Assimp 无法安全读取该二进制 FBX，因此运行时加载 `Model/Nilou/Nilou.obj`（`Tools/export_nilou_obj.py` 用 ufbx 从 FBX 烤出的 T-pose）。NPR 贴图按材质名查表绑定，再 `APP::UploadGpuModel`。**GL / VK 双后端**可运行。
 
