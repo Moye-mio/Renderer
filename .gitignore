@@ -38,6 +38,9 @@ Release/
 x64/
 x86/
 
+# Cursor
+.cursor/
+
 # VS Code
 .vscode/
 !.vscode/settings.json

@@ -36,12 +36,12 @@
 
 **Forward** — 57.419 ms
 
-![Forward](Forward.png)
+![Forward](results/Forward.png)
 
 **Deferred** — 21.555 ms
 
-![Deferred](Deferred.png)
+![Deferred](results/Deferred.png)
 
 **Clustered Forward** — 4.187 ms
 
-![Clustered Forward](ClusteredForwardPlus.png)
+![Clustered Forward](results/ClusteredForwardPlus.png)
