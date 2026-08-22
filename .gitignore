@@ -93,4 +93,5 @@ Rdcs/
 # === 本地 Profiler（Tracy Viewer 等，不入库）===
 /Profiler/
 
-# Docs/Requirements/ 已作为设计/需求文档入库位置，不再忽略。
+# === 各示例的本地需求文档（不入库）===
+Docs/Requirements/
