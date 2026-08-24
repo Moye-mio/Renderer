@@ -9,6 +9,7 @@
 // 默认 OpenGL，`--backend=vk` 可切 Vulkan。
 // ============================================================================
 #include <cstdio>
+#include <cstring>
 #include <memory>
 #include <string>
 
@@ -41,6 +42,22 @@ int main(int argc, char** argv)
     APP::ParseCommandLine(argc, argv);
     if (APP::GetBackend() == GBackend::Unknown)
         APP::SetBackend(GBackend::OpenGL);
+
+    ToonTechnique startMode = ToonTechnique::CelRamp;
+    for (int i = 1; i < argc; ++i)
+    {
+        const char* a = argv[i];
+        if (std::strncmp(a, "--mode=", 7) != 0)
+            continue;
+        const char* v = a + 7;
+        if (std::strcmp(v, "diffuse") == 0 || std::strcmp(v, "DiffuseOnly") == 0)
+            startMode = ToonTechnique::DiffuseOnly;
+        else if (std::strcmp(v, "celramp") == 0 || std::strcmp(v, "CelRamp") == 0)
+            startMode = ToonTechnique::CelRamp;
+        else
+            LOG_STREAM_ERROR(kLog) << "Unknown --mode value: " << v
+                << " (expected diffuse|celramp)";
+    }
     const char* backendName =
         (APP::GetBackend() == GBackend::OpenGL) ? "OpenGL" :
         (APP::GetBackend() == GBackend::Vulkan) ? "Vulkan" : "Null";
@@ -106,7 +123,7 @@ int main(int argc, char** argv)
 
     {
         CAMERA::FlyCameraConfig cfg{};
-        cfg.position  = TitusMath::Vec3{0.0f, 1.05f, 3.4f};
+        cfg.position  = TitusMath::Vec3{0.0f, 1.35f, 3.4f};
         cfg.yawDeg    = -90.0f;
         cfg.pitchDeg  = -8.0f;
         cfg.fovDeg    = 35.0f;
@@ -121,6 +138,7 @@ int main(int argc, char** argv)
     {
         Scene scene(modelHandle, modelMatrix);
         TechniqueContext techniqueCtx;
+        techniqueCtx.mode = startMode;
         auto toonPass = std::make_shared<ToonPass>();
         toonPass->SetScene(&scene);
         toonPass->SetContext(&techniqueCtx);

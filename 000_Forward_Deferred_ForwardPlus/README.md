@@ -1,6 +1,6 @@
 # 000 — Forward / Deferred / Clustered Forward
 
-同一场景、同一套灯、同一套 BRDF 下三种着色算法的开销对比。截图取自 2026-08-16 20:30 的同一次运行，期间只切换 ImGui 面板的 Shading Technique，相机与灯参数未动。
+同一场景、同一套灯、同一套 BRDF 下三种着色算法的开销对比。
 
 ## 编译与启动
 

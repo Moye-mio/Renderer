@@ -8,6 +8,8 @@ REM 用法：
 REM   003_Toon_Shading\Build\run_debug.bat
 REM   003_Toon_Shading\Build\run_debug.bat --backend=vk
 REM   003_Toon_Shading\Build\run_debug.bat --backend=gl
+REM   003_Toon_Shading\Build\run_debug.bat --mode=diffuse
+REM   003_Toon_Shading\Build\run_debug.bat --mode=celramp
 REM ============================================================================
 
 setlocal
