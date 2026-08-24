@@ -96,7 +96,7 @@
 
 1. `ParseCommandLine`：解析 `--backend=gl|vk|null`、`--threading=direct|threaded|nonthreaded`、`--validation=on|off`，以及截图相关：
    - `--screenshot-at=<seconds>`：墙钟到达后自动截一张（含 Overlay）；未指定则不自动截。
-   - `--screenshot-dir=<path>`：输出目录覆盖（默认 `$(SolutionDir)<LoggerAppName>/results/`）。
+   - `--screenshot-dir=<path>`：输出目录覆盖（默认 `$(SolutionDir)<LoggerAppName>/Result/`）。
    - `--quit-after-screenshot=on|off`：自动截图成功后是否退出（默认 `on`）。
 2. `InitApp`：
    - 经 `GDeviceFactory::Create(backend, threading)` 得到 `IGDevice`（可能已被 `GDeviceMainThread` 包裹）；

@@ -134,7 +134,7 @@ git submodule update --init --recursive
 - 当前 **GL / VK 默认线程模式均为 `Direct`**；可用 `--threading=threaded` 做回归验证。
 - `--validation` 主要影响 Vulkan（Debug 默认 on，Release 默认 off）。
 - `--screenshot-at`：进程启动后经过指定墙钟秒数自动截一张 PNG（含 ImGui Overlay）。未指定则不自动截。
-- `--screenshot-dir`：输出目录；默认 `$(SolutionDir)<应用名>/results/`。文件名为 `shot_<gl|vk>_<YYYYMMDD_HHMMSS>.png`。
+- `--screenshot-dir`：输出目录；默认 `$(SolutionDir)<应用名>/Result/`。文件名为 `shot_<gl|vk>_<YYYYMMDD_HHMMSS>.png`。
 - `--quit-after-screenshot`：自动截图成功后是否退出，默认 `on`。手动在 ImGui「Renderer Info」里点 **Capture Screenshot** 不退出。
 
 示例：
@@ -142,7 +142,7 @@ git submodule update --init --recursive
 ```
 Test_000_UnifiedTriangle.exe --backend=vk
 000_Forward_Deferred_ForwardPlus.exe --backend=gl
-001_Reflective_shadow_map.exe --backend=vk --screenshot-at=2 --screenshot-dir=results
+001_Reflective_shadow_map.exe --backend=vk --screenshot-at=2 --screenshot-dir=Result
 ```
 
 ---

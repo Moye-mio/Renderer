@@ -166,7 +166,7 @@
 
 每个工程完成后统一补齐：
 
-- [ ] 需要展示对比结果时，在工程顶层写 `Result.md`（只含测试条件 / 指标 / 截图）；不要写工程 README。
+- [ ] 工程根目录只放一份 `README.md`（内容按项目自定）；必须有 `Build/`、`Result/`、`Shader/`。
 - [ ] 加入 `TitusGLRenderer.sln`，并在根 `README.md` 的目录结构与示例工程表里登记。
 - [ ] 双后端各出一组 `--screenshot-at` 对比图。
 - [ ] 过 `Tools/check_no_backend_headers` 与 `Tools/check_deps_direction` 护栏。

@@ -119,7 +119,7 @@ namespace TitusRHI
             double screenshotAtSec = -1.0;
             bool screenshotQuitAfter = true;
             bool screenshotDone = false;
-            std::string screenshotDir; // 空 = 默认 $(SolutionDir)<appName>/results/
+            std::string screenshotDir; // 空 = 默认 $(SolutionDir)<appName>/Result/
             std::chrono::steady_clock::time_point appStartTime{};
             bool appStartTimeValid = false;
 
@@ -160,11 +160,11 @@ namespace TitusRHI
             {
                 fs::path solDir = fs::path(SOLUTION_DIR);
                 if (!solDir.empty() && fs::exists(solDir))
-                    return (solDir / folder / "results").string();
+                    return (solDir / folder / "Result").string();
             }
             catch (...) { /* fallthrough */ }
 #endif
-            return (fs::current_path() / "results").string();
+            return (fs::current_path() / "Result").string();
         }
 
         std::string MakeScreenshotFilePath(const std::string& dir)
