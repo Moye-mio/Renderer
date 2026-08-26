@@ -20,6 +20,15 @@ struct ToonShadingUBO
 };
 static_assert(sizeof(ToonShadingUBO) == 176, "ToonShadingUBO std140 size");
 
+struct OutlineUBO
+{
+    TitusMath::Mat4 projection{1.0f};
+    TitusMath::Mat4 view{1.0f};
+    TitusMath::Vec4 params{0.003f, 0.0f, 0.0f, 0.0f}; // x=widthNdc y=zBias
+    TitusMath::Vec4 color{0.06f, 0.04f, 0.07f, 1.0f};
+};
+static_assert(sizeof(OutlineUBO) == 160, "OutlineUBO std140 size");
+
 struct ToonNprGpu
 {
     TitusRHI::TextureHandle bodyIlm{};
@@ -63,6 +72,20 @@ inline void FillToonShadingUBO(ToonShadingUBO& data, const TechniqueContext* ctx
     if (ctx && ctx->mode == ToonTechnique::CelRamp)
         mode = ctx->nightRamp ? 2.0f : 1.0f;
     data.rampParams = TitusMath::Vec4(bright, grey, dark, mode);
+}
+
+inline void FillOutlineUBO(OutlineUBO& data, const TechniqueContext* ctx)
+{
+    data.projection = TitusRHI::CAMERA::GetMainCameraProjectionMatrix();
+    data.view = TitusRHI::CAMERA::GetMainCameraViewMatrix();
+    const float pixels = ctx ? ctx->outlinePixels : 2.5f;
+    const float zBias = ctx ? ctx->outlineZBias : 0.0f;
+    const float fbW = static_cast<float>(TitusRHI::WINDOW_KEYWORD::GetWindowWidth());
+    const float widthNdc = pixels * 2.0f / (fbW > 1.0f ? fbW : 1920.0f);
+    data.params = TitusMath::Vec4(widthNdc, zBias, 0.0f, 0.0f);
+    const TitusMath::Vec3 c = ctx ? ctx->outlineColor
+                                  : TitusMath::Vec3{0.06f, 0.04f, 0.07f};
+    data.color = TitusMath::Vec4(c, 1.0f);
 }
 
 inline void FillToonPipelineDesc(TitusRHI::GraphicsPipelineDesc& pd,
@@ -111,6 +134,40 @@ inline void FillToonPipelineDesc(TitusRHI::GraphicsPipelineDesc& pd,
         rb.stages = ShaderStage::Fragment;
         pd.resourceBindings.push_back(rb);
     }
+}
+
+inline void FillOutlinePipelineDesc(TitusRHI::GraphicsPipelineDesc& pd,
+                                    TitusRHI::ShaderHandle vs,
+                                    TitusRHI::ShaderHandle fs,
+                                    TitusRHI::GpuModelHandle layoutSource)
+{
+    using namespace TitusRHI;
+    pd.vertexShader = vs;
+    pd.fragmentShader = fs;
+    pd.topology = PrimitiveTopology::TriangleList;
+    pd.rasterizer.cullMode = CullMode::Front;
+    pd.rasterizer.frontFace = FrontFace::CounterClockwise;
+    pd.depthStencil.depthTestEnable = true;
+    pd.depthStencil.depthWriteEnable = false;
+    pd.depthStencil.depthCompareOp = CompareOp::Less;
+    pd.blend.attachments.resize(1);
+    if (layoutSource.IsValid())
+        pd.vertexLayout = GetMeshSharedLayout(layoutSource);
+
+    PushConstantRange pcModel{};
+    pcModel.stages = ShaderStage::Vertex;
+    pcModel.offset = 0;
+    pcModel.size = sizeof(TitusMath::Mat4);
+    pcModel.glName = "u_ModelMatrix";
+    pd.pushConstantRanges.push_back(pcModel);
+
+    ResourceBinding rbUbo{};
+    rbUbo.name = "u_Outline";
+    rbUbo.set = 0;
+    rbUbo.binding = 0;
+    rbUbo.type = ResourceBindingType::UniformBuffer;
+    rbUbo.stages = ShaderStage::Vertex | ShaderStage::Fragment;
+    pd.resourceBindings.push_back(rbUbo);
 }
 
 inline void DrawGpuModelWithCelRamp(TitusRHI::RenderCommandList& cmd,

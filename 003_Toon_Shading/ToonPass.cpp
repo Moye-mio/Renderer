@@ -93,7 +93,7 @@ namespace
         if (!tex.IsValid())
             return {};
 
-        // G=1 无死阴影，A=1 走 Body Ramp 皮肤行。脸 SDF 留给 M4。
+        // G=1 无死阴影，A=1 走 Body Ramp 皮肤行。脸 SDF 后续再接。
         const uint8_t px[4] = { 0, 255, 0, 255 };
         TextureUploadDesc up{};
         up.data = px;
@@ -115,8 +115,11 @@ bool ToonPass::CreateShaders(TitusRHI::IGDevice& device)
     using namespace TitusRHI;
     const std::string shaderDir = std::string(SOLUTION_DIR) + "003_Toon_Shading/Shader/";
     std::vector<uint8_t> vsBytes, fsBytes;
+    std::vector<uint8_t> outlineVsBytes, outlineFsBytes;
     if (!TitusAsset::ReadAllBytes(shaderDir + "Toon_VS.glsl", vsBytes) ||
-        !TitusAsset::ReadAllBytes(shaderDir + "Toon_FS.glsl", fsBytes))
+        !TitusAsset::ReadAllBytes(shaderDir + "Toon_FS.glsl", fsBytes) ||
+        !TitusAsset::ReadAllBytes(shaderDir + "Outline_VS.glsl", outlineVsBytes) ||
+        !TitusAsset::ReadAllBytes(shaderDir + "Outline_FS.glsl", outlineFsBytes))
     {
         LOG_STREAM_ERROR("ToonPass") << "shader files missing; pipeline not created";
         return false;
@@ -137,7 +140,25 @@ bool ToonPass::CreateShaders(TitusRHI::IGDevice& device)
     fsDesc.entryPoint = "main";
     fsDesc.debugName = "ToonPass.FS";
     m_fs = device.CreateShader(fsDesc);
-    return m_vs.IsValid() && m_fs.IsValid();
+
+    ShaderDesc ovsDesc{};
+    ovsDesc.stage = ShaderStage::Vertex;
+    ovsDesc.code = outlineVsBytes.data();
+    ovsDesc.bytes = outlineVsBytes.size();
+    ovsDesc.entryPoint = "main";
+    ovsDesc.debugName = "ToonPass.OutlineVS";
+    m_outlineVs = device.CreateShader(ovsDesc);
+
+    ShaderDesc ofsDesc{};
+    ofsDesc.stage = ShaderStage::Fragment;
+    ofsDesc.code = outlineFsBytes.data();
+    ofsDesc.bytes = outlineFsBytes.size();
+    ofsDesc.entryPoint = "main";
+    ofsDesc.debugName = "ToonPass.OutlineFS";
+    m_outlineFs = device.CreateShader(ofsDesc);
+
+    return m_vs.IsValid() && m_fs.IsValid()
+        && m_outlineVs.IsValid() && m_outlineFs.IsValid();
 }
 
 bool ToonPass::CreatePipeline(TitusRHI::IGDevice& device)
@@ -149,7 +170,13 @@ bool ToonPass::CreatePipeline(TitusRHI::IGDevice& device)
     FillToonPipelineDesc(pd, m_vs, m_fs, m_scene->GetModelHandle());
     pd.debugName = "ToonPass.CelRamp";
     m_pipeline = device.CreatePipeline(pd);
-    return m_pipeline.IsValid();
+
+    GraphicsPipelineDesc outlinePd{};
+    FillOutlinePipelineDesc(outlinePd, m_outlineVs, m_outlineFs, m_scene->GetModelHandle());
+    outlinePd.debugName = "ToonPass.Outline";
+    m_outlinePipeline = device.CreatePipeline(outlinePd);
+
+    return m_pipeline.IsValid() && m_outlinePipeline.IsValid();
 }
 
 bool ToonPass::CreateNprTextures(TitusRHI::IGDevice& device)
@@ -232,17 +259,32 @@ void ToonPass::Init(TitusRHI::IGDevice& device)
     bd.memory = MemoryUsage::CpuToGpu;
     bd.debugName = "ToonPass.UBO.Shading";
     m_shadingUbo = device.CreateBuffer(bd);
+
+    BufferDesc obd{};
+    obd.size = sizeof(OutlineUBO);
+    obd.usage = BufferUsage::UniformBuffer | BufferUsage::TransferDst;
+    obd.memory = MemoryUsage::CpuToGpu;
+    obd.debugName = "ToonPass.UBO.Outline";
+    m_outlineUbo = device.CreateBuffer(obd);
 }
 
 void ToonPass::Destroy(TitusRHI::IGDevice& device)
 {
     DestroyNprTextures(device);
+    if (m_outlineUbo.IsValid()) device.Destroy(m_outlineUbo);
     if (m_shadingUbo.IsValid()) device.Destroy(m_shadingUbo);
+    if (m_outlinePipeline.IsValid()) device.Destroy(m_outlinePipeline);
     if (m_pipeline.IsValid()) device.Destroy(m_pipeline);
+    if (m_outlineFs.IsValid()) device.Destroy(m_outlineFs);
+    if (m_outlineVs.IsValid()) device.Destroy(m_outlineVs);
     if (m_fs.IsValid()) device.Destroy(m_fs);
     if (m_vs.IsValid()) device.Destroy(m_vs);
+    m_outlineUbo = {};
     m_shadingUbo = {};
+    m_outlinePipeline = {};
     m_pipeline = {};
+    m_outlineFs = {};
+    m_outlineVs = {};
     m_fs = {};
     m_vs = {};
 }
@@ -309,6 +351,32 @@ void ToonPass::Record(TitusRHI::IGDevice& device,
     npr.rampSampler = m_rampSampler;
     npr.shadingUbo = m_shadingUbo;
     DrawGpuModelWithCelRamp(cmd, m_scene->GetModelHandle(), npr);
+
+    const bool drawOutline = m_ctx && m_ctx->enableOutline
+        && m_ctx->outlinePixels > 0.0f
+        && m_outlinePipeline.IsValid() && m_outlineUbo.IsValid();
+    if (drawOutline)
+    {
+        ZoneScopedN("ToonPass::Outline");
+        OutlineUBO outlineData{};
+        FillOutlineUBO(outlineData, m_ctx);
+        device.UpdateBuffer(m_outlineUbo, &outlineData, sizeof(outlineData), 0);
+
+        cmd.BindPipeline(m_outlinePipeline);
+        cmd.PushConstants(ShaderStage::Vertex, 0, sizeof(TitusMath::Mat4), &model);
+
+        ResourceSetDesc rs{};
+        ResourceBindingValue ubo{};
+        ubo.binding = 0;
+        ubo.type = ResourceBindingType::UniformBuffer;
+        ubo.buffer = m_outlineUbo;
+        ubo.bufferOffset = 0;
+        ubo.bufferRange = sizeof(OutlineUBO);
+        rs.bindings.push_back(ubo);
+        cmd.BindResourceSet(0, rs);
+
+        DrawGpuModel(cmd, m_scene->GetModelHandle());
+    }
 
     cmd.EndRenderPass();
 }

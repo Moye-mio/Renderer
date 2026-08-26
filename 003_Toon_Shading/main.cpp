@@ -1,8 +1,8 @@
 // ============================================================================
 // 003_Toon_Shading - main.cpp
 //
-// 卡通渲染对比示例（M2）：妮露角色 + Cel-Ramp（半 Lambert × ilm 采 Ramp）。
-// 描边 / 脸 SDF 按 Docs/003_Toon_Shading_Tasks.md 后续里程碑接入。
+// 卡通渲染对比示例：妮露 + Cel-Ramp，以及背面外扩描边。
+// 脸 SDF 后续接入。
 //
 // 架构与 000 / 001 / 002 一致：仅通过 TitusRHI::* 启动；AssetLoader 解码
 // CPU IR，业务层按材质名绑 Diffuse，gfx 上传得到 GpuModelHandle。
@@ -54,9 +54,11 @@ int main(int argc, char** argv)
             startMode = ToonTechnique::DiffuseOnly;
         else if (std::strcmp(v, "celramp") == 0 || std::strcmp(v, "CelRamp") == 0)
             startMode = ToonTechnique::CelRamp;
+        else if (std::strcmp(v, "outline") == 0 || std::strcmp(v, "Outline") == 0)
+            startMode = ToonTechnique::CelRamp;
         else
             LOG_STREAM_ERROR(kLog) << "Unknown --mode value: " << v
-                << " (expected diffuse|celramp)";
+                << " (expected diffuse|celramp|outline)";
     }
     const char* backendName =
         (APP::GetBackend() == GBackend::OpenGL) ? "OpenGL" :
@@ -150,9 +152,9 @@ int main(int argc, char** argv)
         OVERLAY::AddPanel("Toon Shading", [&techniqueCtx]()
         {
             int m = static_cast<int>(techniqueCtx.mode);
-            ImGui::RadioButton("Diffuse only (M1)", &m, static_cast<int>(ToonTechnique::DiffuseOnly));
+            ImGui::RadioButton("Diffuse only", &m, static_cast<int>(ToonTechnique::DiffuseOnly));
             ImGui::SameLine();
-            ImGui::RadioButton("Cel-Ramp (M2)", &m, static_cast<int>(ToonTechnique::CelRamp));
+            ImGui::RadioButton("Cel-Ramp", &m, static_cast<int>(ToonTechnique::CelRamp));
             techniqueCtx.mode = static_cast<ToonTechnique>(m);
 
             ImGui::Separator();
@@ -167,6 +169,12 @@ int main(int argc, char** argv)
             ImGui::SliderFloat("GreyFac", &techniqueCtx.greyFac, 0.05f, 0.90f);
             ImGui::SliderFloat("DarkFac", &techniqueCtx.darkFac, 0.00f, 0.60f);
             ImGui::Checkbox("Night ramp rows", &techniqueCtx.nightRamp);
+
+            ImGui::Separator();
+            ImGui::Checkbox("Outline (inverted hull)", &techniqueCtx.enableOutline);
+            ImGui::SliderFloat("OutlinePx", &techniqueCtx.outlinePixels, 0.0f, 8.0f);
+            ImGui::SliderFloat("OutlineZBias", &techniqueCtx.outlineZBias, 0.0f, 0.02f);
+            ImGui::ColorEdit3("OutlineColor", &techniqueCtx.outlineColor.x);
         });
 
         while (!APP::ShouldClose())

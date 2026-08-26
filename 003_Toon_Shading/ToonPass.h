@@ -2,7 +2,7 @@
 // ============================================================================
 // 003_Toon_Shading - ToonPass
 //
-// M2：Forward 单 Pass。Diffuse + ilm + Shadow Ramp，画到默认 backbuffer。
+// Forward 单 Pass。先画 Diffuse / Cel-Ramp，再（可选）背面外扩描边。
 // ilm / Ramp 不进 TextureSlot，由本 Pass 自管 TextureHandle。
 // ============================================================================
 #include "RendererInterface/TitusGfxPass.h"
@@ -43,6 +43,11 @@ private:
     TitusRHI::ShaderHandle m_fs;
     TitusRHI::PipelineHandle m_pipeline;
     TitusRHI::BufferHandle m_shadingUbo;
+
+    TitusRHI::ShaderHandle m_outlineVs;
+    TitusRHI::ShaderHandle m_outlineFs;
+    TitusRHI::PipelineHandle m_outlinePipeline;
+    TitusRHI::BufferHandle m_outlineUbo;
 
     TitusRHI::TextureHandle m_bodyIlm;
     TitusRHI::TextureHandle m_hairIlm;

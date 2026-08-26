@@ -4,6 +4,7 @@
 //
 // 对比实验的 CPU 侧共享状态（不持 GPU 资源）。
 // ============================================================================
+#include "Basic/TitusMath.h"
 
 enum class ToonTechnique
 {
@@ -26,4 +27,10 @@ struct TechniqueContext
     float greyFac   = 0.47f;
     float darkFac   = 0.12f;
     bool  nightRamp = false;
+
+    // 背面外扩描边（clip 空间挤出 + 正面剔除）。
+    bool  enableOutline = true;
+    float outlinePixels = 2.5f;
+    float outlineZBias  = 0.0f;
+    TitusMath::Vec3 outlineColor{0.06f, 0.04f, 0.07f};
 };

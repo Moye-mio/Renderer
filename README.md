@@ -79,7 +79,7 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 | `000_Forward_Deferred_ForwardPlus` | Forward / Deferred / Forward+ 三套算法对比；含飞行相机与 ImGui overlay | `gl` |
 | `001_Reflective_shadow_map` | GBuffer → RSM → Compute VPL → ScreenQuad | `gl` |
 | `002_Order_Independent_Transparency` | WBOIT / Fourier OIT 半透明对比 | `gl` |
-| `003_Toon_Shading` | 卡通渲染（M1：妮露 Diffuse 出图） | `gl` |
+| `003_Toon_Shading` | 卡通渲染（妮露 Diffuse / Cel-Ramp / 描边） | `gl` |
 
 ---
 

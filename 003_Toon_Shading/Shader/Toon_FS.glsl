@@ -1,7 +1,7 @@
 #version 430 core
 
-// M2：半 Lambert × ilm.g 采 Shadow Ramp；ilm.a 选行。
-// u_RampParams.w < 0.5 退回 M1 Lambert，便于 ImGui 对照。
+// 半 Lambert × ilm.g 采 Shadow Ramp；ilm.a 选行。
+// u_RampParams.w < 0.5 退回 Lambert（无 Ramp），便于 ImGui 对照。
 layout(location = 0) in vec2 v2f_TexCoords;
 layout(location = 1) in vec3 v2f_NormalVS;
 layout(location = 0) out vec4 Color_;
