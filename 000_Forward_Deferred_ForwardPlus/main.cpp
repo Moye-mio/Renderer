@@ -186,7 +186,7 @@ int main(int argc, char** argv)
 
     // 6) TechniqueContext + 全部 Pass：AddPass（Init 一次），调度列表按 mode 互斥。
     TechniqueContext techniqueCtx;
-    techniqueCtx.shared.lights = MakeLights(bbMin, bbMax, SharedShadingParams::MAX_LIGHTS,
+    techniqueCtx.shared.lights = MakeLights(bbMin, bbMax, 200,
                                             techniqueCtx.shared.radiusScale);
 
     auto gbufferPass = std::make_shared<SponzaGBufferPass>();
