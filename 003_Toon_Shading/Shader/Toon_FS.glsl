@@ -3,7 +3,7 @@
 // 半 Lambert × ilm.g 采 Shadow Ramp；ilm.a 选行。
 // u_RampParams.w < 0.5 退回 Lambert（无 Ramp），便于 ImGui 对照。
 layout(location = 0) in vec2 v2f_TexCoords;
-layout(location = 1) in vec3 v2f_NormalVS;
+layout(location = 1) in vec3 v2f_NormalVs;
 layout(location = 0) out vec4 Color_;
 
 #ifdef VULKAN
@@ -16,7 +16,7 @@ LAYOUT_BIND(0, 0) layout(std140) uniform u_ToonShading
 {
 	mat4 u_ProjectionMatrix;
 	mat4 u_ViewMatrix;
-	vec4 u_LightDirVSAndAmbient;
+	vec4 u_LightDirVsAndAmbient;
 	vec4 u_LightColor;
 	vec4 u_RampParams;
 };
@@ -28,13 +28,13 @@ LAYOUT_BIND(0, 3) uniform sampler2D u_RampTexture;
 void main()
 {
 	vec3 albedo = texture(u_DiffuseTexture, v2f_TexCoords).rgb;
-	vec3 N = normalize(v2f_NormalVS);
-	vec3 L = normalize(u_LightDirVSAndAmbient.xyz);
+	vec3 N = normalize(v2f_NormalVs);
+	vec3 L = normalize(u_LightDirVsAndAmbient.xyz);
 	float ndotl = max(dot(N, L), 0.0);
 
 	if (u_RampParams.w < 0.5)
 	{
-		vec3 ambient = albedo * u_LightDirVSAndAmbient.w;
+		vec3 ambient = albedo * u_LightDirVsAndAmbient.w;
 		vec3 diffuse = albedo * ndotl * u_LightColor.rgb;
 		Color_ = vec4(ambient + diffuse, 1.0);
 		return;
@@ -66,6 +66,6 @@ void main()
 	vec3 rampCol = texture(u_RampTexture, vec2(rampU, rampV)).rgb;
 	float bright = smoothstep(greyFac, brightFac, lit);
 	vec3 shaded = mix(albedo * rampCol, albedo, bright);
-	shaded += albedo * u_LightDirVSAndAmbient.w * 0.25;
+	shaded += albedo * u_LightDirVsAndAmbient.w * 0.25;
 	Color_ = vec4(shaded, 1.0);
 }

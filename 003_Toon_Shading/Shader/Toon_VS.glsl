@@ -13,7 +13,7 @@ LAYOUT_BIND(0, 0) layout(std140) uniform u_ToonShading
 {
 	mat4 u_ProjectionMatrix;
 	mat4 u_ViewMatrix;
-	vec4 u_LightDirVSAndAmbient;
+	vec4 u_LightDirVsAndAmbient;
 	vec4 u_LightColor;
 	vec4 u_RampParams;
 };
@@ -28,12 +28,12 @@ uniform mat4 u_ModelMatrix;
 #endif
 
 layout(location = 0) out vec2 v2f_TexCoords;
-layout(location = 1) out vec3 v2f_NormalVS;
+layout(location = 1) out vec3 v2f_NormalVs;
 
 void main()
 {
-	vec4 posVS = u_ViewMatrix * u_ModelMatrix * vec4(_Position, 1.0);
-	gl_Position = u_ProjectionMatrix * posVS;
+	vec4 posVs = u_ViewMatrix * u_ModelMatrix * vec4(_Position, 1.0);
+	gl_Position = u_ProjectionMatrix * posVs;
 	v2f_TexCoords = _TexCoord;
-	v2f_NormalVS = normalize(mat3(transpose(inverse(u_ViewMatrix * u_ModelMatrix))) * _Normal);
+	v2f_NormalVs = normalize(mat3(transpose(inverse(u_ViewMatrix * u_ModelMatrix))) * _Normal);
 }
