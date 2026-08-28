@@ -1,21 +1,9 @@
 #version 430 core
+// 描边色在 VS 里按 Part 查表并按视距淡出后传下来，这里只负责写出。
+layout(location = 0) in vec3 v2f_OutlineColor;
 layout(location = 0) out vec4 Color_;
-
-#ifdef VULKAN
-#define LAYOUT_BIND(s, b) layout(set = s, binding = b)
-#else
-#define LAYOUT_BIND(s, b) layout(binding = b)
-#endif
-
-LAYOUT_BIND(0, 0) layout(std140) uniform u_Outline
-{
-	mat4 u_ProjectionMatrix;
-	mat4 u_ViewMatrix;
-	vec4 u_OutlineParams;
-	vec4 u_OutlineColor;
-};
 
 void main()
 {
-	Color_ = vec4(u_OutlineColor.rgb, 1.0);
+	Color_ = vec4(v2f_OutlineColor, 1.0);
 }

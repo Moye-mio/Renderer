@@ -13,7 +13,7 @@ struct ToonShadingUBO
 {
     TitusMath::Mat4 projection{1.0f};
     TitusMath::Mat4 view{1.0f};
-    TitusMath::Vec4 lightDirVSAndAmbient{0.0f, 1.0f, 0.0f, 0.22f};
+    TitusMath::Vec4 lightDirVsAndAmbient{0.0f, 1.0f, 0.0f, 0.22f};
     TitusMath::Vec4 lightColor{1.0f, 0.96f, 0.88f, 0.0f};
     // x=brightFac y=greyFac z=darkFac  w=0 DiffuseOnly / 1 day / 2 night
     TitusMath::Vec4 rampParams{0.52f, 0.47f, 0.12f, 1.0f};
@@ -24,10 +24,18 @@ struct OutlineUBO
 {
     TitusMath::Mat4 projection{1.0f};
     TitusMath::Mat4 view{1.0f};
-    TitusMath::Vec4 params{0.003f, 0.0f, 0.0f, 0.0f}; // x=widthNdc y=zBias
-    TitusMath::Vec4 color{0.06f, 0.04f, 0.07f, 1.0f};
+    // x=basePixel y=zBias（视空间米） zw=viewportSize（像素）
+    TitusMath::Vec4 params{2.5f, 0.0f, 1920.0f, 1152.0f};
+    // x=minPixel y=maxPixel z=refDistance w=falloffPower
+    TitusMath::Vec4 widthCtrl{0.8f, 6.0f, 3.4f, 0.5f};
+    // x=fadeStartZ y=fadeEndZ z=fadeStrength w=未用
+    TitusMath::Vec4 fadeCtrl{8.0f, 25.0f, 0.85f, 0.0f};
+    // rgb=远处描边目标色
+    TitusMath::Vec4 fadeColor{0.30f, 0.30f, 0.34f, 0.0f};
+    // 按 NilouMaterials::Part 索引：rgb=描边色 a=线宽倍率
+    TitusMath::Vec4 partParams[4]{};
 };
-static_assert(sizeof(OutlineUBO) == 160, "OutlineUBO std140 size");
+static_assert(sizeof(OutlineUBO) == 256, "OutlineUBO std140 size");
 
 struct ToonNprGpu
 {
@@ -60,9 +68,9 @@ inline void FillToonShadingUBO(ToonShadingUBO& data, const TechniqueContext* ctx
     const float yaw = ctx ? ctx->lightYawDeg : 8.0f;
     const float pitch = ctx ? ctx->lightPitchDeg : 22.0f;
     const float ambient = ctx ? ctx->ambient : 0.08f;
-    const TitusMath::Vec3 lightDirWS = LightDirFromYawPitch(yaw, pitch);
-    const TitusMath::Vec4 lightDirVS = data.view * TitusMath::Vec4(lightDirWS, 0.0f);
-    data.lightDirVSAndAmbient = TitusMath::Vec4(TitusMath::Vec3(lightDirVS), ambient);
+    const TitusMath::Vec3 lightDirWs = LightDirFromYawPitch(yaw, pitch);
+    const TitusMath::Vec4 lightDirVs = data.view * TitusMath::Vec4(lightDirWs, 0.0f);
+    data.lightDirVsAndAmbient = TitusMath::Vec4(TitusMath::Vec3(lightDirVs), ambient);
     data.lightColor = TitusMath::Vec4(1.0f, 0.96f, 0.88f, 0.0f);
 
     const float bright = ctx ? ctx->brightFac : 0.52f;
@@ -76,16 +84,37 @@ inline void FillToonShadingUBO(ToonShadingUBO& data, const TechniqueContext* ctx
 
 inline void FillOutlineUBO(OutlineUBO& data, const TechniqueContext* ctx)
 {
+    static const TechniqueContext kDefaults{};
+    const TechniqueContext& c = ctx ? *ctx : kDefaults;
+
     data.projection = TitusRHI::CAMERA::GetMainCameraProjectionMatrix();
     data.view = TitusRHI::CAMERA::GetMainCameraViewMatrix();
-    const float pixels = ctx ? ctx->outlinePixels : 2.5f;
-    const float zBias = ctx ? ctx->outlineZBias : 0.0f;
+
+    // 视口尺寸交给 shader：外扩方向要在像素空间归一化才是屏幕等宽。
     const float fbW = static_cast<float>(TitusRHI::WINDOW_KEYWORD::GetWindowWidth());
-    const float widthNdc = pixels * 2.0f / (fbW > 1.0f ? fbW : 1920.0f);
-    data.params = TitusMath::Vec4(widthNdc, zBias, 0.0f, 0.0f);
-    const TitusMath::Vec3 c = ctx ? ctx->outlineColor
-                                  : TitusMath::Vec3{0.06f, 0.04f, 0.07f};
-    data.color = TitusMath::Vec4(c, 1.0f);
+    const float fbH = static_cast<float>(TitusRHI::WINDOW_KEYWORD::GetWindowHeight());
+    data.params = TitusMath::Vec4(c.outlinePixels, c.outlineZBias,
+                                  fbW > 1.0f ? fbW : 1920.0f,
+                                  fbH > 1.0f ? fbH : 1152.0f);
+
+    // minPixel 不能越过 maxPixel，否则 clamp 的结果依赖参数先后顺序。
+    const float minPx = c.outlineMinPixels;
+    const float maxPx = minPx > c.outlineMaxPixels ? minPx : c.outlineMaxPixels;
+    data.widthCtrl = TitusMath::Vec4(minPx, maxPx,
+                                     c.outlineRefDistance > 1e-3f
+                                         ? c.outlineRefDistance : 1e-3f,
+                                     c.outlineFalloffPower);
+
+    // fadeEnd 必须严格大于 fadeStart，shader 里 smoothstep 才有定义。
+    const float fadeStart = c.outlineFadeStart;
+    const float fadeEnd = c.outlineFadeEnd > fadeStart + 1e-3f
+                              ? c.outlineFadeEnd : fadeStart + 1e-3f;
+    data.fadeCtrl = TitusMath::Vec4(fadeStart, fadeEnd, c.outlineFadeStrength, 0.0f);
+    data.fadeColor = TitusMath::Vec4(c.outlineFadeColor, 0.0f);
+
+    for (int i = 0; i < 4; ++i)
+        data.partParams[i] = TitusMath::Vec4(c.outlinePartColor[i],
+                                             c.outlinePartWidth[i]);
 }
 
 inline void FillToonPipelineDesc(TitusRHI::GraphicsPipelineDesc& pd,
@@ -166,7 +195,8 @@ inline void FillOutlinePipelineDesc(TitusRHI::GraphicsPipelineDesc& pd,
     rbUbo.set = 0;
     rbUbo.binding = 0;
     rbUbo.type = ResourceBindingType::UniformBuffer;
-    rbUbo.stages = ShaderStage::Vertex | ShaderStage::Fragment;
+    // 描边色在 VS 里就算完传给 FS，FS 不再读 UBO。
+    rbUbo.stages = ShaderStage::Vertex;
     pd.resourceBindings.push_back(rbUbo);
 }
 

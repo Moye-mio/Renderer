@@ -24,6 +24,7 @@
 #include "AssetLoader/ModelLoader.h"
 
 #include "NilouMaterials.h"
+#include "OutlineBake.h"
 #include "Scene.h"
 #include "TechniqueContext.h"
 #include "ToonPass.h"
@@ -101,6 +102,9 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    // 必须在 UploadGpuModel 之前：描边壳要用的平滑法线与 partIndex 直接写进顶点。
+    OutlineBake::BakeOutlineAttributes(modelAsset);
+
     TitusMath::Vec3 bbMin, bbMax;
     if (!ComputeModelAabb(modelAsset, bbMin, bbMax))
     {
@@ -172,9 +176,37 @@ int main(int argc, char** argv)
 
             ImGui::Separator();
             ImGui::Checkbox("Outline (inverted hull)", &techniqueCtx.enableOutline);
-            ImGui::SliderFloat("OutlinePx", &techniqueCtx.outlinePixels, 0.0f, 8.0f);
-            ImGui::SliderFloat("OutlineZBias", &techniqueCtx.outlineZBias, 0.0f, 0.02f);
-            ImGui::ColorEdit3("OutlineColor", &techniqueCtx.outlineColor.x);
+            if (ImGui::CollapsingHeader("Outline params"))
+            {
+                ImGui::SliderFloat("BasePx", &techniqueCtx.outlinePixels, 0.0f, 8.0f);
+                ImGui::SliderFloat("MinPx", &techniqueCtx.outlineMinPixels, 0.0f, 4.0f);
+                ImGui::SliderFloat("MaxPx", &techniqueCtx.outlineMaxPixels, 0.5f, 16.0f);
+                ImGui::SliderFloat("ZBias(m)", &techniqueCtx.outlineZBias, 0.0f, 0.05f);
+
+                ImGui::TextUnformatted("Distance falloff");
+                ImGui::SliderFloat("RefDistance", &techniqueCtx.outlineRefDistance, 0.5f, 20.0f);
+                ImGui::SliderFloat("FalloffPower", &techniqueCtx.outlineFalloffPower, 0.05f, 3.0f);
+
+                ImGui::TextUnformatted("Distance fade");
+                ImGui::SliderFloat("FadeStart", &techniqueCtx.outlineFadeStart, 0.0f, 40.0f);
+                ImGui::SliderFloat("FadeEnd", &techniqueCtx.outlineFadeEnd, 0.0f, 40.0f);
+                ImGui::SliderFloat("FadeStrength", &techniqueCtx.outlineFadeStrength, 0.0f, 1.0f);
+                ImGui::ColorEdit3("FadeColor", &techniqueCtx.outlineFadeColor.x);
+
+                // 顺序与 NilouMaterials::Part 一致。线宽倍率为 0 即该部件不描边。
+                ImGui::TextUnformatted("Per part color / width");
+                static const char* kPartNames[4] = {"Body", "Dress", "Hair", "Face"};
+                for (int i = 0; i < 4; ++i)
+                {
+                    ImGui::PushID(i);
+                    ImGui::ColorEdit3(kPartNames[i], &techniqueCtx.outlinePartColor[i].x);
+                    ImGui::SameLine();
+                    ImGui::PushItemWidth(90.0f);
+                    ImGui::SliderFloat("##w", &techniqueCtx.outlinePartWidth[i], 0.0f, 2.0f);
+                    ImGui::PopItemWidth();
+                    ImGui::PopID();
+                }
+            }
         });
 
         while (!APP::ShouldClose())

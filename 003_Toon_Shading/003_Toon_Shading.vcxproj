@@ -22,12 +22,15 @@
         <ClCompile Include="main.cpp"/>
         <ClCompile Include="NilouMaterials.cpp"/>
         <ClCompile Include="Scene.cpp"/>
+        <ClCompile Include="SmoothNormal.cpp"/>
         <ClCompile Include="ToonPass.cpp"/>
     </ItemGroup>
     <ItemGroup>
         <ClInclude Include="NilouMaterials.h"/>
+        <ClInclude Include="OutlineBake.h"/>
         <ClInclude Include="Scene.h"/>
         <ClInclude Include="SceneDraw.h"/>
+        <ClInclude Include="SmoothNormal.h"/>
         <ClInclude Include="TechniqueContext.h"/>
         <ClInclude Include="ToonPass.h"/>
     </ItemGroup>
