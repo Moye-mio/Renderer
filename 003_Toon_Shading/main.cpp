@@ -175,6 +175,18 @@ int main(int argc, char** argv)
             ImGui::Checkbox("Night ramp rows", &techniqueCtx.nightRamp);
 
             ImGui::Separator();
+            ImGui::Checkbox("Crease (screen space)", &techniqueCtx.enableCrease);
+            if (ImGui::CollapsingHeader("Crease params"))
+            {
+                ImGui::SliderFloat("CreasePx", &techniqueCtx.creasePixels, 0.0f, 6.0f);
+                ImGui::SliderFloat("NThresh", &techniqueCtx.creaseNormalThresh, 0.02f, 0.60f);
+                ImGui::SliderFloat("NSoft", &techniqueCtx.creaseNormalSoft, 0.01f, 0.40f);
+                ImGui::SliderFloat("ZThresh", &techniqueCtx.creaseDepthThresh, 0.005f, 0.20f);
+                ImGui::SliderFloat("ZSoft", &techniqueCtx.creaseDepthSoft, 0.005f, 0.20f);
+                ImGui::TextUnformatted("Width / fade / part color follow Outline params.");
+            }
+
+            ImGui::Separator();
             ImGui::Checkbox("Outline (inverted hull)", &techniqueCtx.enableOutline);
             if (ImGui::CollapsingHeader("Outline params"))
             {

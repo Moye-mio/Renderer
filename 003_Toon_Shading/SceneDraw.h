@@ -25,7 +25,7 @@ struct OutlineUBO
     TitusMath::Mat4 projection{1.0f};
     TitusMath::Mat4 view{1.0f};
     // x=basePixel y=zBias（视空间米） zw=viewportSize（像素）
-    TitusMath::Vec4 params{2.5f, 0.0f, 1920.0f, 1152.0f};
+    TitusMath::Vec4 params{1.5f, 0.0f, 1920.0f, 1152.0f};
     // x=minPixel y=maxPixel z=refDistance w=falloffPower
     TitusMath::Vec4 widthCtrl{0.8f, 6.0f, 3.4f, 0.5f};
     // x=fadeStartZ y=fadeEndZ z=fadeStrength w=未用
@@ -36,6 +36,30 @@ struct OutlineUBO
     TitusMath::Vec4 partParams[4]{};
 };
 static_assert(sizeof(OutlineUBO) == 256, "OutlineUBO std140 size");
+
+struct CreaseUBO
+{
+    // x=nThresh y=nSoft z=dThresh w=dSoft
+    TitusMath::Vec4 detect{0.08f, 0.10f, 0.03f, 0.04f};
+    // x=basePx y=minPx z=maxPx w=refDistance
+    TitusMath::Vec4 widthCtrl{1.5f, 0.8f, 6.0f, 3.4f};
+    // x=fadeStart y=fadeEnd z=fadeStrength w=falloffPower
+    TitusMath::Vec4 fadeCtrl{8.0f, 25.0f, 0.85f, 0.5f};
+    // rgb=远处线色 w=enable
+    TitusMath::Vec4 fadeColor{0.30f, 0.30f, 0.34f, 1.0f};
+    // rgb=合成背景。离屏 MRT 两路都清 0：GL 的 glClear 只吃 colorOps[0]，
+    // 不能给 G-Buffer 单独清零，背景色改在全屏 Pass 里补。
+    TitusMath::Vec4 background{0.12f, 0.13f, 0.16f, 0.0f};
+    TitusMath::Vec4 partParams[4]{};
+};
+static_assert(sizeof(CreaseUBO) == 144, "CreaseUBO std140 size");
+
+inline constexpr TitusRHI::Format kToonSceneColorFormat =
+    TitusRHI::Format::R16G16B16A16_SFLOAT;
+inline constexpr TitusRHI::Format kToonCreaseFormat =
+    TitusRHI::Format::R16G16B16A16_SFLOAT;
+inline constexpr TitusRHI::Format kToonSceneDepthFormat =
+    TitusRHI::Format::D32_SFLOAT;
 
 struct ToonNprGpu
 {
@@ -117,6 +141,36 @@ inline void FillOutlineUBO(OutlineUBO& data, const TechniqueContext* ctx)
                                              c.outlinePartWidth[i]);
 }
 
+inline void FillCreaseUBO(CreaseUBO& data, const TechniqueContext* ctx)
+{
+    static const TechniqueContext kDefaults{};
+    const TechniqueContext& c = ctx ? *ctx : kDefaults;
+
+    data.detect = TitusMath::Vec4(c.creaseNormalThresh,
+                                  c.creaseNormalSoft > 1e-3f ? c.creaseNormalSoft : 1e-3f,
+                                  c.creaseDepthThresh,
+                                  c.creaseDepthSoft > 1e-3f ? c.creaseDepthSoft : 1e-3f);
+
+    const float minPx = c.outlineMinPixels;
+    const float maxPx = minPx > c.outlineMaxPixels ? minPx : c.outlineMaxPixels;
+    data.widthCtrl = TitusMath::Vec4(c.creasePixels, minPx, maxPx,
+                                     c.outlineRefDistance > 1e-3f
+                                         ? c.outlineRefDistance : 1e-3f);
+
+    const float fadeStart = c.outlineFadeStart;
+    const float fadeEnd = c.outlineFadeEnd > fadeStart + 1e-3f
+                              ? c.outlineFadeEnd : fadeStart + 1e-3f;
+    data.fadeCtrl = TitusMath::Vec4(fadeStart, fadeEnd,
+                                    c.outlineFadeStrength, c.outlineFalloffPower);
+    data.fadeColor = TitusMath::Vec4(c.outlineFadeColor,
+                                     (c.enableCrease && c.creasePixels > 0.0f) ? 1.0f : 0.0f);
+    data.background = TitusMath::Vec4(0.12f, 0.13f, 0.16f, 0.0f);
+
+    for (int i = 0; i < 4; ++i)
+        data.partParams[i] = TitusMath::Vec4(c.outlinePartColor[i],
+                                             c.outlinePartWidth[i]);
+}
+
 inline void FillToonPipelineDesc(TitusRHI::GraphicsPipelineDesc& pd,
                                  TitusRHI::ShaderHandle vs,
                                  TitusRHI::ShaderHandle fs,
@@ -131,7 +185,9 @@ inline void FillToonPipelineDesc(TitusRHI::GraphicsPipelineDesc& pd,
     pd.depthStencil.depthTestEnable = true;
     pd.depthStencil.depthWriteEnable = true;
     pd.depthStencil.depthCompareOp = CompareOp::Less;
-    pd.blend.attachments.resize(1);
+    pd.blend.attachments.resize(2);
+    pd.rtLayout.colorFormats = {kToonSceneColorFormat, kToonCreaseFormat};
+    pd.rtLayout.depthStencilFormat = kToonSceneDepthFormat;
     if (layoutSource.IsValid())
         pd.vertexLayout = GetMeshSharedLayout(layoutSource);
 
@@ -179,7 +235,11 @@ inline void FillOutlinePipelineDesc(TitusRHI::GraphicsPipelineDesc& pd,
     pd.depthStencil.depthTestEnable = true;
     pd.depthStencil.depthWriteEnable = false;
     pd.depthStencil.depthCompareOp = CompareOp::Less;
-    pd.blend.attachments.resize(1);
+    pd.blend.attachments.resize(2);
+    // 与 Cel 共用同一张 MRT。GL 的 colorWriteMask 不是 per-RT，所以 FS 必须
+    // 显式写第二路；写 0 表示这些像素不参与内线检测。
+    pd.rtLayout.colorFormats = {kToonSceneColorFormat, kToonCreaseFormat};
+    pd.rtLayout.depthStencilFormat = kToonSceneDepthFormat;
     if (layoutSource.IsValid())
         pd.vertexLayout = GetMeshSharedLayout(layoutSource);
 
@@ -198,6 +258,41 @@ inline void FillOutlinePipelineDesc(TitusRHI::GraphicsPipelineDesc& pd,
     // 描边色在 VS 里就算完传给 FS，FS 不再读 UBO。
     rbUbo.stages = ShaderStage::Vertex;
     pd.resourceBindings.push_back(rbUbo);
+}
+
+inline void FillCreasePipelineDesc(TitusRHI::GraphicsPipelineDesc& pd,
+                                   TitusRHI::ShaderHandle vs,
+                                   TitusRHI::ShaderHandle fs)
+{
+    using namespace TitusRHI;
+    pd.vertexShader = vs;
+    pd.fragmentShader = fs;
+    pd.topology = PrimitiveTopology::TriangleList;
+    pd.rasterizer.cullMode = CullMode::None;
+    pd.depthStencil.depthTestEnable = false;
+    pd.depthStencil.depthWriteEnable = false;
+    pd.blend.attachments.resize(1);
+    // rtLayout 留空：输出到 swapchain。
+
+    ResourceBinding rbUbo{};
+    rbUbo.name = "u_Crease";
+    rbUbo.set = 0;
+    rbUbo.binding = 0;
+    rbUbo.type = ResourceBindingType::UniformBuffer;
+    rbUbo.stages = ShaderStage::Fragment;
+    pd.resourceBindings.push_back(rbUbo);
+
+    const char* samplerNames[] = { "u_SceneColor", "u_CreaseGBuffer" };
+    for (uint32_t i = 0; i < 2; ++i)
+    {
+        ResourceBinding rb{};
+        rb.name = samplerNames[i];
+        rb.set = 0;
+        rb.binding = 1 + i;
+        rb.type = ResourceBindingType::CombinedImageSampler;
+        rb.stages = ShaderStage::Fragment;
+        pd.resourceBindings.push_back(rb);
+    }
 }
 
 inline void DrawGpuModelWithCelRamp(TitusRHI::RenderCommandList& cmd,

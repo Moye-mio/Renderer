@@ -30,7 +30,7 @@ struct TechniqueContext
 
     // 背面外扩描边（正面剔除 + 沿平滑法线挤出，屏幕空间等宽）。
     bool  enableOutline = true;
-    float outlinePixels = 2.5f;
+    float outlinePixels = 1.5f;
     // 外扩壳与正面在轮廓处近似共面，深度比较落在临界值会出麻点。硬件 depth
     // bias 在 RasterizerState 里没有，只能在 shader 里手动偏移。单位是米，在
     // 视空间沿相机方向挪——NDC 偏移随距离剧烈变化，调不出通用值。
@@ -61,4 +61,14 @@ struct TechniqueContext
     };
     // 脸偏细是卡渲通例：整脸等宽会把五官压得很脏。倍率为 0 即该部件不描边。
     float outlinePartWidth[4] = {1.0f, 1.0f, 1.0f, 0.6f};
+
+    // 屏幕空间内线：法线不连续 + 角色内部的深度不连续。外轮廓仍由 inverted hull 负责。
+    bool  enableCrease = true;
+    float creasePixels = 1.5f;
+    // 1 - dot(n, n')。0.08 ≈ 23°，再软 0.10 过渡到约 36°。
+    float creaseNormalThresh = 0.08f;
+    float creaseNormalSoft   = 0.10f;
+    // |Δz| / min(z, z')，角色内部自遮挡（手臂压腰、头发压肩）。
+    float creaseDepthThresh  = 0.03f;
+    float creaseDepthSoft    = 0.04f;
 };

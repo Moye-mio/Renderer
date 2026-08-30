@@ -2,8 +2,8 @@
 // ============================================================================
 // 003_Toon_Shading - ToonPass
 //
-// Forward 单 Pass。先画 Diffuse / Cel-Ramp，再（可选）背面外扩描边。
-// ilm / Ramp 不进 TextureSlot，由本 Pass 自管 TextureHandle。
+// Forward 单 Pass。Cel-Ramp 写到离屏颜色 + crease G-Buffer；背面外扩只写颜色；
+// 最后全屏合成内线并拷到 swapchain。ilm / Ramp 不进 TextureSlot。
 // ============================================================================
 #include "RendererInterface/TitusGfxPass.h"
 
@@ -32,7 +32,9 @@ public:
 private:
     bool CreateShaders(TitusRHI::IGDevice& device);
     bool CreatePipeline(TitusRHI::IGDevice& device);
+    bool CreateOffscreenTargets(TitusRHI::IGDevice& device);
     bool CreateNprTextures(TitusRHI::IGDevice& device);
+    void DestroyOffscreenTargets(TitusRHI::IGDevice& device);
     void DestroyNprTextures(TitusRHI::IGDevice& device);
 
     Scene* m_scene = nullptr;
@@ -48,6 +50,19 @@ private:
     TitusRHI::ShaderHandle m_outlineFs;
     TitusRHI::PipelineHandle m_outlinePipeline;
     TitusRHI::BufferHandle m_outlineUbo;
+
+    TitusRHI::ShaderHandle m_creaseVs;
+    TitusRHI::ShaderHandle m_creaseFs;
+    TitusRHI::PipelineHandle m_creasePipeline;
+    TitusRHI::BufferHandle m_creaseUbo;
+    TitusRHI::SamplerHandle m_creaseSampler;
+
+    uint32_t m_rtWidth = 0;
+    uint32_t m_rtHeight = 0;
+    TitusRHI::TextureHandle m_sceneColor;
+    TitusRHI::TextureHandle m_creaseGBuffer;
+    TitusRHI::TextureHandle m_sceneDepth;
+    TitusRHI::RenderTargetHandle m_sceneRT;
 
     TitusRHI::TextureHandle m_bodyIlm;
     TitusRHI::TextureHandle m_hairIlm;

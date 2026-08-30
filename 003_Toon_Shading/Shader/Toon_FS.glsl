@@ -4,7 +4,11 @@
 // u_RampParams.w < 0.5 退回 Lambert（无 Ramp），便于 ImGui 对照。
 layout(location = 0) in vec2 v2f_TexCoords;
 layout(location = 1) in vec3 v2f_NormalVs;
+layout(location = 2) in float v2f_ViewZ;
+layout(location = 3) in float v2f_PartIndex;
 layout(location = 0) out vec4 Color_;
+// xy=八面体编码的视空间硬边法线  z=线性视距  w=partIndex
+layout(location = 1) out vec4 CreaseGBuffer_;
 
 #ifdef VULKAN
 #define LAYOUT_BIND(s, b) layout(set = s, binding = b)
@@ -25,6 +29,21 @@ LAYOUT_BIND(0, 1) uniform sampler2D u_DiffuseTexture;
 LAYOUT_BIND(0, 2) uniform sampler2D u_IlmTexture;
 LAYOUT_BIND(0, 3) uniform sampler2D u_RampTexture;
 
+vec2 OctEncode(vec3 n)
+{
+	n = normalize(n);
+	n /= abs(n.x) + abs(n.y) + abs(n.z);
+	vec2 e = n.xy;
+	if (n.z < 0.0)
+		e = (vec2(1.0) - abs(e.yx)) * vec2(n.x >= 0.0 ? 1.0 : -1.0, n.y >= 0.0 ? 1.0 : -1.0);
+	return e;
+}
+
+void WriteCreaseGBuffer(vec3 n)
+{
+	CreaseGBuffer_ = vec4(OctEncode(n), v2f_ViewZ, v2f_PartIndex);
+}
+
 void main()
 {
 	vec3 albedo = texture(u_DiffuseTexture, v2f_TexCoords).rgb;
@@ -37,6 +56,7 @@ void main()
 		vec3 ambient = albedo * u_LightDirVsAndAmbient.w;
 		vec3 diffuse = albedo * ndotl * u_LightColor.rgb;
 		Color_ = vec4(ambient + diffuse, 1.0);
+		WriteCreaseGBuffer(N);
 		return;
 	}
 
@@ -68,4 +88,5 @@ void main()
 	vec3 shaded = mix(albedo * rampCol, albedo, bright);
 	shaded += albedo * u_LightDirVsAndAmbient.w * 0.25;
 	Color_ = vec4(shaded, 1.0);
+	WriteCreaseGBuffer(N);
 }

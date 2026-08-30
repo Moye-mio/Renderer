@@ -52,6 +52,8 @@
         <Content Include="Shader\Toon_FS.glsl"/>
         <Content Include="Shader\Outline_VS.glsl"/>
         <Content Include="Shader\Outline_FS.glsl"/>
+        <Content Include="Shader\Crease_VS.glsl"/>
+        <Content Include="Shader\Crease_FS.glsl"/>
     </ItemGroup>
     <PropertyGroup Label="Globals">
         <VCProjectVersion>15.0</VCProjectVersion>
