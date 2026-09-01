@@ -200,6 +200,8 @@ namespace TitusGraphics
         m_caps.maxTextureSizeCube = static_cast<uint32_t>(v);
         glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS, &v);
         m_caps.maxColorAttachments = static_cast<uint32_t>(v);
+        glGetIntegerv(GL_MAX_SAMPLES, &v);
+        m_caps.maxColorSampleCount = static_cast<uint32_t>(v > 0 ? v : 1);
         glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &v);
         m_caps.maxVertexAttributes = static_cast<uint32_t>(v);
         m_caps.maxBoundDescriptorSets = 0;
@@ -273,6 +275,7 @@ namespace TitusGraphics
         e.width = desc.width;
         e.height = desc.height;
         e.depth = desc.depth;
+        e.samples = desc.samples ? desc.samples : 1;
         // mipLevels=0 在 GDescs 中约定为"由后端按 max 计算"。
         // glTexStorage2D 要求 levels >= 1；这里展开为 floor(log2(max(w,h)))+1。
         // 同时 e.mipLevels 也写入展开后的真实层数，方便后续上传/查询。
@@ -291,9 +294,26 @@ namespace TitusGraphics
         e.arrayLayers = desc.arrayLayers;
         e.isDepth = HasFlag(desc.usage, TextureUsage::DepthStencilAttachment);
 
+        if (e.samples > 1)
+        {
+            if (desc.type != TextureType::Tex2D)
+            {
+                LOG_STREAM_ERROR("GLDevice") << "MSAA textures only support Tex2D";
+                return false;
+            }
+            e.target = GL_TEXTURE_2D_MULTISAMPLE;
+            resolvedMips = 1;
+            e.mipLevels = 1;
+        }
+
         glGenTextures(1, &e.id);
         glBindTexture(e.target, e.id);
-        if (e.target == GL_TEXTURE_2D)
+        if (e.samples > 1)
+        {
+            glTexStorage2DMultisample(e.target, static_cast<GLsizei>(e.samples),
+                                      e.internalFmt, desc.width, desc.height, GL_TRUE);
+        }
+        else if (e.target == GL_TEXTURE_2D)
         {
             glTexStorage2D(e.target, static_cast<GLsizei>(resolvedMips), e.internalFmt, desc.width, desc.height);
         }

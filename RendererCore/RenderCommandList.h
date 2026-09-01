@@ -57,6 +57,20 @@ namespace TitusRHI
         virtual void EndRenderPass() = 0;
 
         // ====================================================================
+        // MSAA Resolve
+        // ====================================================================
+        // 把 src（samples > 1）解析到 dst（samples == 1）。两端尺寸须一致。
+        //   - VK：vkCmdResolveImage；调用方先用 PipelineBarrier 把 src 转到
+        //     TransferSrc、dst 转到 TransferDst，resolve 后再把 dst 转到
+        //     ShaderReadOnly 以便采样。
+        //   - GL：glBlitFramebuffer（NEAREST）；barrier 可忽略。
+        //   - samples > 1 的纹理不可直接 Sampled，必须先 resolve。
+        // 默认空实现：Headless / 未接入的后端无需被迫 override。
+        virtual void ResolveTexture(TextureHandle /*src*/, TextureHandle /*dst*/)
+        {
+        }
+
+        // ====================================================================
         // 视口 / 裁剪
         // ====================================================================
         virtual void SetViewport(const Viewport& viewport) = 0;

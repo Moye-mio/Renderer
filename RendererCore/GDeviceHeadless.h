@@ -103,6 +103,7 @@ namespace TitusRHI
             m_caps.maxTextureSize3D = 256;
             m_caps.maxTextureSizeCube = 4096;
             m_caps.maxColorAttachments = 8;
+            m_caps.maxColorSampleCount = 8;
             m_caps.maxVertexAttributes = 16;
             m_caps.maxBoundDescriptorSets = 4;
             m_caps.supportsAnisotropy = false;

@@ -66,6 +66,8 @@ namespace TitusGraphics
                       uint32_t groupCountY,
                       uint32_t groupCountZ) override;
         void PipelineBarrier(const TitusRHI::PipelineBarrierDesc& desc) override;
+        void ResolveTexture(TitusRHI::TextureHandle src,
+                            TitusRHI::TextureHandle dst) override;
 
     private:
         // 录制：把命令塞进延迟队列

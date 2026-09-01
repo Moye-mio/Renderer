@@ -645,6 +645,20 @@ namespace TitusVkGraphics
         m_caps.maxTextureSize3D     = props.limits.maxImageDimension3D;
         m_caps.maxTextureSizeCube   = props.limits.maxImageDimensionCube;
         m_caps.maxColorAttachments  = props.limits.maxColorAttachments;
+        {
+            // 颜色与深度附件都要 MSAA 时，取两者 sample count 位掩码的交集。
+            const VkSampleCountFlags common =
+                props.limits.framebufferColorSampleCounts
+                & props.limits.framebufferDepthSampleCounts;
+            uint32_t maxSamples = 1;
+            if (common & VK_SAMPLE_COUNT_64_BIT)      maxSamples = 64;
+            else if (common & VK_SAMPLE_COUNT_32_BIT) maxSamples = 32;
+            else if (common & VK_SAMPLE_COUNT_16_BIT) maxSamples = 16;
+            else if (common & VK_SAMPLE_COUNT_8_BIT)  maxSamples = 8;
+            else if (common & VK_SAMPLE_COUNT_4_BIT)  maxSamples = 4;
+            else if (common & VK_SAMPLE_COUNT_2_BIT)  maxSamples = 2;
+            m_caps.maxColorSampleCount = maxSamples;
+        }
         m_caps.maxVertexAttributes  = props.limits.maxVertexInputAttributes;
         m_caps.maxBoundDescriptorSets = props.limits.maxBoundDescriptorSets;
 
@@ -761,6 +775,7 @@ namespace TitusVkGraphics
 
         e.mipLevels    = resolvedMipLevels;
         e.arrayLayers  = resolvedArrayLayers;
+        e.samples      = desc.samples ? desc.samples : 1;
         e.currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
         VkImageCreateInfo ci{};
@@ -770,9 +785,12 @@ namespace TitusVkGraphics
         ci.extent        = { desc.width, desc.height, desc.depth ? desc.depth : 1 };
         ci.mipLevels     = resolvedMipLevels;
         ci.arrayLayers   = resolvedArrayLayers;
-        ci.samples       = static_cast<VkSampleCountFlagBits>(desc.samples ? desc.samples : 1);
+        ci.samples       = static_cast<VkSampleCountFlagBits>(e.samples);
         ci.tiling        = VK_IMAGE_TILING_OPTIMAL;
         ci.usage         = ToVkImageUsage(desc.usage);
+        // MSAA 颜色必须能被 vkCmdResolveImage 读；业务侧漏标 TransferSrc 时补上。
+        if (e.samples > 1 && HasFlag(desc.usage, TextureUsage::ColorAttachment))
+            ci.usage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         ci.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
         ci.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         if (desc.type == TextureType::TexCube)
@@ -1606,15 +1624,19 @@ namespace TitusVkGraphics
             const VKTextureEntry* te = LookupTexture(a.texture);
             if (!te || te->defaultView == VK_NULL_HANDLE) continue;
 
+            const uint32_t samples = te->samples ? te->samples : 1;
             VkAttachmentDescription d{};
             d.format         = te->format;
-            d.samples        = VK_SAMPLE_COUNT_1_BIT;
+            d.samples        = static_cast<VkSampleCountFlagBits>(samples);
             d.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;   // 由 BeginRenderPass 实际语义决定，这里用 CLEAR 兼容多数路径
             d.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
             d.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             d.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
             d.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
-            d.finalLayout    = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            // MSAA 附件不能直接 Sampled，finalLayout 走 TransferSrc 供 ResolveTexture。
+            d.finalLayout    = (samples > 1)
+                ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             attDescs.push_back(d);
 
             VkAttachmentReference ref{};
@@ -1631,9 +1653,10 @@ namespace TitusVkGraphics
             const VKTextureEntry* te = LookupTexture(desc.depthStencilAttachment.texture);
             if (te && te->defaultView != VK_NULL_HANDLE)
             {
+                const uint32_t samples = te->samples ? te->samples : 1;
                 VkAttachmentDescription d{};
                 d.format         = te->format;
-                d.samples        = VK_SAMPLE_COUNT_1_BIT;
+                d.samples        = static_cast<VkSampleCountFlagBits>(samples);
                 d.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
                 d.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
                 d.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
@@ -1664,7 +1687,8 @@ namespace TitusVkGraphics
         subpass.pColorAttachments       = colorRefs.empty() ? nullptr : colorRefs.data();
         subpass.pDepthStencilAttachment = hasDepth ? &depthRef : nullptr;
 
-        // 3) 外部依赖：保证写完后供下一 Pass 采样（COLOR_ATTACHMENT → FRAGMENT/COMPUTE_SHADER 读）
+        // 3) 外部依赖：1-sample 供下一 Pass 采样；MSAA 供 ResolveTexture 读。
+        const bool isMsaa = !attDescs.empty() && attDescs[0].samples != VK_SAMPLE_COUNT_1_BIT;
         VkSubpassDependency deps[2] = {};
         deps[0].srcSubpass    = VK_SUBPASS_EXTERNAL;
         deps[0].dstSubpass    = 0;
@@ -1679,10 +1703,18 @@ namespace TitusVkGraphics
         deps[1].srcSubpass    = 0;
         deps[1].dstSubpass    = VK_SUBPASS_EXTERNAL;
         deps[1].srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        deps[1].dstStageMask  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-                              | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        if (isMsaa)
+        {
+            deps[1].dstStageMask  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            deps[1].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        }
+        else
+        {
+            deps[1].dstStageMask  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+                                  | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+            deps[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        }
         deps[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        deps[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
         deps[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
         VkRenderPassCreateInfo rpci{};
@@ -1791,10 +1823,18 @@ namespace TitusVkGraphics
         deps[1].srcSubpass    = 0;
         deps[1].dstSubpass    = VK_SUBPASS_EXTERNAL;
         deps[1].srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        deps[1].dstStageMask  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
-                              | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        if (rtLayout.samples > 1)
+        {
+            deps[1].dstStageMask  = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            deps[1].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        }
+        else
+        {
+            deps[1].dstStageMask  = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT
+                                  | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+            deps[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        }
         deps[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        deps[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
         deps[1].dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT;
 
         VkRenderPassCreateInfo rpci{};

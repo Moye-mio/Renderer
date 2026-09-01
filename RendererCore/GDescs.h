@@ -525,6 +525,8 @@ namespace TitusRHI
         bool supportsRayQuery = false;
         // 光追管线：仅 VK 后端探测到 RT 管线扩展时为 true。
         bool supportsRayTracingPipeline = false;
+        // 颜色+深度附件同时支持的最大 MSAA 采样数（1 表示不支持 MSAA）。
+        uint32_t maxColorSampleCount = 1;
         std::string deviceName;
     };
 

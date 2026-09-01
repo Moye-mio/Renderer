@@ -190,6 +190,7 @@ namespace TitusGraphics
             }
             glFrontFace(ToGLFrontFace(rs.frontFace));
             glPolygonMode(GL_FRONT_AND_BACK, ToGLPolygonMode(rs.polygonMode));
+            glEnable(GL_MULTISAMPLE);
 
             // 深度
             if (ds.depthTestEnable) glEnable(GL_DEPTH_TEST);
@@ -516,6 +517,40 @@ namespace TitusGraphics
         Enqueue([bits]()
         {
             glMemoryBarrier(bits);
+        });
+    }
+
+    void GLCommandList::ResolveTexture(TextureHandle src, TextureHandle dst)
+    {
+        GLDevice* dev = m_device;
+        Enqueue([dev, src, dst]()
+        {
+            const GLTextureEntry* srcTex = dev->LookupTexture(src);
+            const GLTextureEntry* dstTex = dev->LookupTexture(dst);
+            if (!srcTex || !dstTex || srcTex->id == 0 || dstTex->id == 0)
+            {
+                LOG_STREAM_ERROR("GLCommandList") << "ResolveTexture: invalid src/dst";
+                return;
+            }
+
+            GLuint fbos[2] = {0, 0};
+            glGenFramebuffers(2, fbos);
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, fbos[0]);
+            glFramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   srcTex->target, srcTex->id, 0);
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbos[1]);
+            glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   dstTex->target, dstTex->id, 0);
+
+            const GLint w = static_cast<GLint>(srcTex->width);
+            const GLint h = static_cast<GLint>(srcTex->height);
+            glBlitFramebuffer(0, 0, w, h, 0, 0,
+                              static_cast<GLint>(dstTex->width),
+                              static_cast<GLint>(dstTex->height),
+                              GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glDeleteFramebuffers(2, fbos);
         });
     }
 }

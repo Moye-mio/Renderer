@@ -96,6 +96,8 @@ namespace TitusVkGraphics
                       uint32_t groupCountZ) override;
 
         void PipelineBarrier(const TitusRHI::PipelineBarrierDesc& desc) override;
+        void ResolveTexture(TitusRHI::TextureHandle src,
+                            TitusRHI::TextureHandle dst) override;
 
 #if defined(RENDERER_ENABLE_RAY_TRACING)
         // 光追派发：vkCmdTraceRaysKHR

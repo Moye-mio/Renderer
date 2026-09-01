@@ -231,7 +231,9 @@ namespace TitusVkGraphics
                 {
                     if (VKTextureEntry* te = m_device->MutableLookupTexture(th))
                     {
-                        te->currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                        te->currentLayout = (te->samples > 1)
+                            ? VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
+                            : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
                     }
                 }
                 if (rt->depthStencilAttachment.IsValid())
@@ -785,5 +787,32 @@ namespace TitusVkGraphics
                              0, nullptr,
                              static_cast<uint32_t>(imageBars.size()),
                              imageBars.empty() ? nullptr : imageBars.data());
+    }
+
+    void VKCommandList::ResolveTexture(TextureHandle src, TextureHandle dst)
+    {
+        if (!m_cmd) return;
+        const VKTextureEntry* srcTex = m_device->LookupTexture(src);
+        const VKTextureEntry* dstTex = m_device->LookupTexture(dst);
+        if (!srcTex || !dstTex || !srcTex->image || !dstTex->image)
+        {
+            LOG_STREAM_ERROR("VKCommandList") << "ResolveTexture: invalid src/dst";
+            return;
+        }
+
+        VkImageResolve region{};
+        region.srcSubresource.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.srcSubresource.mipLevel       = 0;
+        region.srcSubresource.baseArrayLayer = 0;
+        region.srcSubresource.layerCount     = 1;
+        region.dstSubresource                = region.srcSubresource;
+        region.extent.width                  = srcTex->width;
+        region.extent.height                 = srcTex->height;
+        region.extent.depth                  = 1;
+
+        vkCmdResolveImage(m_cmd,
+                          srcTex->image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                          dstTex->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                          1, &region);
     }
 }

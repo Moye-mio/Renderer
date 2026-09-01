@@ -49,6 +49,7 @@ namespace TitusVkGraphics
         uint32_t       height = 0;
         uint32_t       mipLevels   = 1;
         uint32_t       arrayLayers = 1;
+        uint32_t       samples     = 1;
         VkImageLayout  currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     };
 
