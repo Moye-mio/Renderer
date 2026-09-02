@@ -63,8 +63,8 @@ struct TechniqueContext
     float outlinePartWidth[4] = {1.0f, 1.0f, 1.0f, 0.6f};
 
     // 屏幕空间内线：法线不连续 + 角色内部的深度不连续。外轮廓仍由 inverted hull 负责。
-    bool  enableCrease = true;
-    float creasePixels = 1.5f;
+    bool  enableCrease = false;
+    float creasePixels = 1.0f;
     // 1 - dot(n, n')。0.08 ≈ 23°，再软 0.10 过渡到约 36°。
     float creaseNormalThresh = 0.08f;
     float creaseNormalSoft   = 0.10f;
