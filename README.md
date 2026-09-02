@@ -61,7 +61,7 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 | `001_Reflective_shadow_map/` | RSM 间接光示例 |
 | `002_Order_Independent_Transparency/` | OIT（WBOIT / Fourier OIT） |
 | `003_Toon_Shading/` | 卡通渲染 / NPR（妮露 + Cel-Ramp / 描边） |
-| `004_Anti_Aliasing/` | 抗锯齿对比（Sponza；None / MSAA） |
+| `004_Anti_Aliasing/` | 抗锯齿对比（Sponza；None / MSAA / FXAA / TAA） |
 | `Docs/` | 设计文档、待办（`Todo/`）与事故复盘（`Bug/`） |
 | `Tools/` | 架构护栏与着色器辅助脚本 |
 | `Third-Party/` | 第三方库（imgui、glm、gli、stb、Assimp、GLFW/GLEW、Tracy 等） |
@@ -81,7 +81,7 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 | `001_Reflective_shadow_map` | GBuffer → RSM → Compute VPL → ScreenQuad | `gl` |
 | `002_Order_Independent_Transparency` | WBOIT / Fourier OIT 半透明对比 | `gl` |
 | `003_Toon_Shading` | 卡通渲染（妮露 Diffuse / Cel-Ramp / 描边） | `gl` |
-| `004_Anti_Aliasing` | 抗锯齿对比（Sponza；None / MSAA） | `gl` |
+| `004_Anti_Aliasing` | 抗锯齿对比（Sponza；None / MSAA / FXAA / TAA） | `gl` |
 
 ---
 

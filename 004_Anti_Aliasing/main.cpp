@@ -1,8 +1,8 @@
 // ============================================================================
 // 004_Anti_Aliasing - main.cpp
 //
-// 抗锯齿对比示例：Sponza 上切换 None / MSAA。
-// FXAA / SMAA / TAA 后续按 TechniqueContext::mode 接入。
+// 抗锯齿对比示例：Sponza 上切换 None / MSAA / FXAA / TAA。
+// SMAA 后续按 TechniqueContext::mode 接入。
 //
 // 架构与 000 / 001 / 003 一致：仅通过 TitusRHI::* 启动；AssetLoader 解码
 // CPU IR，gfx 上传得到 GpuModelHandle。默认 OpenGL，`--backend=vk` 可切 Vulkan。
@@ -22,9 +22,11 @@
 #include "AssetLoader/AssetTypes.h"
 #include "AssetLoader/ModelLoader.h"
 
+#include "FXAAPass.h"
 #include "MSAAPass.h"
 #include "ScenePass.h"
 #include "Sponza.h"
+#include "TAAPass.h"
 #include "TechniqueContext.h"
 
 #ifndef SOLUTION_DIR
@@ -53,9 +55,13 @@ int main(int argc, char** argv)
             startMode = AATechnique::None;
         else if (std::strcmp(v, "msaa") == 0 || std::strcmp(v, "MSAA") == 0)
             startMode = AATechnique::MSAA;
+        else if (std::strcmp(v, "fxaa") == 0 || std::strcmp(v, "FXAA") == 0)
+            startMode = AATechnique::FXAA;
+        else if (std::strcmp(v, "taa") == 0 || std::strcmp(v, "TAA") == 0)
+            startMode = AATechnique::TAA;
         else
             LOG_STREAM_ERROR(kLog) << "Unknown --mode value: " << v
-                << " (expected none|msaa)";
+                << " (expected none|msaa|fxaa|taa)";
     }
 
     const char* backendName =
@@ -127,21 +133,33 @@ int main(int argc, char** argv)
 
         auto scenePass = std::make_shared<ScenePass>();
         auto msaaPass = std::make_shared<MSAAPass>();
+        auto fxaaPass = std::make_shared<FXAAPass>();
+        auto taaPass = std::make_shared<TAAPass>();
         scenePass->SetSponza(&sponza);
         scenePass->SetContext(&techniqueCtx);
         msaaPass->SetSponza(&sponza);
         msaaPass->SetContext(&techniqueCtx);
+        fxaaPass->SetSponza(&sponza);
+        fxaaPass->SetContext(&techniqueCtx);
+        taaPass->SetSponza(&sponza);
+        taaPass->SetContext(&techniqueCtx);
 
         auto applySchedule = [&](AATechnique mode)
         {
             if (mode == AATechnique::MSAA)
                 APP::SetScheduledPasses({msaaPass});
+            else if (mode == AATechnique::FXAA)
+                APP::SetScheduledPasses({fxaaPass});
+            else if (mode == AATechnique::TAA)
+                APP::SetScheduledPasses({taaPass});
             else
                 APP::SetScheduledPasses({scenePass});
         };
 
         APP::AddPass(scenePass);
         APP::AddPass(msaaPass);
+        APP::AddPass(fxaaPass);
+        APP::AddPass(taaPass);
         applySchedule(techniqueCtx.mode);
 
         OVERLAY::AddPanel("Anti-Aliasing", [&techniqueCtx, &applySchedule]()
@@ -149,12 +167,16 @@ int main(int argc, char** argv)
             int m = static_cast<int>(techniqueCtx.mode);
             bool changed = ImGui::RadioButton("None", &m, static_cast<int>(AATechnique::None));
             changed = ImGui::RadioButton("MSAA", &m, static_cast<int>(AATechnique::MSAA)) || changed;
+            changed = ImGui::RadioButton("FXAA", &m, static_cast<int>(AATechnique::FXAA)) || changed;
+            changed = ImGui::RadioButton("TAA", &m, static_cast<int>(AATechnique::TAA)) || changed;
             if (changed)
             {
                 techniqueCtx.mode = static_cast<AATechnique>(m);
+                if (techniqueCtx.mode == AATechnique::TAA)
+                    techniqueCtx.taaResetHistory = true;
                 applySchedule(techniqueCtx.mode);
             }
-            ImGui::TextDisabled("FXAA / SMAA / TAA 尚未接入");
+            ImGui::TextDisabled("SMAA 尚未接入");
 
             if (techniqueCtx.mode == AATechnique::MSAA)
             {
@@ -163,6 +185,23 @@ int main(int argc, char** argv)
                 const char* sampleItems[] = { "2x", "4x", "8x" };
                 if (ImGui::Combo("Samples", &sampleIdx, sampleItems, IM_ARRAYSIZE(sampleItems)))
                     techniqueCtx.msaaSamples = (sampleIdx == 0) ? 2u : (sampleIdx == 2) ? 8u : 4u;
+            }
+
+            if (techniqueCtx.mode == AATechnique::FXAA)
+            {
+                ImGui::SliderFloat("Subpix", &techniqueCtx.fxaaSubpix, 0.0f, 1.0f);
+                ImGui::SliderFloat("Edge Threshold", &techniqueCtx.fxaaEdgeThreshold, 0.0312f, 0.333f);
+                ImGui::SliderFloat("Edge Threshold Min", &techniqueCtx.fxaaEdgeThresholdMin, 0.01f, 0.1f);
+            }
+
+            if (techniqueCtx.mode == AATechnique::TAA)
+            {
+                ImGui::SliderFloat("Feedback", &techniqueCtx.taaFeedback, 0.01f, 0.5f);
+                const char* clampItems[] = { "Off", "AABB", "Variance" };
+                ImGui::Combo("Clamp", &techniqueCtx.taaClampMode, clampItems, IM_ARRAYSIZE(clampItems));
+                ImGui::SliderFloat("Jitter Scale", &techniqueCtx.taaJitterScale, 0.0f, 2.0f);
+                if (ImGui::Button("Reset History"))
+                    techniqueCtx.taaResetHistory = true;
             }
 
             ImGui::Separator();
