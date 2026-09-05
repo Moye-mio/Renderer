@@ -20,6 +20,8 @@
     </ItemGroup>
     <ItemGroup>
         <ClCompile Include="main.cpp"/>
+        <ClCompile Include="FSR2Pass.cpp"/>
+        <ClCompile Include="FSRPass.cpp"/>
         <ClCompile Include="FXAAPass.cpp"/>
         <ClCompile Include="MSAAPass.cpp"/>
         <ClCompile Include="ScenePass.cpp"/>
@@ -27,6 +29,8 @@
         <ClCompile Include="TAAPass.cpp"/>
     </ItemGroup>
     <ItemGroup>
+        <ClInclude Include="FSR2Pass.h"/>
+        <ClInclude Include="FSRPass.h"/>
         <ClInclude Include="FXAAPass.h"/>
         <ClInclude Include="MSAAPass.h"/>
         <ClInclude Include="ScenePass.h"/>
@@ -56,6 +60,11 @@
         <Content Include="Shader\TAA_Scene_FS.glsl"/>
         <Content Include="Shader\TAA_Resolve_FS.glsl"/>
         <Content Include="Shader\FXAA_FS.glsl"/>
+        <Content Include="Shader\FSR_EASU_FS.glsl"/>
+        <Content Include="Shader\FSR_RCAS_FS.glsl"/>
+        <Content Include="Shader\FSR2_Scene_VS.glsl"/>
+        <Content Include="Shader\FSR2_Scene_FS.glsl"/>
+        <Content Include="Shader\FSR2_Accumulate_FS.glsl"/>
     </ItemGroup>
     <PropertyGroup Label="Globals">
         <VCProjectVersion>15.0</VCProjectVersion>

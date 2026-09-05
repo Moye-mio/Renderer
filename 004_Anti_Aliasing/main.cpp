@@ -1,12 +1,13 @@
 // ============================================================================
 // 004_Anti_Aliasing - main.cpp
 //
-// 抗锯齿对比示例：Sponza 上切换 None / MSAA / FXAA / TAA。
+// 抗锯齿对比示例：Sponza 上切换 None / MSAA / FXAA / TAA / FSR1.0 / FSR2.0。
 // SMAA 后续按 TechniqueContext::mode 接入。
 //
 // 架构与 000 / 001 / 003 一致：仅通过 TitusRHI::* 启动；AssetLoader 解码
 // CPU IR，gfx 上传得到 GpuModelHandle。默认 OpenGL，`--backend=vk` 可切 Vulkan。
 // ============================================================================
+#include <cmath>
 #include <cstring>
 #include <limits>
 #include <memory>
@@ -22,6 +23,8 @@
 #include "AssetLoader/AssetTypes.h"
 #include "AssetLoader/ModelLoader.h"
 
+#include "FSR2Pass.h"
+#include "FSRPass.h"
 #include "FXAAPass.h"
 #include "MSAAPass.h"
 #include "ScenePass.h"
@@ -59,9 +62,15 @@ int main(int argc, char** argv)
             startMode = AATechnique::FXAA;
         else if (std::strcmp(v, "taa") == 0 || std::strcmp(v, "TAA") == 0)
             startMode = AATechnique::TAA;
+        else if (std::strcmp(v, "fsr") == 0 || std::strcmp(v, "FSR") == 0
+            || std::strcmp(v, "fsr1.0") == 0 || std::strcmp(v, "FSR1.0") == 0)
+            startMode = AATechnique::FSR;
+        else if (std::strcmp(v, "fsr2") == 0 || std::strcmp(v, "FSR2") == 0
+            || std::strcmp(v, "fsr2.0") == 0 || std::strcmp(v, "FSR2.0") == 0)
+            startMode = AATechnique::FSR2;
         else
             LOG_STREAM_ERROR(kLog) << "Unknown --mode value: " << v
-                << " (expected none|msaa|fxaa|taa)";
+                << " (expected none|msaa|fxaa|taa|fsr|fsr2)";
     }
 
     const char* backendName =
@@ -135,6 +144,8 @@ int main(int argc, char** argv)
         auto msaaPass = std::make_shared<MSAAPass>();
         auto fxaaPass = std::make_shared<FXAAPass>();
         auto taaPass = std::make_shared<TAAPass>();
+        auto fsrPass = std::make_shared<FSRPass>();
+        auto fsr2Pass = std::make_shared<FSR2Pass>();
         scenePass->SetSponza(&sponza);
         scenePass->SetContext(&techniqueCtx);
         msaaPass->SetSponza(&sponza);
@@ -143,6 +154,10 @@ int main(int argc, char** argv)
         fxaaPass->SetContext(&techniqueCtx);
         taaPass->SetSponza(&sponza);
         taaPass->SetContext(&techniqueCtx);
+        fsrPass->SetSponza(&sponza);
+        fsrPass->SetContext(&techniqueCtx);
+        fsr2Pass->SetSponza(&sponza);
+        fsr2Pass->SetContext(&techniqueCtx);
 
         auto applySchedule = [&](AATechnique mode)
         {
@@ -152,6 +167,10 @@ int main(int argc, char** argv)
                 APP::SetScheduledPasses({fxaaPass});
             else if (mode == AATechnique::TAA)
                 APP::SetScheduledPasses({taaPass});
+            else if (mode == AATechnique::FSR)
+                APP::SetScheduledPasses({fsrPass});
+            else if (mode == AATechnique::FSR2)
+                APP::SetScheduledPasses({fsr2Pass});
             else
                 APP::SetScheduledPasses({scenePass});
         };
@@ -160,6 +179,8 @@ int main(int argc, char** argv)
         APP::AddPass(msaaPass);
         APP::AddPass(fxaaPass);
         APP::AddPass(taaPass);
+        APP::AddPass(fsrPass);
+        APP::AddPass(fsr2Pass);
         applySchedule(techniqueCtx.mode);
 
         OVERLAY::AddPanel("Anti-Aliasing", [&techniqueCtx, &applySchedule]()
@@ -169,11 +190,15 @@ int main(int argc, char** argv)
             changed = ImGui::RadioButton("MSAA", &m, static_cast<int>(AATechnique::MSAA)) || changed;
             changed = ImGui::RadioButton("FXAA", &m, static_cast<int>(AATechnique::FXAA)) || changed;
             changed = ImGui::RadioButton("TAA", &m, static_cast<int>(AATechnique::TAA)) || changed;
+            changed = ImGui::RadioButton("FSR1.0", &m, static_cast<int>(AATechnique::FSR)) || changed;
+            changed = ImGui::RadioButton("FSR2.0", &m, static_cast<int>(AATechnique::FSR2)) || changed;
             if (changed)
             {
                 techniqueCtx.mode = static_cast<AATechnique>(m);
                 if (techniqueCtx.mode == AATechnique::TAA)
                     techniqueCtx.taaResetHistory = true;
+                if (techniqueCtx.mode == AATechnique::FSR2)
+                    techniqueCtx.fsr2ResetHistory = true;
                 applySchedule(techniqueCtx.mode);
             }
             ImGui::TextDisabled("SMAA 尚未接入");
@@ -202,6 +227,50 @@ int main(int argc, char** argv)
                 ImGui::SliderFloat("Jitter Scale", &techniqueCtx.taaJitterScale, 0.0f, 2.0f);
                 if (ImGui::Button("Reset History"))
                     techniqueCtx.taaResetHistory = true;
+            }
+
+            if (techniqueCtx.mode == AATechnique::FSR)
+            {
+                ImGui::SliderFloat("Render Scale", &techniqueCtx.fsrRenderScale, 0.5f, 1.0f);
+                const char* upscaleItems[] = { "Bilinear", "EASU", "Mobile EASU" };
+                ImGui::Combo("Upscale", &techniqueCtx.fsrUpscaleMode,
+                    upscaleItems, IM_ARRAYSIZE(upscaleItems));
+                ImGui::Checkbox("RCAS", &techniqueCtx.fsrEnableRcas);
+                if (techniqueCtx.fsrEnableRcas)
+                    ImGui::SliderFloat("Sharpness (stops)", &techniqueCtx.fsrSharpnessStops, 0.0f, 2.0f);
+            }
+
+            if (techniqueCtx.mode == AATechnique::FSR2)
+            {
+                int quality = 4;
+                if (std::abs(techniqueCtx.fsr2RenderScale - (1.0f / 1.5f)) < 0.005f)
+                    quality = 0;
+                else if (std::abs(techniqueCtx.fsr2RenderScale - (1.0f / 1.7f)) < 0.005f)
+                    quality = 1;
+                else if (std::abs(techniqueCtx.fsr2RenderScale - 0.5f) < 0.005f)
+                    quality = 2;
+                else if (std::abs(techniqueCtx.fsr2RenderScale - (1.0f / 3.0f)) < 0.005f)
+                    quality = 3;
+                const char* qualityItems[] = {
+                    "Quality 1.5x", "Balanced 1.7x", "Performance 2.0x", "Ultra 3.0x", "Custom"
+                };
+                if (ImGui::Combo("Quality", &quality, qualityItems, IM_ARRAYSIZE(qualityItems))
+                    && quality < 4)
+                {
+                    const float scales[] = { 1.0f / 1.5f, 1.0f / 1.7f, 0.5f, 1.0f / 3.0f };
+                    techniqueCtx.fsr2RenderScale = scales[quality];
+                    techniqueCtx.fsr2ResetHistory = true;
+                }
+                ImGui::SliderFloat("Render Scale", &techniqueCtx.fsr2RenderScale, 0.33f, 1.0f);
+                ImGui::SliderFloat("Feedback", &techniqueCtx.fsr2Feedback, 0.01f, 0.5f);
+                const char* clampItems[] = { "Off", "AABB", "Variance" };
+                ImGui::Combo("Clamp", &techniqueCtx.fsr2ClampMode, clampItems, IM_ARRAYSIZE(clampItems));
+                ImGui::SliderFloat("Jitter Scale", &techniqueCtx.fsr2JitterScale, 0.0f, 2.0f);
+                ImGui::Checkbox("RCAS", &techniqueCtx.fsr2EnableRcas);
+                if (techniqueCtx.fsr2EnableRcas)
+                    ImGui::SliderFloat("Sharpness (stops)", &techniqueCtx.fsr2SharpnessStops, 0.0f, 2.0f);
+                if (ImGui::Button("Reset History"))
+                    techniqueCtx.fsr2ResetHistory = true;
             }
 
             ImGui::Separator();

@@ -32,6 +32,12 @@
     <ClCompile Include="FXAAPass.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FSRPass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSR2Pass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Sponza.h">
@@ -50,6 +56,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FXAAPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FSRPass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FSR2Pass.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -76,6 +88,21 @@
       <Filter>Shader Files</Filter>
     </Content>
     <Content Include="Shader\FXAA_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\FSR_EASU_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\FSR_RCAS_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\FSR2_Scene_VS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\FSR2_Scene_FS.glsl">
+      <Filter>Shader Files</Filter>
+    </Content>
+    <Content Include="Shader\FSR2_Accumulate_FS.glsl">
       <Filter>Shader Files</Filter>
     </Content>
   </ItemGroup>
