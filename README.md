@@ -62,6 +62,7 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 | `002_Order_Independent_Transparency/` | OIT（WBOIT / Fourier OIT） |
 | `003_Toon_Shading/` | 卡通渲染 / NPR（妮露 + Cel-Ramp / 描边） |
 | `004_Anti_Aliasing/` | 抗锯齿对比（Sponza；None / MSAA / FXAA / TAA） |
+| `005_Software_Path_Tracing/` | 软件路径追踪测试台（白色 Cornell Box + 两球，FS 解析求交 + 逐帧累积） |
 | `Docs/` | 设计文档、待办（`Todo/`）与事故复盘（`Bug/`） |
 | `Tools/` | 架构护栏与着色器辅助脚本 |
 | `Third-Party/` | 第三方库（imgui、glm、gli、stb、Assimp、GLFW/GLEW、Tracy 等） |
@@ -82,6 +83,7 @@ AssetLoader（TitusAsset，纯 CPU） + Platform（GLFW / IWindow） + Basic
 | `002_Order_Independent_Transparency` | WBOIT / Fourier OIT 半透明对比 | `gl` |
 | `003_Toon_Shading` | 卡通渲染（妮露 Diffuse / Cel-Ramp / 描边） | `gl` |
 | `004_Anti_Aliasing` | 抗锯齿对比（Sponza；None / MSAA / FXAA / TAA） | `gl` |
+| `005_Software_Path_Tracing` | 软件路径追踪（白色 Cornell Box + 两球；法线 / 直接光 / AO / 路径追踪） | `gl` |
 
 ---
 

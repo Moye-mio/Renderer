@@ -12,6 +12,7 @@
 | `000_Forward_Deferred_ForwardPlus`   | 着色管线对比（Forward / Deferred / Forward+） | `gl` |
 | `001_Reflective_shadow_map`          | RSM 间接光                               | `gl` |
 | `002_Order_Independent_Transparency` | OIT（WBOIT / Fourier OIT）· 进行中         | `gl` |
+| `005_Software_Path_Tracing`          | 软件路径追踪测试台（白色 Cornell Box + 两球，FS 解析求交 + 逐帧累积） | `gl` |
 | `Examples/Test_002_RayQueryHello`    | VK 光追最小闭环（rayQuery / RT 管线 / AS 管理）   | `vk` |
 
 
@@ -24,10 +25,12 @@
 | ------------------------ | ---------- | ------------------------ | ----------- | -------------------- |
 | `003_Toon_Shading`       | 卡通渲染 / NPR | Cel-Ramp、描边、Rim、Hatching | `gl` + `vk` | 小（stencil 描边路线除外）    |
 | `004_Anti_Aliasing`      | 抗锯齿对比      | FXAA / SMAA / TAA / MSAA | `gl` + `vk` | 前三者无；MSAA 需补 resolve |
-| `005_Ray_Traced_Effects` | 混合光追       | RT 阴影 / RTAO / RT 反射     | `vk` only   | 中（几何与材质寻址）           |
+| `006_Ray_Traced_Effects` | 混合光追       | RT 阴影 / RTAO / RT 反射     | `vk` only   | 中（几何与材质寻址）           |
 
 
-建议顺序 **003 → 004 → 005**：003 几乎零基建、可先把 NPR 素材与 LUT 通路跑通；004 的 TAA 会顺带补齐 jitter / motion vector / history 三件套，这三件套正好是 005 做光追降噪与时域累积的前置。
+建议顺序 **003 → 004 → 006**：003 几乎零基建、可先把 NPR 素材与 LUT 通路跑通；004 的 TAA 会顺带补齐 jitter / motion vector / history 三件套，这三件套正好是混合光追做降噪与时域累积的前置。
+
+混合光追原本占 005 这个编号，现在 005 已经是 `005_Software_Path_Tracing`（白色 Cornell Box + 两球的解析求交测试台，只做光线传输算法本身，不碰加速结构），所以这一项顺延到 006。两者不重叠：005 验算法，006 验「怎么把光追接到真实场景的光栅化管线上」。
 
 ## RHI 前置能力评估
 
@@ -122,7 +125,7 @@
 
 
 
-## 005_Ray_Traced_Effects（光线追踪）
+## 006_Ray_Traced_Effects（混合光追）
 
 
 
