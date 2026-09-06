@@ -735,6 +735,27 @@ namespace TitusVkGraphics
             }
             return VK_IMAGE_LAYOUT_UNDEFINED;
         }
+
+        // barrier 的 aspectMask 必须和 image 的实际 aspect 一致，否则
+        // vkCmdPipelineBarrier 直接是非法调用。按创建时的 format 推。
+        VkImageAspectFlags AspectFromFormat(VkFormat f)
+        {
+            switch (f)
+            {
+            case VK_FORMAT_D16_UNORM:
+            case VK_FORMAT_D32_SFLOAT:
+            case VK_FORMAT_X8_D24_UNORM_PACK32:
+                return VK_IMAGE_ASPECT_DEPTH_BIT;
+            case VK_FORMAT_D16_UNORM_S8_UINT:
+            case VK_FORMAT_D24_UNORM_S8_UINT:
+            case VK_FORMAT_D32_SFLOAT_S8_UINT:
+                return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            case VK_FORMAT_S8_UINT:
+                return VK_IMAGE_ASPECT_STENCIL_BIT;
+            default:
+                return VK_IMAGE_ASPECT_COLOR_BIT;
+            }
+        }
     }
 
     void VKCommandList::PipelineBarrier(const TitusRHI::PipelineBarrierDesc& desc)
@@ -767,8 +788,7 @@ namespace TitusVkGraphics
             ib.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
             ib.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
             ib.image                           = te->image;
-            // 简化：根据已知 format 推断 aspect（depth/stencil 留作后续扩展）
-            ib.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+            ib.subresourceRange.aspectMask     = AspectFromFormat(te->format);
             ib.subresourceRange.baseMipLevel   = 0;
             ib.subresourceRange.levelCount     = te->mipLevels  ? te->mipLevels  : 1;
             ib.subresourceRange.baseArrayLayer = 0;

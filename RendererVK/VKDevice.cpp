@@ -2288,7 +2288,7 @@ namespace TitusVkGraphics
         constexpr uint32_t kMaxSetsPerFrame = 4096;
         constexpr uint32_t kPerTypeCount    = 4096;
 
-        const VkDescriptorPoolSize sizes[] = {
+        std::vector<VkDescriptorPoolSize> sizes = {
             { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         kPerTypeCount },
             { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         kPerTypeCount },
             { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, kPerTypeCount },
@@ -2296,6 +2296,12 @@ namespace TitusVkGraphics
             { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          kPerTypeCount },
             { VK_DESCRIPTOR_TYPE_SAMPLER,                kPerTypeCount },
         };
+        if (m_context && m_context->SupportsRayTracing())
+        {
+            // rayQuery / TraceRays 绑定 TLAS 时需要这个 type，否则
+            // vkAllocateDescriptorSets 会报 pool 未声明 ACCELERATION_STRUCTURE_KHR。
+            sizes.push_back({ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 256 });
+        }
 
         for (uint32_t i = 0; i < framesInFlight && i < m_frames.size(); ++i)
         {
@@ -2303,8 +2309,8 @@ namespace TitusVkGraphics
             ci.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
             ci.flags         = 0;   // 不需要 FREE_DESCRIPTOR_SET_BIT —— 整池 reset
             ci.maxSets       = kMaxSetsPerFrame;
-            ci.poolSizeCount = static_cast<uint32_t>(std::size(sizes));
-            ci.pPoolSizes    = sizes;
+            ci.poolSizeCount = static_cast<uint32_t>(sizes.size());
+            ci.pPoolSizes    = sizes.data();
             VK_CHECK(vkCreateDescriptorPool(m_context->GetDevice(), &ci, nullptr,
                                             &m_frames[i].descriptorPool));
         }

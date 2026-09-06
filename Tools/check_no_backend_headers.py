@@ -60,7 +60,7 @@ CPP_EXTS = {".cpp", ".cc", ".cxx"}
 
 def _is_strict(target_dir):
     norm = target_dir.replace("\\", "/")
-    return ("Examples" in norm) or ("001_Reflective_shadow_map" in norm) or ("003_Toon_Shading" in norm) or ("004_Anti_Aliasing" in norm) or ("005_Software_Path_Tracing" in norm)
+    return ("Examples" in norm) or ("001_Reflective_shadow_map" in norm) or ("003_Toon_Shading" in norm) or ("004_Anti_Aliasing" in norm) or ("005_Software_Path_Tracing" in norm) or ("006_Dynamic_Diffuse_GI" in norm)
 
 
 def scan(target_dir):
@@ -102,6 +102,7 @@ def main(argv):
         os.path.join(repo, "003_Toon_Shading"),
         os.path.join(repo, "004_Anti_Aliasing"),
         os.path.join(repo, "005_Software_Path_Tracing"),
+        os.path.join(repo, "006_Dynamic_Diffuse_GI"),
     ]
 
     any_fail = False

@@ -25,12 +25,13 @@
 | ------------------------ | ---------- | ------------------------ | ----------- | -------------------- |
 | `003_Toon_Shading`       | 卡通渲染 / NPR | Cel-Ramp、描边、Rim、Hatching | `gl` + `vk` | 小（stencil 描边路线除外）    |
 | `004_Anti_Aliasing`      | 抗锯齿对比      | FXAA / SMAA / TAA / MSAA | `gl` + `vk` | 前三者无；MSAA 需补 resolve |
-| `006_Ray_Traced_Effects` | 混合光追       | RT 阴影 / RTAO / RT 反射     | `vk` only   | 中（几何与材质寻址）           |
+| `006_Dynamic_Diffuse_GI` | DDGI 间接光     | Compute rayQuery probe 场    | `vk`（GL 退回直接光） | 中（Sponza AS + 材质 SSBO） |
+| （后续编号）             | 混合光追         | RT 阴影 / RTAO / RT 反射     | `vk` only           | 中（几何与材质寻址）           |
 
 
 建议顺序 **003 → 004 → 006**：003 几乎零基建、可先把 NPR 素材与 LUT 通路跑通；004 的 TAA 会顺带补齐 jitter / motion vector / history 三件套，这三件套正好是混合光追做降噪与时域累积的前置。
 
-混合光追原本占 005 这个编号，现在 005 已经是 `005_Software_Path_Tracing`（白色 Cornell Box + 两球的解析求交测试台，只做光线传输算法本身，不碰加速结构），所以这一项顺延到 006。两者不重叠：005 验算法，006 验「怎么把光追接到真实场景的光栅化管线上」。
+006 已落地为 `006_Dynamic_Diffuse_GI`（Sponza + Compute rayQuery probe 场）。原先规划的混合光追（RT 阴影 / RTAO / RT 反射）顺延到后续编号。005 仍是软件路径追踪测试台，只验光线传输算法本身。
 
 ## RHI 前置能力评估
 
